@@ -1,0 +1,39 @@
+# MVP scope. Edit this file to change what the backend analyzes. No code changes needed.
+# Every change here should get a line in docs/decisions.md (what changed, why, who).
+# Restart `make dev` after editing. Invalid values fail at startup with a clear message.
+
+region:
+  name: "TBD (placeholder: Costa Rica)"
+  # [min_lon, min_lat, max_lon, max_lat]. Requests outside this box are rejected (422).
+  bbox: [-86.0, 8.0, -82.5, 11.3]
+
+# Crop ids from data/ecocrop_subset.csv (2 to 8 crops). TBD: team to pick 3 to 5.
+crops: [rice, beans, maize]
+
+# Variables used in scoring. Options: temperature, rainfall, soil_ph, soil_moisture
+variables: [temperature, rainfall, soil_ph, soil_moisture]
+
+# Default farmer priorities; must sum to 1.0. The request can override them.
+#   climate: temperature fit   water: rainfall + soil moisture fit   soil: soil pH fit
+priority_weights:
+  water: 0.4
+  soil: 0.3
+  climate: 0.3
+
+# A rotation = one crop per season, repeated every year (transitions are cyclic).
+# Default: the two rainfed seasons used in Central America (primera / postrera).
+# The dry season (Dec to Apr) is treated as fallow in v0.
+seasons:
+  - name: primera
+    months: [5, 6, 7, 8]
+  - name: postrera
+    months: [9, 10, 11]
+
+# How many rotations /recommendations returns by default
+top_n: 5
+
+# mock   : deterministic fake data, no network (default; frontend can build on it)
+# live   : real APIs; every response is saved to the cache
+# cached : only the cache, never the network (use this for the demo)
+# The DATA_MODE env var overrides this value.
+data_mode: mock

@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Secrets — never commit. Use backend/.env.example as the template.
+.env
+.env.*
+!.env.example
+
+# Runtime cache of external API responses (regenerable).
+# Commit a snapshot under backend/app/cache/snapshots/ only if needed for the demo.
+backend/.cache/
+
+# Claude Code personal settings (team settings live in .claude/settings.json)
+.claude/settings.local.json
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json

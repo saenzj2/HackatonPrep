@@ -1,0 +1,187 @@
+import httpx
+import pytest
+import respx
+
+from app.cache import JsonCache
+from app.errors import (
+    CacheMissError,
+    ConfigError,
+    ErrorCode,
+    SourceDataError,
+    SourceUnavailableError,
+)
+from app.integrations.base import ClimateSource, CropSource, SoilSource
+from app.integrations.ecocrop import EcoCropCatalog
+from app.integrations.mock import MockClimate, MockSoil
+from app.integrations.nasa_power import BASE_URL, NasaPowerClimate, parse_climatology
+from app.settings import BACKEND_DIR, DataMode
+from tests.conftest import load_fixture
+
+POWER_FIXTURE = "nasa_power/climatology_alajuela.json"  # real response, lat 10.0 lon -84.2
+
+
+# ---------------------------------------------------------------- NASA POWER (template)
+def test_parse_real_power_response():
+    climate = parse_climatology(load_fixture(POWER_FIXTURE))
+    assert climate.temperature_c[0] == 22.66  # JAN T2M, °C
+    assert climate.rainfall_mm[0] == pytest.approx(1.22 * 31, abs=0.1)  # mm/day → mm/month
+    assert climate.rainfall_mm[9] > climate.rainfall_mm[1]  # Oct (wet) > Feb (dry)
+
+
+def test_parse_rejects_fill_values():
+    raw = load_fixture(POWER_FIXTURE)
+    raw["properties"]["parameter"]["T2M"]["MAR"] = -999.0
+    with pytest.raises(SourceDataError, match="fill values"):
+        parse_climatology(raw)
+
+
+def test_parse_rejects_unexpected_payload():
+    with pytest.raises(SourceDataError, match="Unexpected NASA POWER payload") as exc:
+        parse_climatology({"messages": ["boom"]})
+    assert exc.value.code == ErrorCode.SOURCE_BAD_DATA
+
+
+@respx.mock
+def test_live_mode_fetches_and_caches(tmp_path):
+    route = respx.get(BASE_URL).mock(
+        return_value=httpx.Response(200, json=load_fixture(POWER_FIXTURE))
+    )
+    live = NasaPowerClimate(JsonCache(tmp_path, DataMode.LIVE))
+    assert live.monthly_climate(10.0, -84.2).temperature_c[0] == 22.66
+    assert route.called
+    assert route.calls[0].request.url.params["community"] == "AG"
+
+    # Same data now available offline
+    offline = NasaPowerClimate(JsonCache(tmp_path, DataMode.CACHED))
+    assert offline.monthly_climate(10.0, -84.2).temperature_c[0] == 22.66
+    assert route.call_count == 1
+
+
+@respx.mock
+def test_live_mode_falls_back_to_cache_when_api_fails(tmp_path):
+    respx.get(BASE_URL).mock(
+        side_effect=[httpx.Response(200, json=load_fixture(POWER_FIXTURE)), httpx.Response(500)]
+    )
+    src = NasaPowerClimate(JsonCache(tmp_path, DataMode.LIVE))
+    src.monthly_climate(10.0, -84.2)
+    assert src.monthly_climate(10.0, -84.2).temperature_c[0] == 22.66  # 500 → cached copy
+
+
+@respx.mock
+def test_live_mode_raises_without_cache(tmp_path):
+    respx.get(BASE_URL).mock(return_value=httpx.Response(503))
+    with pytest.raises(SourceUnavailableError, match="HTTP 503") as exc:
+        NasaPowerClimate(JsonCache(tmp_path, DataMode.LIVE)).monthly_climate(10.0, -84.2)
+    assert exc.value.details == {"source": "nasa_power", "status": 503}
+
+
+@respx.mock
+def test_network_failure_is_source_unavailable_without_url(tmp_path):
+    respx.get(BASE_URL).mock(side_effect=httpx.ConnectTimeout("timed out"))
+    with pytest.raises(SourceUnavailableError, match="ConnectTimeout") as exc:
+        NasaPowerClimate(JsonCache(tmp_path, DataMode.LIVE)).monthly_climate(10.0, -84.2)
+    assert "http" not in exc.value.message.lower()  # never leak URLs (could carry API keys)
+
+
+@respx.mock
+def test_non_json_body_is_bad_data(tmp_path):
+    respx.get(BASE_URL).mock(return_value=httpx.Response(200, text="<html>maintenance</html>"))
+    with pytest.raises(SourceDataError, match="non-JSON"):
+        NasaPowerClimate(JsonCache(tmp_path, DataMode.LIVE)).monthly_climate(10.0, -84.2)
+
+
+@respx.mock
+def test_bad_data_never_overwrites_a_good_cache(tmp_path):
+    good = load_fixture(POWER_FIXTURE)
+    bad = load_fixture(POWER_FIXTURE)
+    bad["properties"]["parameter"]["T2M"]["JAN"] = -999.0
+    respx.get(BASE_URL).mock(
+        side_effect=[httpx.Response(200, json=good), httpx.Response(200, json=bad)]
+    )
+    cache = JsonCache(tmp_path, DataMode.LIVE)
+    src = NasaPowerClimate(cache)
+    src.monthly_climate(10.0, -84.2)
+    file = cache.path_for("nasa_power", src.request_params(10.0, -84.2))
+    before = file.read_text()
+    assert src.monthly_climate(10.0, -84.2).temperature_c[0] == 22.66  # served the good copy
+    assert file.read_text() == before
+
+
+def test_corrupt_cache_file_is_a_miss(tmp_path):
+    cache = JsonCache(tmp_path, DataMode.CACHED)
+    params = NasaPowerClimate.request_params(10.0, -84.2)
+    path = cache.path_for("nasa_power", params)
+    path.parent.mkdir(parents=True)
+    path.write_text('{"data": {"trunc')  # e.g. process killed mid-write
+    with pytest.raises(CacheMissError):
+        NasaPowerClimate(cache).monthly_climate(10.0, -84.2)
+
+
+@respx.mock
+def test_cache_write_leaves_no_temp_files(tmp_path):
+    respx.get(BASE_URL).mock(return_value=httpx.Response(200, json=load_fixture(POWER_FIXTURE)))
+    NasaPowerClimate(JsonCache(tmp_path, DataMode.LIVE)).monthly_climate(10.0, -84.2)
+    files = [p.name for p in tmp_path.rglob("*") if p.is_file()]
+    assert len(files) == 1
+    assert files[0].endswith(".json")
+
+
+def test_cached_mode_miss(tmp_path):
+    with pytest.raises(CacheMissError, match="data_mode=live"):
+        NasaPowerClimate(JsonCache(tmp_path, DataMode.CACHED)).monthly_climate(10.0, -84.2)
+
+
+@pytest.mark.network
+def test_real_power_api(tmp_path):
+    """Calls the real API. Run with `make test-all`. Not part of CI."""
+    climate = NasaPowerClimate(JsonCache(tmp_path, DataMode.LIVE)).monthly_climate(10.0, -84.2)
+    assert 10 < climate.temperature_c[0] < 35
+
+
+# ---------------------------------------------------------------- EcoCrop
+def test_ecocrop_catalog_loads():
+    crops = EcoCropCatalog(BACKEND_DIR / "data" / "ecocrop_subset.csv").all()
+    assert {"rice", "beans", "maize"} <= set(crops)
+    assert crops["beans"].is_legume
+    assert not crops["maize"].is_legume
+
+
+def test_ecocrop_bad_row(tmp_path):
+    bad = tmp_path / "bad.csv"
+    bad.write_text("id,name\nrice,Rice\n")
+    with pytest.raises(ConfigError, match="line 2") as exc:
+        EcoCropCatalog(bad).all()
+    assert exc.value.details["source"] == "ecocrop_subset"
+
+
+def _catalog_with(tmp_path, *rows: str) -> EcoCropCatalog:
+    real = (BACKEND_DIR / "data" / "ecocrop_subset.csv").read_text().splitlines()
+    path = tmp_path / "crops.csv"
+    path.write_text("\n".join([real[0], *rows]) + "\n")
+    return EcoCropCatalog(path)
+
+
+def test_ecocrop_short_row_is_config_error(tmp_path):
+    with pytest.raises(ConfigError, match="line 2"):
+        _catalog_with(tmp_path, "rice,Rice,Oryza sativa").all()
+
+
+def test_ecocrop_duplicate_id_is_config_error(tmp_path):
+    real_row = (BACKEND_DIR / "data" / "ecocrop_subset.csv").read_text().splitlines()[1]
+    with pytest.raises(ConfigError, match="duplicate crop id"):
+        _catalog_with(tmp_path, real_row, real_row).all()
+
+
+# ---------------------------------------------------------------- mock + protocols
+def test_mock_is_deterministic_and_location_dependent():
+    a, b = MockClimate().monthly_climate(10, -84), MockClimate().monthly_climate(10, -84)
+    assert a == b
+    assert a != MockClimate().monthly_climate(9, -83)
+    assert 4.5 < MockSoil().soil(10, -84).ph < 7.5
+
+
+def test_adapters_implement_protocols(tmp_path):
+    assert isinstance(MockClimate(), ClimateSource)
+    assert isinstance(NasaPowerClimate(JsonCache(tmp_path, DataMode.LIVE)), ClimateSource)
+    assert isinstance(MockSoil(), SoilSource)
+    assert isinstance(EcoCropCatalog(tmp_path / "x.csv"), CropSource)
