@@ -31,6 +31,7 @@ ARCSEC_DEG = 1 / 3600  # SRTM GL1 posting: samples sit on a 1 arc-second grid
 SRTM_VOID_M = -32768.0  # SRTM "no data" value (radar shadow, water)
 EARTH_RADIUS_M = 6_371_008.8  # mean Earth radius; <0.5 % error on 30 m spacings, fine for slope
 COORD_DECIMALS = 6  # ~0.1 m: keeps neighbouring samples (30 m apart) in separate cache entries
+HTTP_TOO_MANY_REQUESTS = 429  # daily quota used up
 
 
 def parse_elevation(raw: dict[str, Any]) -> float:
@@ -64,10 +65,14 @@ def parse_elevation(raw: dict[str, Any]) -> float:
     return elevation_m
 
 
+def _arcsec_to_deg(arcsec: int) -> float:
+    return round(arcsec * ARCSEC_DEG, COORD_DECIMALS)
+
+
 def snap_to_srtm_grid(deg: float) -> float:
     """Nearest SRTM sample (whole arc-second), so the centre and its neighbours are exactly one
     sample apart, and nearby clicks reuse the same cached points."""
-    return round(round(deg / ARCSEC_DEG) * ARCSEC_DEG, COORD_DECIMALS)
+    return _arcsec_to_deg(round(deg / ARCSEC_DEG))
 
 
 class OpenTopographyElevation:
@@ -107,6 +112,12 @@ class OpenTopographyElevation:
             ) from e
         # Status checked by hand instead of raise_for_status(): httpx's HTTPStatusError message
         # contains the full URL, key included, and would end up in the logged traceback.
+        if resp.status_code == HTTP_TOO_MANY_REQUESTS:
+            raise SourceUnavailableError(
+                "OpenTopography daily request limit reached (free key: 50 calls a day). "
+                "Try again tomorrow, or use data_mode=cached for locations already fetched",
+                details={"source": SOURCE, "status": resp.status_code},
+            )
         if resp.is_error:
             raise SourceUnavailableError(
                 f"OpenTopography answered HTTP {resp.status_code}",
@@ -134,6 +145,11 @@ class OpenTopographyElevation:
     def elevation_m(self, lat: float, lon: float) -> float:
         """SRTM GL1 elevation (m above the EGM96 geoid) at one point. One API call if not cached."""
         params = self.point_params(lat, lon)
+        # SRTM was flown in 2000 and never changes, so a cached point is reused in every mode.
+        # get_or_fetch alone would refetch in live mode and spend the key's 50 calls a day.
+        cached = self.cache.peek(SOURCE, params)
+        if cached is not None:
+            return parse_elevation(cached)
         raw = self.cache.get_or_fetch(SOURCE, params, lambda: self._fetch_valid(params))
         return parse_elevation(raw)
 
@@ -144,14 +160,17 @@ class OpenTopographyElevation:
         Distances are in metres: one arc-second north-south is constant, east-west shrinks
         with cos(latitude) (~30.4 m in Costa Rica instead of ~30.9 m).
         """
-        lat0, lon0 = snap_to_srtm_grid(lat), snap_to_srtm_grid(lon)
+        # Integer arc-seconds, so every point (centre or neighbour) maps to one exact cache key:
+        # the north neighbour of one location is the same key as the centre of the next one.
+        lat_s, lon_s = round(lat / ARCSEC_DEG), round(lon / ARCSEC_DEG)
+        lat0 = _arcsec_to_deg(lat_s)
         step_rad = math.radians(ARCSEC_DEG)
         return TerrainSample(
-            elevation_m=self.elevation_m(lat0, lon0),
-            north_m=self.elevation_m(lat0 + ARCSEC_DEG, lon0),
-            south_m=self.elevation_m(lat0 - ARCSEC_DEG, lon0),
-            east_m=self.elevation_m(lat0, lon0 + ARCSEC_DEG),
-            west_m=self.elevation_m(lat0, lon0 - ARCSEC_DEG),
+            elevation_m=self.elevation_m(lat0, _arcsec_to_deg(lon_s)),
+            north_m=self.elevation_m(_arcsec_to_deg(lat_s + 1), _arcsec_to_deg(lon_s)),
+            south_m=self.elevation_m(_arcsec_to_deg(lat_s - 1), _arcsec_to_deg(lon_s)),
+            east_m=self.elevation_m(lat0, _arcsec_to_deg(lon_s + 1)),
+            west_m=self.elevation_m(lat0, _arcsec_to_deg(lon_s - 1)),
             spacing_ns_m=EARTH_RADIUS_M * step_rad,
             spacing_ew_m=EARTH_RADIUS_M * step_rad * math.cos(math.radians(lat0)),
         )

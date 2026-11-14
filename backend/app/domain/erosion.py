@@ -32,9 +32,14 @@ class ErosionRisk(IntEnum):
 class RainfallThresholds:
     """Rainfall risk thresholds. Placeholders, override per call to experiment.
 
-    Each indicator gives a level (≥ medium → 1, ≥ high → 2) and the rainfall risk is the worst one.
-    Rates (mm/day, days per 30 days) instead of totals, so a 1-month and a 1-year period
-    are judged on the same scale.
+    Two indicators each give a level (>= medium -> 1, >= high -> 2); the rainfall risk is the
+    worse one. Both are rates (mm/day, heavy days per 30 days), so a 1-month and a 1-year period
+    are judged on the same scale. The wettest day is reported but not scored: it keeps growing with
+    the period length, so a long period would almost always score high.
+
+    Limits: the classes are hard cut-offs (3.99 mm/day is low, 4.0 is medium), and over short
+    periods one storm moves the heavy-day rate a lot (1 heavy day in 10 days = 3 per 30 = high).
+    POWER's ~50 km grid also smooths local storms, so heavy days are undercounted (decisions.md).
     """
 
     heavy_rain_mm: float = HEAVY_RAIN_MM
@@ -42,14 +47,11 @@ class RainfallThresholds:
     avg_daily_high_mm: float = 8.0  # ~2900 mm/year, wet Caribbean / Pacific south slopes
     heavy_days_per_30d_medium: float = 1.0
     heavy_days_per_30d_high: float = 3.0
-    max_daily_medium_mm: float = 50.0
-    max_daily_high_mm: float = 100.0  # a single storm of this size can strip bare soil
 
     def __post_init__(self) -> None:
         pairs = (
             (self.avg_daily_medium_mm, self.avg_daily_high_mm),
             (self.heavy_days_per_30d_medium, self.heavy_days_per_30d_high),
-            (self.max_daily_medium_mm, self.max_daily_high_mm),
         )
         if self.heavy_rain_mm <= 0 or any(not 0 <= med <= high for med, high in pairs):
             raise DomainInvariantError(
@@ -127,25 +129,30 @@ def _level(value: float, medium: float, high: float) -> ErosionRisk:
 def rainfall_risk(
     summary: RainfallSummary, thresholds: RainfallThresholds = DEFAULT_RAINFALL_THRESHOLDS
 ) -> ErosionRisk:
-    """Worst of three indicators: average intensity, how often it pours, the biggest storm."""
+    """Worse of two rates: average intensity (mm/day) and how often it pours (heavy days / 30 d).
+
+    max_daily_mm is deliberately not used (it grows with the period length, see RainfallThresholds).
+    """
     heavy_per_30d = summary.heavy_rain_days * REFERENCE_PERIOD_DAYS / summary.valid_days
     return max(
         _level(summary.avg_daily_mm, thresholds.avg_daily_medium_mm, thresholds.avg_daily_high_mm),
         _level(
             heavy_per_30d, thresholds.heavy_days_per_30d_medium, thresholds.heavy_days_per_30d_high
         ),
-        _level(summary.max_daily_mm, thresholds.max_daily_medium_mm, thresholds.max_daily_high_mm),
     )
 
 
 def combined_risk(terrain: ErosionRisk, rainfall: ErosionRisk) -> ErosionRisk:
-    """Slope decides the base level; heavy rain can raise it one step, never lower it.
+    """Slope decides the base level; high rain can raise it one step, never lower it.
 
     Water erosion needs both runoff (slope) and rain to drive it:
         rainfall →  low  medium  high
         flat (0)     0     0      1
         medium (1)   1     1      2
         steep (2)    2     2      2
+
+    Intended: medium rain never changes the result. Costa Rica's normal wet-season rain is
+    "medium", so only clearly heavy rain is allowed to move a slope class (decisions.md).
     """
     return ErosionRisk(max(terrain, min(ErosionRisk.HIGH, terrain + rainfall - 1)))
 

@@ -5,7 +5,7 @@
 | **Used for** | Elevation and local slope for erosion risk (`TerrainSource`) |
 | **Adapter** | `app/integrations/opentopography.py` |
 | **Fixtures** | `tests/fixtures/opentopography/elevation_san_jose_{center,north,south,east,west}.json` (centre lat 9.93, lon −84.08, neighbours ±1″; fetched 2026-11-14) |
-| **Status** | ⚙️ Adapter + `services.erosion_risk()`; not wired into `build_sources()` or any endpoint yet |
+| **Status** | ⚙️ Adapter + `services.erosion_risk()`, wired in `build_sources()` (`Sources.terrain`, `MockTerrain` in mock mode); no endpoint yet |
 
 ## Access
 - Endpoint: `GET https://portal.opentopography.org/API/v1/elevation?latitude=&longitude=&dataset=SRTM_GL1&API_Key=`
@@ -35,6 +35,9 @@
 ## How we use it (slope)
 - The point is snapped to the nearest SRTM sample (whole arc-second), then the 4 neighbours one
   sample N/S/E/W are fetched: 5 calls, each cached separately (6-decimal cache key, no API key in it).
+  Neighbours are computed in integer arc-seconds, so adjacent locations share cache entries.
+- Cached points are reused in **every** mode, live included (SRTM never changes), so each point
+  costs one call ever. HTTP 429 (daily quota used up) gets its own message.
 - Slope % = 100 × √((ΔzEW / 2dx)² + (ΔzNS / 2dy)²), with dx = R·cos(lat)·1″ and dy = R·1″ in metres.
 - Spec asked for a 3×3 grid (9 calls). We use the 4 direct neighbours to fit the daily quota (decisions.md).
 

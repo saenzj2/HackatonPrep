@@ -425,12 +425,16 @@ def test_summarize_rainfall_rejects_no_data():
         (rain_summary(avg=8.0), HIGH),
         (rain_summary(heavy_days=1), MEDIUM),  # 1 heavy day per 30 days
         (rain_summary(heavy_days=3), HIGH),
-        (rain_summary(max_mm=50.0), MEDIUM),  # one big storm
-        (rain_summary(max_mm=100.0), HIGH),
+        (rain_summary(avg=8.0, heavy_days=1), HIGH),  # the worse of the two wins
     ],
 )
 def test_rainfall_risk_is_worst_indicator(summary, expected):
     assert rainfall_risk(summary) == expected
+
+
+def test_rainfall_risk_ignores_the_wettest_day():
+    # Reported, not scored: it grows with the period length (reviewer #3)
+    assert rainfall_risk(rain_summary(max_mm=150.0)) == LOW
 
 
 def test_rainfall_risk_scales_heavy_days_with_period_length():

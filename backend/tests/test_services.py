@@ -8,6 +8,7 @@ import pytest
 
 from app.domain.models import TerrainSample
 from app.errors import SourceDataError
+from app.integrations.mock import MockClimate, MockTerrain
 from app.services import erosion_risk
 
 JAN = {"lat": 9.93, "lon": -84.08, "start": date(2026, 1, 1), "end": date(2026, 1, 10)}
@@ -81,3 +82,9 @@ def test_erosion_risk_without_rainfall_data_is_source_error():
     with pytest.raises(SourceDataError, match="no daily rainfall") as exc:
         run(12.5, [math.nan] * 10)
     assert exc.value.details == {"source": "fake_weather"}
+
+
+def test_erosion_risk_works_offline_with_mock_sources():
+    out = erosion_risk(terrain_source=MockTerrain(), weather_source=MockClimate(), **JAN)
+    assert set(out) == EXPECTED_KEYS
+    assert out["combined_erosion_risk"] >= out["terrain_erosion_risk"]

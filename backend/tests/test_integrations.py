@@ -16,6 +16,7 @@ from app.errors import (
     SourceDataError,
     SourceUnavailableError,
 )
+from app.integrations import build_sources
 from app.integrations.base import (
     ClimateSource,
     CropSource,
@@ -24,7 +25,7 @@ from app.integrations.base import (
     TerrainSource,
 )
 from app.integrations.ecocrop import EcoCropCatalog
-from app.integrations.mock import MockClimate, MockSoil
+from app.integrations.mock import MockClimate, MockSoil, MockTerrain
 from app.integrations.nasa_power import (
     BASE_URL,
     DAILY_URL,
@@ -329,6 +330,46 @@ def test_terrain_sample_fetches_five_points_and_caches(tmp_path):
 
 
 @respx.mock
+def test_terrain_sample_repeat_in_live_mode_uses_the_cache(tmp_path):
+    # SRTM never changes: a second live call must not spend the key's daily quota again
+    route = respx.get(OT_URL).mock(side_effect=ot_responder)
+    src = ot_source(tmp_path)
+    first = src.terrain_sample(9.93, -84.08)
+    assert src.terrain_sample(9.93, -84.08) == first
+    assert route.call_count == 5  # not 10
+
+
+def any_point_responder(request):
+    """A real response shape for whatever point was asked (Location echoed like the API does)."""
+    lat = float(request.url.params["latitude"])
+    lon = float(request.url.params["longitude"])
+    raw = ot_fixture("center") | {"Location": {"Latitude": lat, "Longitude": lon}}
+    return httpx.Response(200, json=raw)
+
+
+@respx.mock
+def test_neighbour_cache_keys_match_the_next_location(tmp_path):
+    # One arc-second north, the old north neighbour is the new centre and the old centre the new
+    # south neighbour: same cache keys, so only 3 new requests instead of 5.
+    route = respx.get(OT_URL).mock(side_effect=any_point_responder)
+    src = ot_source(tmp_path)
+    src.terrain_sample(9.93, -84.08)
+    src.terrain_sample(9.93 + 1 / 3600, -84.08)
+    assert route.call_count == 8
+    first_north = route.calls[1].request.url.params["latitude"]
+    second_centre = OpenTopographyElevation.point_params(snap_to_srtm_grid(9.93 + 1 / 3600), 0)
+    assert float(first_north) == second_centre["latitude"]
+
+
+@respx.mock
+def test_daily_quota_reached_has_a_clear_message(tmp_path):
+    respx.get(OT_URL).mock(return_value=httpx.Response(429))
+    with pytest.raises(SourceUnavailableError, match="daily request limit") as exc:
+        ot_source(tmp_path).elevation_m(9.93, -84.08)
+    assert exc.value.details == {"source": "opentopography", "status": 429}
+
+
+@respx.mock
 def test_terrain_sample_spacing_is_in_metres(tmp_path):
     respx.get(OT_URL).mock(side_effect=ot_responder)
     sample = ot_source(tmp_path).terrain_sample(9.93, -84.08)
@@ -477,6 +518,35 @@ def test_mock_is_deterministic_and_location_dependent():
     assert 4.5 < MockSoil().soil(10, -84).ph < 7.5
 
 
+def test_mock_terrain_is_deterministic_with_slope_0_to_25_pct():
+    a, b = MockTerrain().terrain_sample(10, -84), MockTerrain().terrain_sample(10, -84)
+    assert a == b
+    rise_m = a.east_m - a.west_m
+    assert 0 <= 100 * rise_m / (2 * a.spacing_ew_m) <= 25
+
+
+def test_mock_daily_weather_matches_power_columns():
+    period = {"lat": 10, "lon": -84, "start": date(2026, 1, 1), "end": date(2026, 1, 31)}
+    df = MockClimate().daily_weather(**period)
+    assert list(df.columns) == ["date", "temperature_c", "rainfall_mm"]
+    assert len(df) == 31
+    assert (df["rainfall_mm"] >= 0).all()
+    assert df.equals(MockClimate().daily_weather(**period))  # deterministic
+
+
+def test_build_sources_mock_mode_has_erosion_sources(config, env):
+    sources = build_sources(config, env)  # conftest forces mock mode
+    assert isinstance(sources.daily, MockClimate)
+    assert isinstance(sources.terrain, MockTerrain)
+    assert set(sources.names()) == {"climate", "soil", "crops"}  # API contract unchanged
+
+
+def test_build_sources_live_mode_uses_real_erosion_sources(config, env):
+    sources = build_sources(config.model_copy(update={"data_mode": DataMode.LIVE}), env)
+    assert isinstance(sources.daily, NasaPowerClimate)
+    assert isinstance(sources.terrain, OpenTopographyElevation)
+
+
 def test_adapters_implement_protocols(tmp_path):
     assert isinstance(MockClimate(), ClimateSource)
     assert isinstance(NasaPowerClimate(JsonCache(tmp_path, DataMode.LIVE)), ClimateSource)
@@ -484,3 +554,5 @@ def test_adapters_implement_protocols(tmp_path):
     assert isinstance(EcoCropCatalog(tmp_path / "x.csv"), CropSource)
     assert isinstance(NasaPowerClimate(JsonCache(tmp_path, DataMode.LIVE)), DailyWeatherSource)
     assert isinstance(ot_source(tmp_path, key=None), TerrainSource)
+    assert isinstance(MockClimate(), DailyWeatherSource)
+    assert isinstance(MockTerrain(), TerrainSource)
