@@ -15,6 +15,9 @@ General backend rules: [`backend/AGENTS.md`](../../AGENTS.md).
 - All schemas inherit `Schema` (`extra="forbid"`) so typos in requests fail loudly with 422.
 - **Fields:** English `snake_case`, unit suffix (`temperature_c`), `Field(ge=..., le=...)` for ranges,
   `examples=[...]` on request fields (they show up in `/docs`), `description` when the meaning isn't obvious.
+- **Crop traits** (`forage_value`, `nutrition_density`, … listed in `TRAIT_FIELDS`) are 0..1 scores in
+  the domain and `{"level": word, "score": number}` in responses. Type them `Trait` in any schema and
+  pass the score: it adds the matching word. `tests/test_trait_levels.py` fails if a trait field isn't a `Trait`.
 - **Prefer additive changes** (new optional fields). Removing or renaming fields breaks the frontend:
   call it out in the PR.
 - **Routes are thin**, about 5 lines: take `ctx: Ctx` and the request, call `app.services`, return a schema.

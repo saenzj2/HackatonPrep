@@ -25,6 +25,30 @@
         "opt_max": 7.5,
         "abs_max": 8.0
       },
+      "root_depth_m": 1.0,
+      "is_cover_crop": false,
+      "forage_value": {
+        "level": "low",
+        "score": 0.33
+      },
+      "nutrition_density": {
+        "level": "low",
+        "score": 0.33
+      },
+      "mycorrhizal_affinity": {
+        "level": "low",
+        "score": 0.33
+      },
+      "nitrogen_demand": {
+        "level": "high",
+        "score": 1.0
+      },
+      "market_note": "Staple grain with steady local demand",
+      "sources": [
+        "FAO EcoCrop (tolerance ranges, approximate)",
+        "FAO-56 Table 22 (root depth)",
+        "team estimate (cover crop, forage, nutrition, mycorrhizal, nitrogen demand)"
+      ],
       "verified": false
     },
     {
@@ -52,6 +76,30 @@
         "opt_max": 6.8,
         "abs_max": 8.2
       },
+      "root_depth_m": 0.9,
+      "is_cover_crop": false,
+      "forage_value": {
+        "level": "low",
+        "score": 0.33
+      },
+      "nutrition_density": {
+        "level": "high",
+        "score": 1.0
+      },
+      "mycorrhizal_affinity": {
+        "level": "high",
+        "score": 1.0
+      },
+      "nitrogen_demand": {
+        "level": "low",
+        "score": 0.33
+      },
+      "market_note": "Staple food legume with strong local demand",
+      "sources": [
+        "FAO EcoCrop (tolerance ranges, approximate)",
+        "FAO-56 Table 22 (root depth)",
+        "team estimate (cover crop, forage, nutrition, mycorrhizal, nitrogen demand)"
+      ],
       "verified": false
     },
     {
@@ -79,6 +127,30 @@
         "opt_max": 7.0,
         "abs_max": 8.5
       },
+      "root_depth_m": 1.7,
+      "is_cover_crop": false,
+      "forage_value": {
+        "level": "high",
+        "score": 1.0
+      },
+      "nutrition_density": {
+        "level": "medium",
+        "score": 0.67
+      },
+      "mycorrhizal_affinity": {
+        "level": "high",
+        "score": 1.0
+      },
+      "nitrogen_demand": {
+        "level": "high",
+        "score": 1.0
+      },
+      "market_note": "Staple grain and its stover is valued as cattle feed",
+      "sources": [
+        "FAO EcoCrop (tolerance ranges, approximate)",
+        "FAO-56 Table 22 (root depth)",
+        "team estimate (cover crop, forage, nutrition, mycorrhizal, nitrogen demand)"
+      ],
       "verified": false
     }
   ]

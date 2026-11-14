@@ -93,6 +93,14 @@ def crop_schema(c: CropProfile) -> s.Crop:
         temperature_c=_range(c.temperature_c),
         rainfall_mm=_range(c.rainfall_mm),
         soil_ph=_range(c.soil_ph),
+        root_depth_m=c.root_depth_m,
+        is_cover_crop=c.is_cover_crop,
+        forage_value=c.forage_value,  # 0..1 score; Trait adds the word
+        nutrition_density=c.nutrition_density,  # 0..1 score; Trait adds the word
+        mycorrhizal_affinity=c.mycorrhizal_affinity,  # 0..1 score; Trait adds the word
+        nitrogen_demand=c.nitrogen_demand,  # 0..1 score; Trait adds the word
+        market_note=c.market_note,
+        sources=list(c.sources),
         verified=c.verified,
     )
 

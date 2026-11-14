@@ -15,7 +15,11 @@ R package `dismo` (function `ecocrop`) and in research datasets.
 
 ## CSV columns
 `id, name, scientific_name, family, is_legume, cycle_days,
-temp_{abs_min,opt_min,opt_max,abs_max}, rain_{…}, ph_{…}, verified`
+temp_{abs_min,opt_min,opt_max,abs_max}, rain_{…}, ph_{…}, root_depth_m, is_cover_crop,
+forage_value, nutrition_density, mycorrhizal_affinity, nitrogen_demand, market_note, sources, verified`
+
+Only the ranges and `cycle_days` come from EcoCrop. Meaning, allowed values and sources of every
+column: [`../crop-schema.md`](../crop-schema.md).
 
 Rule: `abs_min ≤ opt_min ≤ opt_max ≤ abs_max`. The loader rejects rows that break it.
 

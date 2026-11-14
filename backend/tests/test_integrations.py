@@ -1,3 +1,5 @@
+import csv
+import io
 from datetime import date
 
 import httpx
@@ -276,6 +278,48 @@ def test_ecocrop_duplicate_id_is_config_error(tmp_path):
     real_row = (BACKEND_DIR / "data" / "ecocrop_subset.csv").read_text().splitlines()[1]
     with pytest.raises(ConfigError, match="duplicate crop id"):
         _catalog_with(tmp_path, real_row, real_row).all()
+
+
+def test_ecocrop_catalog_reads_crop_traits():
+    crops = EcoCropCatalog(BACKEND_DIR / "data" / "ecocrop_subset.csv").all()
+    cowpea = crops["cowpea"]
+    assert cowpea.is_cover_crop
+    assert cowpea.nitrogen_demand == pytest.approx(0.33)
+    assert cowpea.root_depth_m == pytest.approx(1.0)
+    assert cowpea.sources
+
+
+def test_ecocrop_every_crop_has_sources_and_market_note():
+    for crop in EcoCropCatalog(BACKEND_DIR / "data" / "ecocrop_subset.csv").all().values():
+        assert crop.sources, crop.id
+        assert crop.market_note, crop.id
+
+
+def _real_row_with(column: str, value: str) -> str:
+    """The first real CSV row with one column replaced (csv-aware, values may contain commas)."""
+    lines = (BACKEND_DIR / "data" / "ecocrop_subset.csv").read_text().splitlines()
+    header, row = next(csv.reader(lines[:1])), next(csv.reader(lines[1:2]))
+    row[header.index(column)] = value
+    out = io.StringIO()
+    csv.writer(out, lineterminator="").writerow(row)
+    return out.getvalue()
+
+
+@pytest.mark.parametrize(
+    ("column", "value"),
+    [
+        ("forage_value", "lots"),
+        ("nitrogen_demand", ""),
+        ("nutrition_density", "1.5"),
+        ("mycorrhizal_affinity", "high"),
+        ("root_depth_m", "0"),
+        ("root_depth_m", "deep"),
+        ("sources", " ; "),
+    ],
+)
+def test_ecocrop_bad_trait_is_config_error(tmp_path, column, value):
+    with pytest.raises(ConfigError, match="line 2"):
+        _catalog_with(tmp_path, _real_row_with(column, value)).all()
 
 
 # ---------------------------------------------------------------- mock + protocols
