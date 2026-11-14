@@ -1,4 +1,7 @@
+from datetime import date
+
 import httpx
+import pandas as pd
 import pytest
 import respx
 
@@ -13,11 +16,19 @@ from app.errors import (
 from app.integrations.base import ClimateSource, CropSource, SoilSource
 from app.integrations.ecocrop import EcoCropCatalog
 from app.integrations.mock import MockClimate, MockSoil
-from app.integrations.nasa_power import BASE_URL, NasaPowerClimate, parse_climatology
+from app.integrations.nasa_power import (
+    BASE_URL,
+    DAILY_URL,
+    NasaPowerClimate,
+    parse_climatology,
+    parse_daily,
+)
 from app.settings import BACKEND_DIR, DataMode
 from tests.conftest import load_fixture
 
 POWER_FIXTURE = "nasa_power/climatology_alajuela.json"  # real response, lat 10.0 lon -84.2
+# real response, lat 9.93 lon -84.08, Jan 2026
+DAILY_FIXTURE = "nasa_power/daily_san_jose_202601.json"
 
 
 # ---------------------------------------------------------------- NASA POWER (template)
@@ -143,6 +154,94 @@ def test_real_power_api(tmp_path):
     """Calls the real API. Run with `make test-all`. Not part of CI."""
     climate = NasaPowerClimate(JsonCache(tmp_path, DataMode.LIVE)).monthly_climate(10.0, -84.2)
     assert 10 < climate.temperature_c[0] < 35
+
+
+# ---------------------------------------------------------------- NASA POWER daily
+JAN_2026 = {"lat": 9.93, "lon": -84.08, "start": date(2026, 1, 1), "end": date(2026, 1, 31)}
+
+
+def test_parse_daily_real_response():
+    df = parse_daily(load_fixture(DAILY_FIXTURE))
+    assert list(df.columns) == ["date", "temperature_c", "rainfall_mm"]
+    assert len(df) == 31
+    assert df["date"].iloc[0] == pd.Timestamp("2026-01-01")
+    assert df["temperature_c"].iloc[0] == pytest.approx(22.43)  # T2M, °C
+    assert df["rainfall_mm"].iloc[-1] == pytest.approx(8.67)  # PRECTOTCORR, mm/day as is
+
+
+def test_parse_daily_turns_fill_values_into_nan():
+    raw = load_fixture(DAILY_FIXTURE)
+    raw["properties"]["parameter"]["PRECTOTCORR"]["20260105"] = -999.0
+    df = parse_daily(raw)
+    assert pd.isna(df.loc[4, "rainfall_mm"])
+    assert df.loc[4, "temperature_c"] == pytest.approx(22.19)  # the other variable is kept
+
+
+def test_parse_daily_aligns_rows_by_date():
+    raw = load_fixture(DAILY_FIXTURE)
+    rain = raw["properties"]["parameter"]["PRECTOTCORR"]
+    raw["properties"]["parameter"]["PRECTOTCORR"] = dict(reversed(list(rain.items())))
+    df = parse_daily(raw)
+    assert df["rainfall_mm"].iloc[-1] == pytest.approx(8.67)  # still Jan 31
+
+
+def test_parse_daily_rejects_all_fill_values():
+    raw = load_fixture(DAILY_FIXTURE)
+    for series in raw["properties"]["parameter"].values():
+        for day in series:
+            series[day] = -999.0
+    with pytest.raises(SourceDataError, match="only fill values"):
+        parse_daily(raw)
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        {"messages": ["boom"]},
+        {"properties": {"parameter": {"T2M": {"2026-01-01": 22.0}, "PRECTOTCORR": {}}}},
+        {"properties": {"parameter": {"T2M": {"20260101": "hot"}, "PRECTOTCORR": {}}}},
+    ],
+    ids=["missing_keys", "bad_date", "non_numeric"],
+)
+def test_parse_daily_rejects_unexpected_payload(raw):
+    with pytest.raises(SourceDataError, match="Unexpected NASA POWER daily payload") as exc:
+        parse_daily(raw)
+    assert exc.value.details == {"source": "nasa_power_daily"}
+
+
+@respx.mock
+def test_daily_weather_fetches_and_caches(tmp_path):
+    route = respx.get(DAILY_URL).mock(
+        return_value=httpx.Response(200, json=load_fixture(DAILY_FIXTURE))
+    )
+    live = NasaPowerClimate(JsonCache(tmp_path, DataMode.LIVE))
+    assert len(live.daily_weather(**JAN_2026)) == 31
+    sent = route.calls[0].request.url.params
+    assert sent["start"] == "20260101"
+    assert sent["end"] == "20260131"
+
+    offline = NasaPowerClimate(JsonCache(tmp_path, DataMode.CACHED))
+    assert len(offline.daily_weather(**JAN_2026)) == 31
+    assert route.call_count == 1
+
+
+@respx.mock
+def test_daily_weather_http_error_is_source_unavailable(tmp_path):
+    respx.get(DAILY_URL).mock(return_value=httpx.Response(503))
+    with pytest.raises(SourceUnavailableError, match="HTTP 503"):
+        NasaPowerClimate(JsonCache(tmp_path, DataMode.LIVE)).daily_weather(**JAN_2026)
+
+
+def test_daily_weather_cached_mode_miss(tmp_path):
+    with pytest.raises(CacheMissError, match="data_mode=live"):
+        NasaPowerClimate(JsonCache(tmp_path, DataMode.CACHED)).daily_weather(**JAN_2026)
+
+
+@pytest.mark.network
+def test_real_power_daily_api(tmp_path):
+    """Calls the real API. Run with `make test-all`. Not part of CI."""
+    df = NasaPowerClimate(JsonCache(tmp_path, DataMode.LIVE)).daily_weather(**JAN_2026)
+    assert len(df) == 31
 
 
 # ---------------------------------------------------------------- EcoCrop
