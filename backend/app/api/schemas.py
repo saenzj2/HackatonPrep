@@ -7,15 +7,44 @@ Class names are the OpenAPI component names, so renaming a class is a contract c
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, model_validator
 
-from app.errors import ErrorCode
+from app.domain.models import level_for
+from app.errors import DomainInvariantError, ErrorCode
 
 
 class Schema(BaseModel):
     model_config = ConfigDict(extra="forbid")
+
+
+class TraitValue(Schema):
+    """A crop trait as a word for display plus its 0..1 score (e.g. for a hover)."""
+
+    level: Literal["none", "low", "medium", "high"] = Field(description="Word for the score")
+    score: float = Field(ge=0, le=1, description="0..1, 1 = most")
+
+    @model_validator(mode="after")
+    def _level_matches_score(self) -> TraitValue:
+        # Deliberately not a ValueError (422): a mismatch is a backend bug, so it surfaces as a 500.
+        if self.level != level_for(self.score):
+            raise DomainInvariantError(
+                f"Trait level '{self.level}' doesn't match score {self.score}; pass the score only"
+            )
+        return self
+
+
+def _trait_from_score(value: object) -> object:
+    """0..1 score → {level, score}. Anything else goes to normal TraitValue validation."""
+    if isinstance(value, int | float) and not isinstance(value, bool):
+        return {"level": level_for(value), "score": value}
+    return value
+
+
+# Crop traits in ANY response use this type (docs/crop-schema.md). Give it the domain's 0..1 score;
+# the response shows {"level": word, "score": number}. tests/test_trait_levels.py enforces its use.
+Trait = Annotated[TraitValue, BeforeValidator(_trait_from_score)]
 
 
 class Location(Schema):
@@ -52,6 +81,16 @@ class Crop(Schema):
     temperature_c: ToleranceRange
     rainfall_mm: ToleranceRange = Field(description="Total rainfall over the crop cycle")
     soil_ph: ToleranceRange
+    root_depth_m: float = Field(description="Typical maximum effective rooting depth, m")
+    is_cover_crop: bool = Field(description="Commonly grown to cover and protect the soil")
+    forage_value: Trait = Field(description="Value of the crop or its residue as animal feed")
+    nutrition_density: Trait = Field(description="Nutrient density of the edible part")
+    mycorrhizal_affinity: Trait = Field(
+        description="How much the crop hosts and benefits from mycorrhizal fungi; none = non-host"
+    )
+    nitrogen_demand: Trait = Field(description="Nitrogen need; high = heavy feeder")
+    market_note: str = Field(description="One line of local market context; may be empty")
+    sources: list[str] = Field(description="Citations for this crop's values")
     verified: bool = Field(description="False while values are still approximate")
 
 

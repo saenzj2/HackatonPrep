@@ -30,6 +30,11 @@ def _bool(v: str) -> bool:
     return v.strip().lower() in {"true", "1", "yes"}
 
 
+def _sources(v: str) -> tuple[str, ...]:
+    """'FAO EcoCrop; FAO-56 Table 22' → ('FAO EcoCrop', 'FAO-56 Table 22')."""
+    return tuple(s.strip() for s in v.split(";") if s.strip())
+
+
 class EcoCropCatalog:
     name = SOURCE
 
@@ -59,6 +64,14 @@ class EcoCropCatalog:
                     temperature_c=_range(row, "temp"),
                     rainfall_mm=_range(row, "rain"),
                     soil_ph=_range(row, "ph"),
+                    root_depth_m=float(row["root_depth_m"]),
+                    is_cover_crop=_bool(row["is_cover_crop"]),
+                    forage_value=float(row["forage_value"]),
+                    nutrition_density=float(row["nutrition_density"]),
+                    mycorrhizal_affinity=float(row["mycorrhizal_affinity"]),
+                    nitrogen_demand=float(row["nitrogen_demand"]),
+                    market_note=row["market_note"].strip(),
+                    sources=_sources(row["sources"]),
                     verified=_bool(row.get("verified", "false")),
                 )
             # Short rows give None values (AttributeError on .strip, TypeError on float).

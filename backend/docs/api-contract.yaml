@@ -241,6 +241,36 @@ components:
           description: Total rainfall over the crop cycle
         soil_ph:
           $ref: '#/components/schemas/ToleranceRange'
+        root_depth_m:
+          type: number
+          title: Root Depth M
+          description: Typical maximum effective rooting depth, m
+        is_cover_crop:
+          type: boolean
+          title: Is Cover Crop
+          description: Commonly grown to cover and protect the soil
+        forage_value:
+          $ref: '#/components/schemas/TraitValue'
+          description: Value of the crop or its residue as animal feed
+        nutrition_density:
+          $ref: '#/components/schemas/TraitValue'
+          description: Nutrient density of the edible part
+        mycorrhizal_affinity:
+          $ref: '#/components/schemas/TraitValue'
+          description: 'How much the crop hosts and benefits from mycorrhizal fungi; none = non-host'
+        nitrogen_demand:
+          $ref: '#/components/schemas/TraitValue'
+          description: 'Nitrogen need; high = heavy feeder'
+        market_note:
+          type: string
+          title: Market Note
+          description: 'One line of local market context; may be empty'
+        sources:
+          items:
+            type: string
+          type: array
+          title: Sources
+          description: Citations for this crop's values
         verified:
           type: boolean
           title: Verified
@@ -257,6 +287,14 @@ components:
       - temperature_c
       - rainfall_mm
       - soil_ph
+      - root_depth_m
+      - is_cover_crop
+      - forage_value
+      - nutrition_density
+      - mycorrhizal_affinity
+      - nitrogen_demand
+      - market_note
+      - sources
       - verified
       title: Crop
     CropsResponse:
@@ -740,6 +778,30 @@ components:
       - opt_max
       - abs_max
       title: ToleranceRange
+    TraitValue:
+      properties:
+        level:
+          type: string
+          enum:
+          - none
+          - low
+          - medium
+          - high
+          title: Level
+          description: Word for the score
+        score:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Score
+          description: 0..1, 1 = most
+      additionalProperties: false
+      type: object
+      required:
+      - level
+      - score
+      title: TraitValue
+      description: A crop trait as a word for display plus its 0..1 score (e.g. for a hover).
 servers:
 - url: http://localhost:8000
   description: Local dev (make dev)

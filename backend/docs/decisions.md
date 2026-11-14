@@ -15,6 +15,27 @@ Template:
 
 ---
 
+## 2026-11-14 — Crop schema v1: soil-health, nutrition and market traits (T3.1, #23)
+- **Decision:** `data/ecocrop_subset.csv` gains `root_depth_m`, `is_cover_crop`, `forage_value`,
+  `nutrition_density`, `mycorrhizal_affinity`, `nitrogen_demand`, `market_note` and `sources`. The four
+  trait columns are 0..1 scores; the API sends each as `{"level": none|low|medium|high, "score": 0..1}`
+  (`TraitValue`), so the frontend can show the word and the number on hover. The `Trait` API type
+  builds it from the score (`level_for()`), and `tests/test_trait_levels.py` fails if any response
+  declares a trait any other way. The loader rejects bad values at startup.
+  `nitrogen_demand` and `sources` were added beyond the issue's list: rule #25 needs "heavy feeders"
+  and #24 needs a citation per crop. Full spec: `docs/crop-schema.md`.
+- **Why:** Rotation rules, badges and explanations need these traits, and keeping them in the CSV keeps
+  crop knowledge out of Python.
+- **Data status:** root depth from FAO-56 Table 22; the other traits are a team estimate, labelled as
+  such in `sources`, until #24 cites them. Every row stays `verified=false`.
+- **Alternatives considered:** words only in the data (scoring would need its own mapping); words only
+  in the API (no number for a hover); separate `*_score` fields or a score map next to the words (the
+  pair can drift apart); a separate trait file (two files to keep in sync).
+- **Contract change:** `Crop` gains the same 8 fields, all required, and a new `TraitValue` schema. There
+  is no frontend yet, so nothing breaks; review it with the frontend when it starts.
+- **Also decided:** keep `nitrogen_demand`, keep the CSV name, leave long-cycle crops out of #24.
+- **Revisit if:** #24 finds cited numeric values that need finer cutoffs than `LOW_BELOW` / `MEDIUM_BELOW`.
+
 ## 2026-11-14 — mypy follows the running interpreter (no `python_version` pin)
 - **Decision:** Removed `python_version = "3.11"` from `[tool.mypy]`.
 - **Why:** numpy 2.5 (pulled in by pandas) ships stubs with 3.12-only syntax, so a 3.12 venv failed `make lint`

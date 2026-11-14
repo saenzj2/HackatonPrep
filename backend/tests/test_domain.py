@@ -1,3 +1,5 @@
+from dataclasses import replace
+
 import pytest
 
 from app.domain.models import (
@@ -8,6 +10,7 @@ from app.domain.models import (
     SeasonClimate,
     SoilConditions,
     Weights,
+    level_for,
 )
 from app.domain.ranking import (
     MONOCULTURE_PENALTY,
@@ -43,6 +46,14 @@ def crop(
         temperature_c=temp,
         rainfall_mm=Range(200, 400, 1200, 2000),
         soil_ph=Range(4.5, 5.5, 7.0, 8.5),
+        root_depth_m=1.0,
+        is_cover_crop=False,
+        forage_value=0.67,
+        nutrition_density=0.67,
+        mycorrhizal_affinity=0.67,
+        nitrogen_demand=0.67,
+        market_note="",
+        sources=("test",),
     )
 
 
@@ -84,6 +95,45 @@ def test_trapezoid_with_no_ramp():
 def test_range_rejects_bad_order():
     with pytest.raises(DomainInvariantError, match="abs_min <= opt_min"):
         Range(abs_min=20, opt_min=10, opt_max=30, abs_max=40)
+
+
+@pytest.mark.parametrize(
+    ("score", "expected"),
+    [
+        (0.0, "none"),
+        (0.01, "low"),
+        (0.33, "low"),
+        (0.5, "medium"),
+        (0.67, "medium"),
+        (0.8, "high"),
+        (1.0, "high"),
+    ],
+)
+def test_level_for_maps_score_to_word(score, expected):
+    assert level_for(score) == expected
+
+
+@pytest.mark.parametrize("score", [-0.1, 1.1])
+def test_level_for_rejects_score_outside_0_1(score):
+    with pytest.raises(DomainInvariantError, match="Trait score must be in"):
+        level_for(score)
+
+
+@pytest.mark.parametrize("depth", [0.0, -1.0, 6.0])
+def test_crop_rejects_implausible_root_depth(depth):
+    with pytest.raises(DomainInvariantError, match="root_depth_m"):
+        replace(crop("x"), root_depth_m=depth)
+
+
+@pytest.mark.parametrize("score", [-0.1, 1.5])
+def test_crop_rejects_trait_score_outside_0_1(score):
+    with pytest.raises(DomainInvariantError, match="trait scores"):
+        replace(crop("x"), forage_value=score)
+
+
+def test_crop_requires_a_source():
+    with pytest.raises(DomainInvariantError, match="at least one source"):
+        replace(crop("x"), sources=())
 
 
 def test_weights_normalized():
