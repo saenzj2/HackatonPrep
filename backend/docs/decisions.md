@@ -15,6 +15,17 @@ Template:
 
 ---
 
+## 2026-11-14 — pandas for daily NASA POWER data
+- **Decision:** Add `pandas>=2.2` (and `pandas-stubs` for mypy) to the backend. The new
+  `NasaPowerClimate.daily_weather()` returns a DataFrame (`date`, `temperature_c`, `rainfall_mm`).
+  Daily fill values become NaN instead of rejecting the whole request.
+- **Why:** Data retrieval and calculations (dry spells, heat waves, frost days, aggregations) are
+  easier and clearer in pandas, which the team's data work already uses.
+- **Alternatives considered:** Plain tuples in a frozen dataclass, like `MonthlyClimate` (no extra
+  dependency, but every calculation is hand-written).
+- **Revisit if:** `make setup` gets too slow, or the domain layer needs to stay pandas-free
+  (convert DataFrames to domain models in `services.py` before they reach `app/domain/`).
+
 ## 2026-11-14 — Contract v0.2: compare against the farmer's current rotation, structured explanations
 - **Decision:** `POST /recommendations` takes an optional `current_rotation` (one crop id per season).
   It is scored like every other combination and returned as `current_rotation` (its `rank` is its
