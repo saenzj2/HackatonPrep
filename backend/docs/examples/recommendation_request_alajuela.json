@@ -1,0 +1,14 @@
+{
+  "lat": 10.0,
+  "lon": -84.2,
+  "priorities": {
+    "water": 0.4,
+    "soil": 0.3,
+    "climate": 0.3
+  },
+  "current_rotation": [
+    "maize",
+    "maize"
+  ],
+  "top_n": 3
+}
