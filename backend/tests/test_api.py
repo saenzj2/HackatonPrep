@@ -123,6 +123,15 @@ def test_current_rotation_crops_join_the_candidates(client):
     assert body["current_rotation"]["sequence"][0]["crop_id"] == "sorghum"
 
 
+def test_recommendation_is_for_the_requested_point(client):
+    # The API takes one representative point (e.g. picked inside a selected area) and echoes it
+    # unchanged: no snapping, no area or polygon average.
+    point = {"lat": 10.37, "lon": -84.47}
+    body = client.post("/recommendations", json=point).json()
+    assert body["location"] == point
+    assert body["conditions"]["location"] == point
+
+
 def test_same_input_same_output(client):
     a = client.post("/recommendations", json=CR).json()
     b = client.post("/recommendations", json=CR).json()

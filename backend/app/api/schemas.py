@@ -48,6 +48,8 @@ Trait = Annotated[TraitValue, BeforeValidator(_trait_from_score)]
 
 
 class Location(Schema):
+    """One representative point (decimal degrees). Values are for it, never an area average."""
+
     lat: float = Field(ge=-90, le=90, examples=[10.0])
     lon: float = Field(ge=-180, le=180, examples=[-84.2])
 
@@ -144,13 +146,24 @@ class Priorities(Schema):
     climate: float = Field(ge=0, examples=[0.3])
 
 
+# Shared field descriptions (#41): the API takes one point and never substitutes crops.
+POINT_NOTE = (
+    "of one representative point. For a selected area, send one explicitly chosen point; "
+    "results are for that point, never an area or polygon average."
+)
+UNSUPPORTED_CROP_NOTE = "Ids not in GET /crops fail with unknown_crop; they are never substituted."
+
+
 class RecommendationRequest(Schema):
-    lat: float = Field(ge=-90, le=90, examples=[10.0])
-    lon: float = Field(ge=-180, le=180, examples=[-84.2])
+    lat: float = Field(ge=-90, le=90, examples=[10.0], description=f"Latitude {POINT_NOTE}")
+    lon: float = Field(ge=-180, le=180, examples=[-84.2], description=f"Longitude {POINT_NOTE}")
     crops: list[str] | None = Field(
         default=None,
         min_length=1,
-        description="Crop ids from GET /crops. Omit for the MVP crops; an empty list is invalid.",
+        description=(
+            "Crop ids from GET /crops. Omit for the MVP crops; an empty list is invalid. "
+            + UNSUPPORTED_CROP_NOTE
+        ),
     )
     priorities: Priorities | None = Field(
         default=None, description="Relative importance; normalized to sum 1. Default: MVP weights."
@@ -160,7 +173,9 @@ class RecommendationRequest(Schema):
         default=None,
         description=(
             "The farmer's current rotation: crop ids from GET /crops, one per season, in the "
-            "order of conditions.seasons. Scored as the baseline the other rotations compare to."
+            "order of conditions.seasons. Scored as the baseline the other rotations compare to. "
+            "Omit when there is no current crop: no baseline, so current_rotation and "
+            "score_delta_vs_current are null. " + UNSUPPORTED_CROP_NOTE
         ),
         examples=[["maize", "maize"]],
     )
