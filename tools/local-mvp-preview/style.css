@@ -1,0 +1,12 @@
+:root {color-scheme: dark; font: 16px/1.55 system-ui, sans-serif; background: #101d19; color: #edf4e7}
+* {box-sizing: border-box} body {margin: 0} header, main, footer {max-width: 1440px; margin: auto; padding: 1.5rem 3vw}
+header {padding-top: 3rem} h1 {font-size: clamp(2rem, 4vw, 3.7rem); line-height: 1.1; margin: 1rem 0} h2 {font-size: 1.25rem} h3 {font-size: 1.05rem}
+.eyebrow, .badge {color: #d2e9a1; font-size: .75rem; letter-spacing: .08em} main {display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 1.5rem}
+section {background: #192b24; border: 1px solid #385043; border-radius: 14px; padding: 1.4rem; min-width: 0} .wide {grid-column: 1 / -1} .heading, .toolbar {display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; justify-content: space-between}
+button, select {font: inherit; color: #edf4e7; background: #294437; border: 1px solid #758a72; border-radius: 6px; padding: .5rem .8rem} button {cursor: pointer; min-height: 44px} button:hover, button[aria-pressed="true"] {background: #456542}
+button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible, summary:focus-visible {outline: 3px solid #ffe37b; outline-offset: 3px}
+label {display: block; margin: .7rem 0} input[type="range"], select {width: 100%; accent-color: #d2e9a1} fieldset {border: 1px solid #758a72; border-radius: 6px} a {color: #d2e9a1} .fine, footer {font-size: .8rem; color: #bdcfc1}
+.notice {border-left: 3px solid #e8c870; padding: .8rem; background: #29352a} #map {width: 100%; aspect-ratio: 4/3; display: block; margin-top: 1rem; background: #101d19; touch-action: none; cursor: grab; overflow: hidden}
+#selection {fill: #ffe37b22; stroke: #ffe37b; stroke-width: 2; vector-effect: non-scaling-stroke} #center {fill: #ffe37b; stroke: #192b24; stroke-width: .15} .selection-controls, .cards {display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem}
+article {background: #12221b; border-radius: 8px; padding: 1rem} article img {width: 100%; height: 190px; object-fit: contain} #rankings article {margin: 1rem 0} pre {white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30rem; overflow-y: auto; font-size: .8rem}
+@media (max-width: 850px) {main {grid-template-columns: 1fr} .cards, .selection-controls {grid-template-columns: 1fr} header, main, footer {padding-left: 1rem; padding-right: 1rem}}
