@@ -425,6 +425,7 @@ components:
       - lat
       - lon
       title: Location
+      description: One representative point (decimal degrees). Values are for it, never an area average.
     MonthClimate:
       properties:
         month:
@@ -489,6 +490,8 @@ components:
           maximum: 90.0
           minimum: -90.0
           title: Lat
+          description: 'Latitude of one representative point. For a selected area, send one explicitly chosen point;
+            results are for that point, never an area or polygon average.'
           examples:
           - 10.0
         lon:
@@ -496,6 +499,8 @@ components:
           maximum: 180.0
           minimum: -180.0
           title: Lon
+          description: 'Longitude of one representative point. For a selected area, send one explicitly chosen point;
+            results are for that point, never an area or polygon average.'
           examples:
           - -84.2
         crops:
@@ -506,7 +511,8 @@ components:
             minItems: 1
           - type: 'null'
           title: Crops
-          description: Crop ids from GET /crops. Omit for the MVP crops; an empty list is invalid.
+          description: 'Crop ids from GET /crops. Omit for the MVP crops; an empty list is invalid. Ids
+            not in GET /crops fail with unknown_crop; they are never substituted.'
         priorities:
           anyOf:
           - $ref: '#/components/schemas/Priorities'
@@ -527,7 +533,9 @@ components:
           - type: 'null'
           title: Current Rotation
           description: 'The farmer''s current rotation: crop ids from GET /crops, one per season, in the
-            order of conditions.seasons. Scored as the baseline the other rotations compare to.'
+            order of conditions.seasons. Scored as the baseline the other rotations compare to. Omit when
+            there is no current crop: no baseline, so current_rotation and score_delta_vs_current are null.
+            Ids not in GET /crops fail with unknown_crop; they are never substituted.'
           examples:
           - - maize
             - maize

@@ -4,10 +4,16 @@
 
 BACKEND := backend
 VENV    := $(BACKEND)/.venv
-BIN     := $(CURDIR)/$(VENV)/bin
+# Windows Python (Git Bash + GNU make) puts venv executables in Scripts/; everyone else uses bin/.
+ifeq ($(OS),Windows_NT)
+VENV_BIN_DIR := Scripts
+else
+VENV_BIN_DIR := bin
+endif
+BIN     := $(CURDIR)/$(VENV)/$(VENV_BIN_DIR)
 
-# First Python >= 3.11 found on PATH. Override with: make setup PYTHON=/path/to/python3.12
-PYTHON ?= $(shell for p in python3.13 python3.12 python3.11 python3; do \
+# First Python >= 3.11 found on PATH (`py` is the Windows launcher; Store stubs fail the check). Override with: make setup PYTHON=/path/to/python3.12
+PYTHON ?= $(shell for p in python3.13 python3.12 python3.11 python3 python py; do \
 	command -v $$p >/dev/null 2>&1 && $$p -c 'import sys; sys.exit(sys.version_info < (3, 11))' 2>/dev/null \
 	&& { command -v $$p; break; }; done)
 
@@ -29,8 +35,8 @@ install: ## Create backend/.venv and install the backend with dev deps
 		echo "ERROR: $(PYTHON) is $$($(PYTHON) --version 2>&1); Python >= 3.11 is required."; exit 1; }
 	@echo "Using $(PYTHON) ($$($(PYTHON) --version))"
 	@test -d $(VENV) || $(PYTHON) -m venv $(VENV)
-	$(BIN)/pip install --quiet --upgrade pip
-	cd $(BACKEND) && $(BIN)/pip install --quiet -e ".[dev]"
+	$(BIN)/python -m pip install --quiet --upgrade pip
+	cd $(BACKEND) && $(BIN)/python -m pip install --quiet -e ".[dev]"
 	@test -f $(BACKEND)/.env || cp $(BACKEND)/.env.example $(BACKEND)/.env
 	@echo "Done. Next: make dev"
 

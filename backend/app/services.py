@@ -75,7 +75,7 @@ class AppContext:
     def resolve_crops(self, ids: list[str] | None) -> list[CropProfile]:
         catalog = self.sources.crops.all()
         ids = self.config.crops if ids is None else ids
-        unknown = [c for c in ids if c not in catalog]
+        unknown = [c for c in dict.fromkeys(ids) if c not in catalog]  # once each, in request order
         if unknown:
             raise UnknownCropError(
                 f"Unknown crop ids: {', '.join(unknown)}",

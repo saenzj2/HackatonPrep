@@ -96,6 +96,18 @@ def test_unknown_crop_in_current_rotation(client):
 
 
 @pytest.mark.parametrize(
+    "field", [{"crops": ["pineapple"]}, {"current_rotation": ["pineapple", "pineapple"]}]
+)
+def test_unsupported_pineapple_is_rejected_not_substituted(client, field):
+    # Pineapple is not in the catalog yet (#24): the API must say so, not rank other crops instead.
+    err = assert_error(
+        client.post("/recommendations", json={**CR, **field}), 422, ErrorCode.UNKNOWN_CROP
+    )
+    assert err["details"]["unknown"] == ["pineapple"]
+    assert "pineapple" not in err["details"]["available"]
+
+
+@pytest.mark.parametrize(
     ("body", "loc"),
     [
         ({"lat": 200, "lon": -84.2}, "body.lat"),
