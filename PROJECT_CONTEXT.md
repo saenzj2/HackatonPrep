@@ -13,13 +13,15 @@ For running the backend, use the [README](README.md); for contributor rules, rea
 | [Project tracker](https://github.com/users/saenzj2/projects/1/views/5) | Team task coordination; consult it for current assignments |
 | [MVP configuration](backend/config/mvp.yaml) | Actual configured region, crops, variables, seasons and data mode |
 | [Decision log](backend/docs/decisions.md) | Recorded technical choices and limitations |
-| [API contract](backend/docs/api-contract.yaml) | Frontend/backend agreement, currently draft v0 per the decision log |
+| [API contract](backend/docs/api-contract.yaml) | Frontend/backend agreement, currently `0.2.0-draft` |
+| [San Carlos pilot baseline](docs/pilot-baseline/README.md) | Selected example location, six research images, provenance, limitations and next steps |
 
 Challenge details below summarize the official-page text supplied by the team. The official
 URL was located in search, but a complete live-page fetch timed out during documentation.
 The roster, venue, timetable and local rubric were supplied by the team, including event images;
-they have not been independently confirmed with the organizer. Dataset links are discovery
-entry points, not proof of downloaded data, licensing review or pilot-region suitability.
+they have not been independently confirmed with the organizer. The dataset catalog below lists
+discovery entry points, not proof of acquisition or suitability. The separate San Carlos baseline
+records the sources actually explored and their checked redistribution terms.
 
 ## Team
 
@@ -57,26 +59,44 @@ The dataset catalog is a set of possibilities, not an instruction to integrate e
 
 ## Current implementation versus provisional scope
 
-Repository snapshot for this context: **14 November 2026**. These are documented/configured
-facts, not fresh runtime or scientific validation results.
+Repository snapshot for this context: **14 November 2026**, inspected at `1992e21`.
+These are source/configuration observations, not fresh runtime or scientific validation results.
+The selected research/demo example is **San Carlos, Costa Rica**, at **10.999930, -84.601590**
+(latitude, longitude). This selection does not establish a farm boundary or finalize the configured
+pilot scope. See the [visual baseline and provenance](docs/pilot-baseline/README.md).
 
 | Topic | Current evidence | Still provisional or limited |
 |---|---|---|
-| Pilot region | Config name is `TBD (placeholder: Costa Rica)` with a bounding box | Costa Rica is not a finalized pilot selection |
+| Pilot region | San Carlos example selected for research; config still says `TBD (placeholder: Costa Rica)` | Config bounds remain Costa Rica-wide; no farm ownership or surveyed boundary established |
 | Crops | Config selects `rice`, `beans`, `maize` | Team still needs to confirm the final 3–5 crops; catalog values are marked `verified=false` |
-| Variables | Temperature, rainfall, soil pH and soil moisture | No measured improvement in soil health or water savings is established |
+| Variables | Temperature, rainfall, soil pH, soil moisture, heat and frost | Heat/frost use monthly summaries, not daily event counts; no measured soil-health or water-saving improvement |
 | Priorities | Defaults: water 0.4, soil 0.3, climate 0.3; request can override | Defaults are not individual farmer preferences |
 | Seasons | `primera` May–August; `postrera` September–November | Dry season is fallow in v0; regional/irrigation fit needs review |
-| Output | `top_n: 5` in config | Does not establish a three-strategy baseline comparison |
-| Climate | NASA POWER adapter for live/cached; mock climate in mock mode | Existing adapter does not imply a live call was verified in this documentation task |
-| Soil | `MockSoil` in **every** mode | No real soil integration selected; SMAP/SoilGrids are candidates only |
+| Output | Ranked rotations, optional `current_rotation`, score deltas, benefits, risks, data gaps and evidence | Baseline requires farmer input; the API does not invent current practice or guarantee exactly three strategies |
+| Climate | POWER monthly normals feed conditions/ranking in live/cached mode; daily DataFrame adapter also exists | Daily data is not wired into recommendation services; no live pilot call verified in this documentation task |
+| Soil | `MockSoil` in **every** mode | SoilGrids SOC was explored externally, not integrated; it does not replace mocked pH/moisture |
 | Crop source | Local EcoCrop subset CSV | Unverified trait values must not be presented as validated agronomy |
-| Ranking | Explainable v0 scoring and cyclic rotation adjustments | Monoculture penalty and legume bonus are placeholders, not calibrated impacts |
+| Ranking | `suitability-v1`, cyclic rotation adjustments including same-family penalty | Penalties and legume bonus are placeholders, not calibrated agronomic impacts |
 | Frontend | README leaves same-repo versus separate-repo location open | No completed dashboard is asserted here |
 
 The scope principle remains **one region, a few crops, a few variables and one clear
 recommendation**. Do not change config, scoring constants or the API contract through this
 context document. Follow the existing contract-first workflow and decision-log rules.
+
+### Farmer-first map direction (not implemented here)
+
+The user favors a map flow: open a recognizable example, select a rectangular area, inspect
+available evidence, enter crops/current practice and priorities, then compare explained rotations.
+This is a design direction, not an implemented dashboard or a finalized polygon-analysis contract.
+Show source/provider, date or period, resolution, uncertainty and mock status beside each layer/result.
+The existing API accepts a **point**, not a rectangle or polygon; an explicitly labeled representative
+point could bridge a future selection UI to it, but point-selection rules still need agreement.
+Do not describe the response as an area average or field-level measurement.
+
+The images show agricultural-looking patterns, not confirmed pineapple. Pineapple is not among
+the configured crops (`rice`, `beans`, `maize`). Validate actual crops and the local seasonal calendar
+before adapting the model: the default dry-season fallow assumption may not fit this northern site.
+Water, soil and climate remain farmer-selected priorities; defaults are examples, not elicited needs.
 
 ### Demo honesty
 
@@ -179,10 +199,16 @@ shows limits honestly and leaves the decision with the farmer.
 
 ## Open decisions and next handoff
 
-- Confirm the pilot location and crops; keep tentative choices explicitly tentative until accepted.
-- Agree on the frontend contract and baseline comparison; do not infer assignments from the roster.
-- Verify crop traits and choose a real soil strategy before claiming agronomic validity.
-- Select only the data products that improve the demo within the time available.
+- Use the [San Carlos baseline](docs/pilot-baseline/README.md) as the selected visual example;
+  no farmer or real farm is available; label the scenario hypothetical and seek expert validation later.
+- Agree on the rectangle-selection/representative-point handoff and frontend contract; reuse the
+  existing optional current-rotation comparison rather than treating it as missing.
+- Verify crop traits and choose a real soil strategy before claiming agronomic validity. Keep the
+  externally explored SOC map distinct from backend mock pH/moisture.
+- Cache NASA POWER for the actual pilot point and verify effective mode/source labels before the demo;
+  existing example responses describe Alajuela, not this San Carlos point.
+- Select only evidence layers that help the farmer, with dates, attribution and limitations visible;
+  FTW predictions are incomplete here and cannot silently define the selected farm.
 - Confirm organizer timetable changes, submission requirements and any deadlines not provided here.
 
 Use the [tracker](https://github.com/users/saenzj2/projects/1/views/5) for work ownership and

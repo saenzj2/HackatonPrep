@@ -10,6 +10,8 @@ or a separate repo) is still to be decided. `backend/` is self-contained, so it 
 
 **New to the team?** Read the [shared project context](PROJECT_CONTEXT.md) for the challenge,
 participants, data-source candidates, provisional MVP status and 14–15 November local event plan.
+For the selected San Carlos example, start with the [visual pilot baseline](docs/pilot-baseline/README.md):
+five attributed images, what each dataset does (and does not) show, and the next farmer-facing steps.
 
 ## Quickstart
 
@@ -47,8 +49,8 @@ Frontend ──POST /recommendations──► API (backend/app/api)
                      ┌───────────────┼────────────────┐
                      ▼               ▼                ▼
               Climate source    Soil source      Crop source       backend/app/integrations
-              (NASA POWER)      (mock → SMAP/    (EcoCrop CSV)     one adapter per source,
-                                 SoilGrids)                         same interface, cached
+              (NASA POWER)      (mock in every  (EcoCrop CSV)     one adapter per source,
+                                 data mode)                        same interface, cached
                      └───────────────┼────────────────┘
                                      ▼
                        Suitability + rotation ranking            backend/app/domain (pure logic)
@@ -70,6 +72,13 @@ When the team decides them, edit that file (and log why in
 | `live`   | calls real APIs and saves every response to the local cache          |
 | `cached` | serves only from the cache, never touches the network (**use for the demo**) |
 
+Soil pH and moisture remain **mocked in every mode**. NASA POWER monthly normals feed
+conditions and ranking; the daily-weather adapter exists but is not connected to those services.
+The optional `current_rotation` request now enables comparison with a farmer-supplied baseline,
+including score deltas, benefits, risks, evidence and data gaps (contract `0.2.0-draft`).
+The current endpoints take a representative **point**, not a selected rectangle or polygon average.
+External Sentinel-2, WorldCover, SoilGrids and FTW research images are not backend integrations.
+
 ## Repo map
 
 | Path | What |
@@ -84,6 +93,7 @@ When the team decides them, edit that file (and log why in
 | `backend/docs/decisions.md` | Log of technical decisions |
 | `backend/docs/sources/` | One page per dataset: variables, units, coverage, license |
 | `backend/tests/fixtures/` | Real sample responses from each source |
+| `docs/pilot-baseline/` | Curated San Carlos visual evidence, source attribution and research limitations |
 | `AGENTS.md` (+ one per main folder) | Rules for humans and AI assistants: context, layers, Python practices |
 | `CLAUDE.md`, `.claude/` | Claude Code extras: settings, hooks, skills, subagents (optional) |
 | `learning/harness-cheatsheet.md` | One-page summary of everything in this harness |
