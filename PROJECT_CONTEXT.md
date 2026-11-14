@@ -86,17 +86,63 @@ context document. Follow the existing contract-first workflow and decision-log r
 ### Farmer-first map direction (not implemented here)
 
 The user favors a map flow: open a recognizable example, select a rectangular area, inspect
-available evidence, enter crops/current practice and priorities, then compare explained rotations.
+available evidence, optionally enter existing crops/current practice, set priorities, then compare
+explained options. A farmer without a current crop must also be able to explore the evidence.
 This is a design direction, not an implemented dashboard or a finalized polygon-analysis contract.
 Show source/provider, date or period, resolution, uncertainty and mock status beside each layer/result.
 The existing API accepts a **point**, not a rectangle or polygon; an explicitly labeled representative
 point could bridge a future selection UI to it, but point-selection rules still need agreement.
 Do not describe the response as an area average or field-level measurement.
 
+#### Two entry paths, one evidence standard
+
+| Farmer situation | Intended experience | Current API boundary |
+|---|---|---|
+| No current crop or no baseline supplied | Inspect location evidence and compare supported candidate crops/rotations without inventing current practice | Omit `current_rotation`; omit `crops` to use configured candidates, or supply supported catalog IDs. No baseline score delta is available. |
+| Existing crop supplied by the farmer | Inspect relevant data and recommendations for that crop; offer an alternative only when traits, local conditions and rotation logic support it | `current_rotation` is a sequence with one supported crop per configured season, not a generic single-current-crop field. A new field or different crop-cycle model requires contract-first agreement. |
+
+An unknown or unsupported crop must remain an explicit gap, not be silently replaced. If evidence
+cannot justify a recommendation or alternative, explain the missing evidence instead of inventing
+an option. Current heuristic rankings and unverified catalog traits do not establish agronomic validity.
+This is the intended evidence standard, not a claim that the current API already filters all unsupported
+agronomic conclusions. Single-crop advice and changed response behavior need separately agreed
+[contract](backend/docs/api-contract.yaml) changes, implementation and tests.
+
+**Hypothetical example, not exclusive scope:** a farmer reports pineapple at San Carlos. This is
+one possible walkthrough, not the only supported user situation or a verified crop identification.
 The images show agricultural-looking patterns, not confirmed pineapple. Pineapple is not among
 the configured crops (`rice`, `beans`, `maize`). Validate actual crops and the local seasonal calendar
 before adapting the model: the default dry-season fallow assumption may not fit this northern site.
 Water, soil and climate remain farmer-selected priorities; defaults are examples, not elicited needs.
+
+### Cache-first direction and quota boundaries
+
+**Prefer reuse of suitable cached evidence, not default live calls.** This is a proposed operating
+policy, not a new `data_mode` or an implemented default. Current configuration remains `mock`, with
+an environment override; `cached` is offline-only, whereas `live` fetches on every request and only
+falls back to a saved copy after a source error. Cache-first read-through behavior, freshness rules
+and quota accounting are not implemented by this documentation.
+
+| Situation | Intended policy / current limitation |
+|---|---|
+| Valid matching cache hit | Reuse without a live call; show provider, location/parameters, observation period and retrieval date. Current cache stores `params`, `fetched_at` and raw data, but does not enforce freshness. |
+| Stale cached evidence | Label age and scientific limits; use only if suitable for the question. Do not silently refresh or imply historical evidence is current. Agree on source-specific freshness rules before implementation. |
+| Miss, unreadable entry or empty cache | In `cached`, return the existing `cache_miss` error (503), with no network request. Do not silently switch to live or mock; explain that evidence is unavailable. |
+| Explicit live acquisition/refresh allowed | First agree on location, source, credentials and budget; fetch only when configured/authorized and cache validated results. A cache miss alone is not authorization. |
+| Live disabled, required key missing, or quota exhausted | Make no new external calls under the proposed policy. Use suitable labeled cache if available, otherwise report the gap; partial response behavior needs contract agreement. Current shared cache has no quota/key preflight. |
+| Demo | Prepare only agreed requests within budget, verify cache completeness, then use `cached`; rehearse a miss as well as a hit. Soil mock status must remain visible. |
+
+The user's 50-calls/day concern appears to match the **OpenTopography Point Elevation API** in
+[open PR #66](https://github.com/saenzj2/HackatonPrep/pull/66), not an established merged backend
+source or a NASA POWER quota. The [provider's developer page](https://opentopography.org/developers/),
+checked 14 November 2026, lists **50 calls per 24 hours for non-academic free Point Elevation keys**
+and 250 for academic keys; limits depend on endpoint and plan. Verify the actual account entitlement
+before acquisition, and do not share or publicly embed keys. PR #66 describes five elevation requests
+for a new location; that is an in-flight design estimate, not a universal cost per recommendation.
+Cache keys, repeated selections and failed/retried requests must be included in any later budget design.
+
+See [issue #67](https://github.com/saenzj2/HackatonPrep/issues/67) for this documentation follow-up.
+This page changes no code, configuration, contract, API quota control or integration.
 
 ### Demo honesty
 
@@ -205,7 +251,8 @@ shows limits honestly and leaves the decision with the farmer.
   existing optional current-rotation comparison rather than treating it as missing.
 - Verify crop traits and choose a real soil strategy before claiming agronomic validity. Keep the
   externally explored SOC map distinct from backend mock pH/moisture.
-- Cache NASA POWER for the actual pilot point and verify effective mode/source labels before the demo;
+- Reuse suitable cached NASA POWER evidence; acquire only missing agreed pilot-point data within budget,
+  then verify effective mode/source labels before the demo;
   existing example responses describe Alajuela, not this San Carlos point.
 - Select only evidence layers that help the farmer, with dates, attribution and limitations visible;
   FTW predictions are incomplete here and cannot silently define the selected farm.

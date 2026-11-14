@@ -27,7 +27,7 @@ That was exploratory candidate selection, not a second approved pilot or ground 
 example here is San Carlos. Visually regular fields and a cropland classification improve the
 illustration, but neither establishes crop species. Do not label the site a pineapple farm.
 
-## Five images and how to read them
+## Six images and how to read them
 
 ### 1. Historical Sentinel-2 overview
 
@@ -146,11 +146,24 @@ and [configuration](../../backend/config/mvp.yaml). Existing generated examples 
 ## Desired farmer flow and next steps
 
 The user favors **map → recognizable example → rectangle selection → inspect evidence → priorities
-and current practice → explained comparison**. This is a direction to design, not an implemented UI.
+and optional current practice → explained comparison**. This is a direction to design, not an implemented UI.
 Keep a plain-language label on every layer: provider, date/period, native resolution, measured vs
 modeled vs mocked, coverage and uncertainty. Do not label external map layers as NASA products.
 If a rectangle is represented by a point for the current API, show that point explicitly and agree
 on its selection rule; do not silently claim area-wide analysis.
+
+The flow has **two entry paths**: a farmer without a current crop can inspect evidence and compare
+supported candidates without a baseline; a farmer supplying existing crops should receive relevant
+data/recommendations and an alternative only if evidence and crop-cycle logic justify it. Never
+invent a current crop or alternative to complete the demo. `crops` selects candidates; omission uses
+the configured set. Optional `current_rotation` accepts supported IDs, one per configured season;
+it is not a generic single-current-crop field. Other crop-cycle models or new fields need contract-first
+agreement. See [entry paths and limitations](../../PROJECT_CONTEXT.md#two-entry-paths-one-evidence-standard).
+
+**Pineapple at San Carlos is one hypothetical farmer report**, not the only scenario the product
+should address, an image-derived crop identification or a currently validated recommendation case.
+The configured rice/beans/maize candidates and unverified traits do not justify naming a replacement
+for pineapple. If evidence is insufficient, show the gap and defer the recommendation.
 
 1. **Use a hypothetical case for the hackathon:** no farmer or real farm is available to validate the
    boundary, current crops/rotation, irrigation or priorities. Label assumptions and seek expert validation later.
@@ -159,8 +172,14 @@ on its selection rule; do not silently claim area-wide analysis.
    (May–August), postrera (September–November) and dry-season fallow need regional validation here.
 3. **Agree on the frontend handoff:** rectangle plus clearly labeled representative point for the
    existing API, or a separately agreed contract change. Reuse the existing baseline comparison.
-4. **Prepare honest cached evidence:** fetch/cache the selected point and confirm effective
-   `data_mode` and source labels. Keep soil mocked until a real strategy is chosen and documented.
+4. **Prepare honest cached evidence:** reuse suitable saved data first; acquire only agreed missing
+   pilot-point requests with explicit live configuration/authorization and a checked budget, then use
+   `cached` for the demo. Label provider, observation period, retrieval date, resolution and stale/missing
+   data. A miss or empty cache must not silently enable live calls or mock substitution. Keep soil
+   mocked and labeled until a real strategy is chosen and documented. See the
+   [cache policy and quota boundary](../../PROJECT_CONTEXT.md#cache-first-direction-and-quota-boundaries):
+   current `live` fetches first, freshness/quota controls are proposed, and the 50/24h free limit
+   concerns OpenTopography Point Elevation identified in unmerged PR #66, not NASA POWER.
 5. **Verify before presenting:** check response/contract agreement and map labels, then rehearse
    cached/offline behavior. Present rankings as decision support, not an agronomic prescription.
 
