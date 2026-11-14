@@ -23,6 +23,33 @@ they have not been independently confirmed with the organizer. The dataset catal
 discovery entry points, not proof of acquisition or suitability. The separate San Carlos baseline
 records the sources actually explored and their checked redistribution terms.
 
+## Hackathon offers and participant guides
+
+The NASA Space Apps GO Team's 13 November 2026 kickoff message announced optional
+[Global Offers](https://www.spaceappschallenge.org/2026/global-offers/) for participants.
+The message lists GoDaddy (domain and one year of hosting), Google Cloud (including Firebase
+and Maps), Meteomatics (weather and climate API), Microsoft (Azure, Planetary Computer,
+Copilot, GitHub Copilot and Teams), and Miro (plans and hackathon templates). Check the
+individual offer for eligibility, availability, redemption steps and current terms; these
+are optional resources, not dependencies or approved services for this project.
+
+Some offers may request a credit card for verification. The message says a purchase is not
+required; review the offer terms and potential charges before entering payment details.
+Do not commit credentials, redemption links or private account information.
+Provider claims about data accuracy or capabilities are not independently verified here.
+
+| Resource | Why consult it |
+|---|---|
+| [Project Submission Guide](https://www.spaceappschallenge.org/resources/project-submission-guide/) | Submission steps and deadlines; verify the current event instructions. |
+| [Judging and Awards Guide](https://www.spaceappschallenge.org/resources/judging-awards-guide/) | Local/global judging and award eligibility. |
+| [Navigating the Hackathon videos](https://youtube.com/playlist?list=PLTPrbzl1eIYU) | Step-by-step event tutorials. |
+| [Participant FAQs](https://www.spaceappschallenge.org/resources/participant-faqs/) | Common participant questions. |
+| [Space Apps Connect](https://github.com/nasa/spaceapps) | Community discussion and support. |
+| [Space Apps Connect Guide](https://www.spaceappschallenge.org/resources/space-app-connect-guide/) | Instructions for joining the community. |
+
+The links above are the direct destinations embedded in the kickoff email, without
+recipient-specific tracking links. Content and offer terms may change; access may require sign-in.
+
 ## Team
 
 **Guardians of the Harvest**
