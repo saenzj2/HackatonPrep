@@ -29,3 +29,7 @@ Rule: `abs_min ≤ opt_min ≤ opt_max ≤ abs_max`. The loader rejects rows tha
 3. Add the crops the team picks for the pilot region (cassava, sweet potato, …). Crops with a cycle
    much longer than one season need a different rotation model (see decisions.md).
 4. Optional: per-crop soil moisture and texture preferences.
+5. **#24: add at least one mycorrhizal non-host** (`mycorrhizal_affinity` 0, e.g. amaranth or a
+   Brassicaceae crop). Until then the `fungi_break` rotation rule (#25) can't fire with real data and
+   is only covered by toy crops. `test_fungi_break_fires_with_real_crops` in `tests/test_integrations.py`
+   is skipped until such a crop exists, then it runs by itself: check it passes.

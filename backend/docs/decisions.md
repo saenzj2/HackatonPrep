@@ -15,6 +15,38 @@ Template:
 
 ---
 
+## 2026-11-14 — Rotation rules with verdicts and reasons (T3.3, #25)
+- **Decision:** `app/domain/rotation_rules.py` judges every consecutive crop pair (cyclic) and returns a
+  verdict (favoured / allowed / discouraged), one reason per rule that fired, and a score adjustment.
+  Rules: monoculture (−0.10, skips the others), same family (−0.05), family change (benefit, 0),
+  legume after a non-legume (+0.05; stronger reason after a heavy feeder), **new** two heavy feeders in
+  a row (−0.05), **new** non-host before a fungi-dependent crop (−0.05). Any risk → discouraged; else a
+  scoring benefit → favoured; else allowed. "Heavy feeder" / "depends on fungi" = the trait's API word
+  is `high` (`level_for`), so rules and API agree. `ranking.score_rotation()` now uses these rules.
+  For two different crops the penalties are capped at `MAX_PAIR_PENALTY` (0.075), so changing crops
+  always beats repeating one.
+- **Choices (engine owner, marceconejo):** legume bonus kept for any non-legume (no score change);
+  new rules get −0.05 placeholders, like same family; verdicts stay inside the domain (reasons already
+  reach the API as `benefits` / `risks`, no contract change); rules never make a rotation non-viable.
+- **`agro-logic` review (applied):** (1) cap added: rice → maize (same family + two heavy feeders) tied
+  with maize monoculture; (2) rice `nitrogen_demand` 1 → 0.67: rainfed rice removes about as much
+  nitrogen as sorghum, maize is the textbook heavy feeder; (3) reasons reworded to avoid overclaiming
+  (beans fix little nitrogen and most leaves with the grain; same family shares *some* pests; a family
+  change *helps* break cycles; monoculture builds up pests rather than "depleting the soil"). The
+  reviewer cited references from memory (e.g. Giller 2001; Herridge et al. 2008), not checked yet.
+- **Effect on the current 5 crops:** no score changes. Maize is the only heavy feeder now, so heavy after
+  heavy can't fire (maize → maize is monoculture), and fungi break needs a non-host crop. Both stay ready
+  for #24, which must add a non-host (see `docs/sources/ecocrop.md` to-do 5).
+- **Alternatives considered:** bonus only after heavy feeders (lowers sorghum → legume); verdict-only
+  rules with no score effect (left #27 without inputs); exposing verdicts in the API now (contract change
+  better done with explanations #29); `HEAVY_AFTER_HEAVY_PENALTY = 0.03` instead of a cap (fixes only
+  today's pair, not crops added later).
+- **Open (team, not this PR):** the review warns that beans planted in primera (May–Aug) in humid
+  San Carlos face heavy web blight; the regional bean season is around Nov–Dec. Check the season setup
+  in `mvp.yaml` with a local source (MAG / INTA) before the demo.
+- **Revisit if:** an agronomist disagrees with a rule or value; #29 needs per-transition verdicts in the
+  response; sorghum joins the MVP crops (closer-relative penalty, slow start after sorghum).
+
 ## 2026-11-14 — Crop schema v1: soil-health, nutrition and market traits (T3.1, #23)
 - **Decision:** `data/ecocrop_subset.csv` gains `root_depth_m`, `is_cover_crop`, `forage_value`,
   `nutrition_density`, `mycorrhizal_affinity`, `nitrogen_demand`, `market_note` and `sources`. The four

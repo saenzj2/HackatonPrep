@@ -57,7 +57,8 @@ silence them with `# noqa` or `# type: ignore` unless there's no clean fix. Add 
 - **Config.** Read settings through `app/settings.py`. Never `os.environ` scattered in code, never hardcoded scope.
 
 ## Scoring constants
-`MONOCULTURE_PENALTY`, `SAME_FAMILY_PENALTY`, `LEGUME_BONUS`, `STRONG_CATEGORY` (ranking.py) and
+`MONOCULTURE_PENALTY`, `SAME_FAMILY_PENALTY`, `LEGUME_BONUS`, `HEAVY_AFTER_HEAVY_PENALTY`,
+`FUNGI_BREAK_PENALTY` (rotation_rules.py), `STRONG_CATEGORY` (ranking.py) and
 `GENERIC_SOIL_MOISTURE`, `HEAT_MARGIN_C`, `FROST_C`, `FROST_SAFE_C`, `MARGINAL_SCORE` (suitability.py),
 `SLOPE_MEDIUM_PCT`, `SLOPE_HIGH_PCT`, `HEAVY_RAIN_MM` and `RainfallThresholds` defaults (erosion.py)
 are placeholders. Change them only with a `docs/decisions.md` entry, ideally after an `agro-logic` review.

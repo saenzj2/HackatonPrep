@@ -25,12 +25,8 @@ from app.domain.models import (
     Weights,
     level_for,
 )
-from app.domain.ranking import (
-    MONOCULTURE_PENALTY,
-    SAME_FAMILY_PENALTY,
-    explain,
-    rank_rotations,
-)
+from app.domain.ranking import explain, rank_rotations
+from app.domain.rotation_rules import MONOCULTURE_PENALTY, SAME_FAMILY_PENALTY
 from app.domain.suitability import (
     HEAT_MARGIN_C,
     crop_season_fit,
@@ -313,7 +309,7 @@ def test_same_family_is_a_risk_and_family_change_a_benefit():
     }
     assert any("same family (Poaceae)" in x for x in results[("maize", "rice")].risks)
     assert any("family change" in x for x in results[("maize", "beans")].benefits)
-    assert any("fixes nitrogen" in x for x in results[("maize", "beans")].benefits)
+    assert any("nitrogen from the air" in x for x in results[("maize", "beans")].benefits)
 
 
 def test_strong_categories_are_benefits():

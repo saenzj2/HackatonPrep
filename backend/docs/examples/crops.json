@@ -40,8 +40,8 @@
         "score": 0.33
       },
       "nitrogen_demand": {
-        "level": "high",
-        "score": 1.0
+        "level": "medium",
+        "score": 0.67
       },
       "market_note": "Staple grain with steady local demand",
       "sources": [
