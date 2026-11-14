@@ -15,6 +15,29 @@ Template:
 
 ---
 
+## 2026-11-14 — Monthly field indicators from daily data; no heat/frost days from the daily mean (T2.3, #19)
+- **Decision:** `app/domain/indicators.py` turns a daily series into one row per calendar month:
+  mean temperature, rainfall total, dry days (< 1 mm), longest dry spell, extreme-rain days (>= 30 mm,
+  same as erosion's `HEAVY_RAIN_MM`), heat-stress days (daily max >= 35 °C) and frost days (daily
+  min <= 0 °C, = `FROST_C`). `services.field_indicators()` returns the table; no endpoint yet.
+  Heat-stress and frost days are `None` unless the source gives true daily max / min. Missing days
+  are skipped and counted per variable, end a dry spell, and an empty month gives `None`.
+  Full rules: `docs/indicators.md`.
+- **Why:** NASA POWER daily `T2M` is a daily mean and cannot show a hot afternoon or a frosty dawn,
+  so counting heat or frost days from it would be a false claim. 1 mm is the ETCCDI wet-day
+  threshold. Reusing 30 mm keeps the erosion and indicator counts consistent.
+- **Placeholders:** `HEAT_STRESS_MAX_C = 35.0` (generic, needs an `agro-logic` review before scoring).
+  `DRY_DAY_MM` and `HEAT_STRESS_MAX_C` are new; no existing scoring constant changed.
+- **Alternatives considered:** estimating max/min from the monthly climatology or a fixed daily
+  range (invented numbers); requesting `T2M_MAX`/`T2M_MIN` in the daily adapter now (needs a new real
+  fixture and changes the daily cache key; left as a follow-up).
+- **Open (issue #19 is not done):** (1) real data has no daily max / min yet, so heat-stress and
+  frost days are always `None` for POWER; (2) the 35 °C heat threshold is unvalidated (no
+  `agro-logic` review); (3) demo fields are not chosen (#15) and their daily responses are not
+  cached (#18), so the only table is for the San José fixture.
+- **Revisit if:** the daily adapter adds `T2M_MAX`/`T2M_MIN`; demo fields are chosen (#15); an
+  endpoint exposes the table (#40).
+
 ## 2026-11-14 — Recommendations: representative point, no-baseline path, unsupported crops (T8.2, #41)
 - **Decision:** No new fields. The contract now states what `POST /recommendations`
   already does: `lat`/`lon` (and every `Location`) are **one representative point**, never an area or

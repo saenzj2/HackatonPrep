@@ -56,9 +56,10 @@ Response shape: `properties.parameter.<PARAM>.{JAN..DEC, ANN}`. Missing data = `
   series raises `source_bad_data`. Callers must handle NaN (e.g. `skipna` in pandas aggregations).
 - Recent days may be missing: MERRA-2 data arrives with a lag of a few weeks.
 - Cache namespace `nasa_power_daily`, keyed by lat/lon (2 decimals) and start/end.
-- Not wired into `services.py` or the `ClimateSource` protocol yet; it is the base for dry-spell,
-  heat-wave and frost-day calculations.
+- Used by `services.erosion_risk()` and `services.field_indicators()` (monthly indicators,
+  `docs/indicators.md`). `T2M` is a daily **mean**: heat-stress and frost days stay `None` until
+  `T2M_MAX` / `T2M_MIN` are requested.
 
 ## Next steps
-- `T2M_MAX`/`T2M_MIN` now feed `heat` and `frost`. Next: the daily endpoint for extremes (dry spells, heat waves, frost-day counts).
+- `T2M_MAX`/`T2M_MIN` now feed `heat` and `frost`. Daily dry spells and extreme-rain days are done (`docs/indicators.md`). Next: daily `T2M_MAX` / `T2M_MIN` for heat-stress and frost-day counts.
 - Consider the `climatology` vs. recent-years trend to show climate shift (the "Field Shift" angle).
