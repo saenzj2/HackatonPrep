@@ -25,7 +25,13 @@ from app.domain.models import (
     Weights,
     level_for,
 )
-from app.domain.ranking import explain, rank_rotations
+from app.domain.ranking import (
+    LOCAL_REVIEW_UNSCORED,
+    NO_BENEFIT,
+    STRONG_CATEGORY,
+    explain,
+    rank_rotations,
+)
 from app.domain.rotation_rules import MONOCULTURE_PENALTY, SAME_FAMILY_PENALTY
 from app.domain.suitability import (
     HEAT_MARGIN_C,
@@ -482,3 +488,39 @@ def test_assess_erosion_end_to_end():
     assert a.terrain_erosion_risk == MEDIUM
     assert a.rainfall_erosion_risk == HIGH
     assert a.combined_erosion_risk == HIGH
+
+
+def test_every_rotation_ends_with_local_review_items():
+    for r in rank([crop("maize"), crop("beans", legume=True)], top_n=None):
+        assert r.risks[-1] == LOCAL_REVIEW_UNSCORED
+        assert r.risks[-2].startswith("Local review: check sowing dates")
+
+
+def test_local_review_names_each_crop_and_season():
+    (r,) = rank([crop("maize"), crop("beans", legume=True)], top_n=1)
+    names = [f"{f.crop.name} in {f.season.name}" for f in r.sequence]
+    assert ", ".join(names) in r.risks[-2]
+
+
+def test_rotation_with_good_fit_and_family_change_still_has_local_review_risks():
+    """maize -> beans has no rule risk; without local review its risks would be empty."""
+    (r,) = rank([crop("maize"), crop("beans", legume=True)], top_n=1)
+    assert [x for x in r.risks if not x.startswith("Local review")] == []
+    assert len(r.risks) == 2
+
+
+def test_rotation_without_any_benefit_says_so():
+    """Monoculture of a crop that fits poorly: no rule benefit and no strong category."""
+    poor = replace(
+        crop("maize", temp=Range(20, 35, 38, 45)),  # 25 °C: low on the cold ramp
+        rainfall_mm=Range(100, 1000, 1500, 2000),  # ~600 mm per cycle: on the dry ramp
+        soil_ph=Range(5, 6.5, 7, 8),  # pH 6: on the acid ramp
+    )
+    (r,) = rank([poor], top_n=None)
+    assert all(v < STRONG_CATEGORY for v in vars(r.breakdown).values() if v is not None)
+    assert r.benefits == (NO_BENEFIT,)
+
+
+def test_rotation_with_a_benefit_does_not_say_none_found():
+    (r,) = rank([crop("maize"), crop("beans", legume=True)], top_n=1)
+    assert NO_BENEFIT not in r.benefits

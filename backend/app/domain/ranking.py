@@ -9,7 +9,10 @@ legume after a non-legume, two heavy feeders in a row, ...), applied to every co
 A rotation is "viable" only if every crop/season score is > 0. Rules lower or raise the score,
 they never make a rotation non-viable.
 
-Each rotation carries plain-language `benefits` and `risks` for the farmer.
+Each rotation carries plain-language `benefits` and `risks` for the farmer (T4.4, #29). `risks`
+always ends with "Local review: ..." items: what this tool does not judge, for a local agronomist
+or extension officer to check before acting. `benefits` is never empty: if nothing qualifies, it
+says so.
 """
 
 from __future__ import annotations
@@ -34,6 +37,21 @@ from app.errors import DomainInvariantError
 
 # A category (climate, water, soil) at or above this is listed as a benefit.
 STRONG_CATEGORY = 0.8
+
+# Said instead of an empty list (possible for monoculture or same family with a weak fit).
+NO_BENEFIT = (
+    "No benefit found by the rotation rules and no strong climate, water or soil fit; "
+    "compare with the other options"
+)
+# What the score does not see. Always listed, so the farmer knows where local expertise is needed.
+# Pests and diseases are only approximated by crop family (rotation_rules.py); slope and erosion
+# (erosion.py) are not part of the ranking; seasons are rainfed (mvp.yaml); markets and labour are
+# not modelled.
+LOCAL_REVIEW_UNSCORED = (
+    "Local review: actual pest and disease pressure (judged here only by crop family), field "
+    "slope and erosion, irrigation, labour and market prices are not scored; ask a local "
+    "agronomist or extension officer to check them for this field"
+)
 
 
 def _mean_category(fits: Sequence[CropSeasonFit], name: str) -> float | None:
@@ -63,14 +81,25 @@ def score_rotation(fits: Sequence[CropSeasonFit]) -> RotationResult:
     for name, value in vars(breakdown).items():
         if value is not None and value >= STRONG_CATEGORY:
             benefits.append(f"Strong {name} fit across the year ({value:.2f})")
+    risks.extend(local_review(fits))
     return RotationResult(
         sequence=tuple(fits),
         score=min(1.0, max(0.0, base + adjustment)),
         breakdown=breakdown,
         viable=all(f.score > 0 for f in fits),
-        benefits=tuple(dict.fromkeys(benefits)),  # dedupe, keep order
+        benefits=tuple(dict.fromkeys(benefits)) or (NO_BENEFIT,),  # dedupe, keep order
         risks=tuple(dict.fromkeys(risks)),
     )
+
+
+def local_review(fits: Sequence[CropSeasonFit]) -> list[str]:
+    """Where local expertise is needed before acting on this rotation. Never empty."""
+    steps = ", ".join(f"{f.crop.name} in {f.season.name}" for f in fits)
+    return [
+        f"Local review: check sowing dates and varieties for {steps}; the seasons here are fixed "
+        "calendar months, not the local planting calendar",
+        LOCAL_REVIEW_UNSCORED,
+    ]
 
 
 def rank_rotations(

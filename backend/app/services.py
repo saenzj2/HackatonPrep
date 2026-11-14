@@ -203,6 +203,12 @@ def _evidence(
     return list(dict.fromkeys(lines))
 
 
+PLACEHOLDER_RULES_GAP = (
+    "Scoring thresholds and rotation rule values are placeholders, "
+    "not yet reviewed by an agronomist"
+)
+
+
 def _data_gaps(r: RotationResult, sources: dict[str, str], variables: Sequence[str]) -> list[str]:
     """What is missing or approximate behind this result. Shown so nobody over-trusts it."""
     gaps: list[str] = []
@@ -217,6 +223,8 @@ def _data_gaps(r: RotationResult, sources: dict[str, str], variables: Sequence[s
     for c in dict.fromkeys(f.crop for f in r.sequence):
         if not c.verified:
             gaps.append(f"{c.name} tolerance ranges are approximate (not yet verified)")
+    # True until an agronomist reviews them (docs/decisions.md), so data_gaps is never empty.
+    gaps.append(PLACEHOLDER_RULES_GAP)
     return gaps
 
 
