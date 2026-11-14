@@ -15,6 +15,11 @@ six attributed images, what each dataset does (and does not) show, and the next 
 
 ## Quickstart
 
+Want a no-install interactive satellite/evidence preview? Start the independent
+[local MVP preview](tools/local-mvp-preview/README.md):
+`python tools/local-mvp-preview/serve.py` → **http://127.0.0.1:8765**.
+It is offline/local-only, separate from the team frontend; no San Carlos ranking is invented.
+
 Requirements: **Python ≥ 3.11** (macOS: `brew install python@3.12`), `make`, `git`.
 
 ```bash
