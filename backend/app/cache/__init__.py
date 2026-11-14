@@ -29,6 +29,14 @@ class JsonCache:
         digest = hashlib.sha256(json.dumps(params, sort_keys=True).encode()).hexdigest()[:16]
         return self.root / namespace / f"{digest}.json"
 
+    def peek(self, namespace: str, params: dict[str, Any]) -> Any | None:
+        """The cached data for these params, or None. Never fetches, in any mode.
+
+        For sources whose data never changes (e.g. SRTM elevation): the adapter can reuse a cached
+        copy even in live mode instead of spending an API call.
+        """
+        return self._read(self.path_for(namespace, params))
+
     def _read(self, path: Path) -> Any | None:
         """The cached data, or None if the file is missing or unreadable (treated as a miss)."""
         try:

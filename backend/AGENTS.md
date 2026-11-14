@@ -58,5 +58,6 @@ silence them with `# noqa` or `# type: ignore` unless there's no clean fix. Add 
 
 ## Scoring constants
 `MONOCULTURE_PENALTY`, `SAME_FAMILY_PENALTY`, `LEGUME_BONUS`, `STRONG_CATEGORY` (ranking.py) and
-`GENERIC_SOIL_MOISTURE`, `HEAT_MARGIN_C`, `FROST_C`, `FROST_SAFE_C`, `MARGINAL_SCORE` (suitability.py)
+`GENERIC_SOIL_MOISTURE`, `HEAT_MARGIN_C`, `FROST_C`, `FROST_SAFE_C`, `MARGINAL_SCORE` (suitability.py),
+`SLOPE_MEDIUM_PCT`, `SLOPE_HIGH_PCT`, `HEAVY_RAIN_MM` and `RainfallThresholds` defaults (erosion.py)
 are placeholders. Change them only with a `docs/decisions.md` entry, ideally after an `agro-logic` review.

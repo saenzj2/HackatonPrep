@@ -6,9 +6,12 @@ and raise only SourceUnavailableError / SourceDataError / ConfigError (see docs/
 
 from __future__ import annotations
 
+from datetime import date
 from typing import Protocol, runtime_checkable
 
-from app.domain.models import CropProfile, MonthlyClimate, SoilConditions
+import pandas as pd
+
+from app.domain.models import CropProfile, MonthlyClimate, SoilConditions, TerrainSample
 
 
 @runtime_checkable
@@ -30,3 +33,19 @@ class CropSource(Protocol):
     name: str
 
     def all(self) -> dict[str, CropProfile]: ...
+
+
+@runtime_checkable
+class DailyWeatherSource(Protocol):
+    """Daily series: DataFrame with date, temperature_c, rainfall_mm (mm/day); NaN = missing day."""
+
+    name: str
+
+    def daily_weather(self, *, lat: float, lon: float, start: date, end: date) -> pd.DataFrame: ...
+
+
+@runtime_checkable
+class TerrainSource(Protocol):
+    name: str
+
+    def terrain_sample(self, lat: float, lon: float) -> TerrainSample: ...

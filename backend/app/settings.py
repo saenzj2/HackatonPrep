@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Literal
 
 import yaml
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.errors import ConfigError
@@ -34,6 +34,9 @@ class EnvSettings(BaseSettings):
     cache_dir: Path = BACKEND_DIR / ".cache"
     crop_catalog: Path = BACKEND_DIR / "data" / "ecocrop_subset.csv"
     cors_origins: str = "http://localhost:3000,http://localhost:5173"
+    # OpenTopography API key (OPEN_TOPOGRAPHY_KEY). Only needed to fetch new elevation data in live
+    # mode; SecretStr keeps it out of logs and reprs.
+    open_topography_key: SecretStr | None = None
 
     @property
     def cors_origin_list(self) -> list[str]:

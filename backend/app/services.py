@@ -8,10 +8,15 @@ from __future__ import annotations
 import calendar
 from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import UTC, datetime
-from typing import overload
+from datetime import UTC, date, datetime
+from typing import TypedDict, overload
 
 from app.api import schemas as s
+from app.domain.erosion import (
+    DEFAULT_RAINFALL_THRESHOLDS,
+    RainfallThresholds,
+    assess_erosion,
+)
 from app.domain.models import (
     CropProfile,
     MonthlyClimate,
@@ -27,9 +32,11 @@ from app.errors import (
     InvalidPrioritiesError,
     InvalidRotationError,
     OutOfRegionError,
+    SourceDataError,
     UnknownCropError,
 )
 from app.integrations import Sources
+from app.integrations.base import DailyWeatherSource, TerrainSource
 from app.settings import MvpConfig
 
 METHOD_VERSION = "suitability-v1"
@@ -306,3 +313,71 @@ def recommend(ctx: AppContext, req: s.RecommendationRequest) -> s.Recommendation
         method_version=METHOD_VERSION,
         generated_at=datetime.now(UTC),
     )
+
+
+class ErosionRiskResult(TypedDict):
+    """erosion_risk() output. Becomes a schema in app/api/schemas.py once an endpoint exists."""
+
+    elevation_m: int  # SRTM GL1, m above the EGM96 geoid
+    slope_pct: float
+    terrain_erosion_risk: int  # 0 low, 1 medium, 2 high
+    total_rainfall_mm: float
+    avg_daily_rainfall_mm: float  # mm/day over the days with data
+    heavy_rain_days: int  # days with >= HEAVY_RAIN_MM
+    max_daily_rainfall_mm: float  # reported only, not scored
+    combined_erosion_risk: int  # 0 low, 1 medium, 2 high; never below terrain_erosion_risk
+
+
+def erosion_risk(
+    *,
+    terrain_source: TerrainSource,
+    weather_source: DailyWeatherSource,
+    lat: float,
+    lon: float,
+    start: date,
+    end: date,
+    thresholds: RainfallThresholds = DEFAULT_RAINFALL_THRESHOLDS,
+) -> ErosionRiskResult:
+    """Terrain (SRTM slope) and combined (slope + NASA POWER daily rain) erosion risk, 0 to 2.
+
+    1. Slope: SRTM GL1 elevation at the point and its 4 neighbours one sample (~30 m) N/S/E/W,
+       central differences with distances in metres. Terrain risk: < 5 % low (0),
+       5-15 % medium (1), > 15 % high (2).
+    2. Rainfall over start..end (inclusive), missing days skipped: total mm, average mm/day,
+       heavy days (>= 30 mm) and the wettest day. Rainfall risk is the worse of two rates
+       (thresholds in `RainfallThresholds`, overridable): average mm/day and heavy days per
+       30 days, so a month and a year are judged on the same scale. The wettest day is reported
+       but not scored, because it keeps growing with the period length.
+    3. Combined: slope sets the base level, high rain raises it one step (flat land reaches
+       medium at most), and it is never lower than the terrain risk:
+           rainfall ->   low  medium  high
+           flat (0)       0     0      1
+           medium (1)     1     1      2
+           steep (2)      2     2      2
+       Medium rain never changes the result, on purpose (decisions.md).
+
+    Returns the 8 fields of the erosion output, rounded for display. All thresholds are
+    placeholders (docs/decisions.md). Not exposed over HTTP yet: that needs an api-contract.yaml
+    change. API cost: 5 OpenTopography calls (free key: 50/day) the first time a location is seen,
+    in any mode afterwards 0 (SRTM never changes, so cached points are reused even in live mode);
+    1 POWER call per request in live mode (no key or quota).
+    """
+    terrain = terrain_source.terrain_sample(lat, lon)
+    rain_mm = weather_source.daily_weather(lat=lat, lon=lon, start=start, end=end)["rainfall_mm"]
+    if rain_mm.isna().all():
+        # Temperature may exist while rainfall is missing for the whole period.
+        raise SourceDataError(
+            "NASA POWER has no daily rainfall for this point and period",
+            details={"source": weather_source.name},
+        )
+    a = assess_erosion(terrain=terrain, daily_rainfall_mm=rain_mm.tolist(), thresholds=thresholds)
+    return {
+        "elevation_m": round(a.elevation_m),
+        "slope_pct": round(a.slope_pct, 1),
+        "terrain_erosion_risk": int(a.terrain_erosion_risk),
+        "total_rainfall_mm": round(a.rainfall.total_mm, 1),
+        "avg_daily_rainfall_mm": round(a.rainfall.avg_daily_mm, 2),
+        "heavy_rain_days": a.rainfall.heavy_rain_days,
+        "max_daily_rainfall_mm": round(a.rainfall.max_daily_mm, 1),
+        "combined_erosion_risk": int(a.combined_erosion_risk),
+    }
