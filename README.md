@@ -29,7 +29,20 @@ make dev        # API on http://localhost:8000 — interactive docs at http://lo
 make check      # ruff + mypy + tests: exactly what CI runs
 ```
 
-Run `make` with no arguments to list every command. On Windows, use WSL or Git Bash.
+Run `make` with no arguments to list every command.
+
+**Windows:** use WSL, or Git Bash plus GNU make (Git for Windows does not include `make`; for example
+`winget install ezwinports.make`, then reopen Git Bash). The Makefile uses the Windows venv layout
+(`backend/.venv/Scripts/`) automatically. If the Microsoft Store opens or Python ≥ 3.11 is not found,
+pass the interpreter explicitly: `make setup PYTHON=py` (Windows launcher) or the full `python.exe` path.
+
+### What starts today
+
+| Part | Start | Status |
+|------|-------|--------|
+| Backend API | `make dev` → http://localhost:8000/docs | Works with mock data out of the box |
+| Local MVP preview | `python tools/local-mvp-preview/serve.py` → http://127.0.0.1:8765 | Independent offline explorer, not the team frontend |
+| Team frontend | — | Not in this repo yet; tracked in issue #14 |
 
 ### Try it
 
