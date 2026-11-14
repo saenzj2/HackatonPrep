@@ -7,6 +7,7 @@ General backend rules: [`backend/AGENTS.md`](../../AGENTS.md).
 - `models.py`: frozen dataclasses (`Range`, `CropProfile`, `MonthlyClimate`, `SoilConditions`, `Season`,
   `Weights`, `CropSeasonFit`, `RotationResult`). Validate invariants in `__post_init__`.
 - `suitability.py`: trapezoid scoring per variable → categories (climate, water, soil) → one crop/season score.
+- `erosion.py`: slope → terrain risk, daily rain → rainfall risk, combined erosion risk (0/1/2).
 - `ranking.py`: builds every rotation, applies rotation rules, sorts, writes the farmer-facing explanation.
 
 ## Rules

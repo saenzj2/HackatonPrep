@@ -162,3 +162,23 @@ class RotationResult:
     viable: bool
     benefits: tuple[str, ...] = field(default_factory=tuple)
     risks: tuple[str, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True)
+class TerrainSample:
+    """Elevation at a point and at its 4 neighbours (metres), for a local slope estimate.
+
+    spacing_*_m is the horizontal distance from the centre to each neighbour on that axis.
+    """
+
+    elevation_m: float
+    north_m: float
+    south_m: float
+    east_m: float
+    west_m: float
+    spacing_ns_m: float
+    spacing_ew_m: float
+
+    def __post_init__(self) -> None:
+        if self.spacing_ns_m <= 0 or self.spacing_ew_m <= 0:
+            raise DomainInvariantError(f"Terrain sample spacings must be > 0 m: {self}")

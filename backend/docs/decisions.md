@@ -43,6 +43,21 @@ Template:
 - **Alternatives considered:** Pin `python_version = "3.12"` (misstates the supported minimum); cap numpy.
 - **Revisit if:** CI and local Python versions diverge enough to give different mypy results.
 
+## 2026-11-14 — Erosion risk from SRTM slope + NASA POWER daily rain
+- **Decision:** New source OpenTopography `/v1/elevation`, dataset `SRTM_GL1`, key `OPEN_TOPOGRAPHY_KEY`.
+  Slope from the point + its 4 direct neighbours (one SRTM sample, ~30 m) by central differences.
+  Terrain risk: < 5 % low, 5–15 % medium, > 15 % high. Rainfall risk = worst of average mm/day,
+  heavy days (≥ 30 mm) per 30 days and max daily mm (`RainfallThresholds`, overridable per call).
+  Combined = terrain, raised one step only when rain is high (or medium rain on medium terrain stays
+  medium); never below terrain. `services.erosion_risk()` returns the 8-field dict; no endpoint yet.
+- **Why:** The free key allows 50 calls/day and the API returns one point per call: 5 calls per
+  location instead of 9 for a 3×3 grid. Rates instead of totals make short and long periods comparable.
+  Flat land with heavy rain is not high water-erosion risk, so rain alone raises flat land to medium at most.
+- **Alternatives considered:** 3×3 grid with Horn's method (9 calls); `/globaldem` AAIGrid tile
+  (1 call, but a different endpoint than the spec); RUSLE (needs soil erodibility and cover data we don't have).
+- **Revisit if:** `agro-logic` review of the thresholds. `max_daily_mm` grows with period length, so a
+  full year almost always reaches high; consider dropping it or scaling it. A soil source becomes available.
+
 ## 2026-11-14 — pandas for daily NASA POWER data
 - **Decision:** Add `pandas>=2.2` (and `pandas-stubs` for mypy) to the backend. The new
   `NasaPowerClimate.daily_weather()` returns a DataFrame (`date`, `temperature_c`, `rainfall_mm`).

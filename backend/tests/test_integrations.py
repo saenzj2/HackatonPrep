@@ -6,6 +6,7 @@ import httpx
 import pandas as pd
 import pytest
 import respx
+from pydantic import SecretStr
 
 from app.cache import JsonCache
 from app.errors import (
@@ -15,7 +16,13 @@ from app.errors import (
     SourceDataError,
     SourceUnavailableError,
 )
-from app.integrations.base import ClimateSource, CropSource, SoilSource
+from app.integrations.base import (
+    ClimateSource,
+    CropSource,
+    DailyWeatherSource,
+    SoilSource,
+    TerrainSource,
+)
 from app.integrations.ecocrop import EcoCropCatalog
 from app.integrations.mock import MockClimate, MockSoil
 from app.integrations.nasa_power import (
@@ -25,7 +32,13 @@ from app.integrations.nasa_power import (
     parse_climatology,
     parse_daily,
 )
-from app.settings import BACKEND_DIR, DataMode
+from app.integrations.opentopography import BASE_URL as OT_URL
+from app.integrations.opentopography import (
+    OpenTopographyElevation,
+    parse_elevation,
+    snap_to_srtm_grid,
+)
+from app.settings import BACKEND_DIR, DataMode, EnvSettings
 from tests.conftest import load_fixture
 
 POWER_FIXTURE = "nasa_power/climatology_alajuela.json"  # real response, lat 10.0 lon -84.2
@@ -246,6 +259,140 @@ def test_real_power_daily_api(tmp_path):
     assert len(df) == 31
 
 
+# ---------------------------------------------------------------- OpenTopography (SRTM GL1)
+OT_KEY = SecretStr("test-key-not-real")
+# Real responses around lat 9.93 lon -84.08 (San José), one SRTM sample (1 arc-second) apart
+OT_POINTS = ("center", "north", "south", "east", "west")
+
+
+def ot_fixture(point):
+    return load_fixture(f"opentopography/elevation_san_jose_{point}.json")
+
+
+def ot_responder(request):
+    """Serve the saved real response whose Location matches the requested lat/lon."""
+    lat = float(request.url.params["latitude"])
+    lon = float(request.url.params["longitude"])
+    for point in OT_POINTS:
+        raw = ot_fixture(point)
+        if (raw["Location"]["Latitude"], raw["Location"]["Longitude"]) == (lat, lon):
+            return httpx.Response(200, json=raw)
+    return httpx.Response(404, json={"Status": "Error"})
+
+
+def ot_source(tmp_path, mode=DataMode.LIVE, key=OT_KEY):
+    return OpenTopographyElevation(JsonCache(tmp_path, mode), key)
+
+
+def test_parse_real_elevation_response():
+    assert parse_elevation(ot_fixture("center")) == 1164.0  # metres, as is
+
+
+def test_parse_elevation_rejects_srtm_void():
+    raw = ot_fixture("center")
+    raw["Elevation"] = -32768
+    with pytest.raises(SourceDataError, match="data void"):
+        parse_elevation(raw)
+
+
+def test_parse_elevation_rejects_failed_status():
+    with pytest.raises(SourceDataError, match="could not return an elevation") as exc:
+        parse_elevation({"Status": "Error", "Message": "Point outside dataset"})
+    assert exc.value.details == {"source": "opentopography"}
+
+
+@pytest.mark.parametrize("bad", [None, "high", {}])
+def test_parse_elevation_rejects_non_numeric(bad):
+    raw = ot_fixture("center")
+    raw["Elevation"] = bad
+    with pytest.raises(SourceDataError, match="Unexpected OpenTopography payload"):
+        parse_elevation(raw)
+
+
+def test_snap_to_srtm_grid_rounds_to_whole_arc_seconds():
+    assert snap_to_srtm_grid(9.93012) == 9.93  # 35748.4 arc-seconds -> 35748
+    assert snap_to_srtm_grid(-84.08) == -84.08
+
+
+@respx.mock
+def test_terrain_sample_fetches_five_points_and_caches(tmp_path):
+    route = respx.get(OT_URL).mock(side_effect=ot_responder)
+    sample = ot_source(tmp_path).terrain_sample(9.93, -84.08)
+    assert route.call_count == 5
+    assert (sample.elevation_m, sample.north_m, sample.south_m) == (1164.0, 1164.0, 1165.0)
+    assert (sample.east_m, sample.west_m) == (1164.0, 1163.0)
+    assert route.calls[0].request.url.params["dataset"] == "SRTM_GL1"
+
+    offline = ot_source(tmp_path, DataMode.CACHED, key=None)  # no key needed once cached
+    assert offline.terrain_sample(9.93, -84.08) == sample
+    assert route.call_count == 5
+
+
+@respx.mock
+def test_terrain_sample_spacing_is_in_metres(tmp_path):
+    respx.get(OT_URL).mock(side_effect=ot_responder)
+    sample = ot_source(tmp_path).terrain_sample(9.93, -84.08)
+    assert sample.spacing_ns_m == pytest.approx(30.89, abs=0.01)  # 1 arc-second of latitude
+    assert sample.spacing_ew_m == pytest.approx(30.42, abs=0.01)  # same x cos(9.93 deg)
+
+
+@respx.mock
+def test_api_key_is_sent_but_never_cached(tmp_path):
+    route = respx.get(OT_URL).mock(side_effect=ot_responder)
+    ot_source(tmp_path).elevation_m(9.93, -84.08)
+    assert route.calls[0].request.url.params["API_Key"] == "test-key-not-real"
+    cached = [p.read_text() for p in tmp_path.rglob("*.json")]
+    assert len(cached) == 1
+    assert "test-key-not-real" not in cached[0]
+
+
+@respx.mock
+def test_http_error_never_leaks_the_key(tmp_path):
+    respx.get(OT_URL).mock(return_value=httpx.Response(401, text="Invalid API key"))
+    with pytest.raises(SourceUnavailableError, match="HTTP 401") as exc:
+        ot_source(tmp_path).elevation_m(9.93, -84.08)
+    assert exc.value.details == {"source": "opentopography", "status": 401}
+    assert exc.value.__cause__ is None  # no httpx error (its message has the URL) chained
+    assert "test-key-not-real" not in str(exc.value)
+
+
+@respx.mock
+def test_network_failure_never_leaks_the_key(tmp_path):
+    respx.get(OT_URL).mock(side_effect=httpx.ConnectTimeout("timed out"))
+    with pytest.raises(SourceUnavailableError, match="ConnectTimeout") as exc:
+        ot_source(tmp_path).elevation_m(9.93, -84.08)
+    assert "test-key-not-real" not in str(exc.value)
+
+
+def test_missing_key_in_live_mode_is_config_error(tmp_path):
+    with pytest.raises(ConfigError, match="OPEN_TOPOGRAPHY_KEY"):
+        ot_source(tmp_path, key=None).elevation_m(9.93, -84.08)
+
+
+@respx.mock
+def test_void_elevation_is_never_cached(tmp_path):
+    void = ot_fixture("center") | {"Elevation": -32768}
+    respx.get(OT_URL).mock(return_value=httpx.Response(200, json=void))
+    with pytest.raises(SourceDataError, match="data void"):
+        ot_source(tmp_path).elevation_m(9.93, -84.08)
+    assert not list(tmp_path.rglob("*.json"))
+
+
+def test_elevation_cached_mode_miss(tmp_path):
+    with pytest.raises(CacheMissError, match="data_mode=live"):
+        ot_source(tmp_path, DataMode.CACHED).elevation_m(9.93, -84.08)
+
+
+@pytest.mark.network
+def test_real_opentopography_api(tmp_path):
+    """Real API: uses 5 of the key's ~50 daily calls. Needs OPEN_TOPOGRAPHY_KEY in backend/.env."""
+    key = EnvSettings().open_topography_key
+    if key is None:
+        pytest.skip("OPEN_TOPOGRAPHY_KEY not set")
+    sample = ot_source(tmp_path, key=key).terrain_sample(9.93, -84.08)
+    assert 1000 < sample.elevation_m < 1300
+
+
 # ---------------------------------------------------------------- EcoCrop
 def test_ecocrop_catalog_loads():
     crops = EcoCropCatalog(BACKEND_DIR / "data" / "ecocrop_subset.csv").all()
@@ -335,3 +482,5 @@ def test_adapters_implement_protocols(tmp_path):
     assert isinstance(NasaPowerClimate(JsonCache(tmp_path, DataMode.LIVE)), ClimateSource)
     assert isinstance(MockSoil(), SoilSource)
     assert isinstance(EcoCropCatalog(tmp_path / "x.csv"), CropSource)
+    assert isinstance(NasaPowerClimate(JsonCache(tmp_path, DataMode.LIVE)), DailyWeatherSource)
+    assert isinstance(ot_source(tmp_path, key=None), TerrainSource)
