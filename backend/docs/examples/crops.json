@@ -1,0 +1,85 @@
+{
+  "crops": [
+    {
+      "id": "rice",
+      "name": "Rice",
+      "scientific_name": "Oryza sativa",
+      "family": "Poaceae",
+      "is_legume": false,
+      "cycle_days": 120,
+      "temperature_c": {
+        "abs_min": 10.0,
+        "opt_min": 20.0,
+        "opt_max": 30.0,
+        "abs_max": 36.0
+      },
+      "rainfall_mm": {
+        "abs_min": 1000.0,
+        "opt_min": 1500.0,
+        "opt_max": 2000.0,
+        "abs_max": 4000.0
+      },
+      "soil_ph": {
+        "abs_min": 4.5,
+        "opt_min": 5.5,
+        "opt_max": 7.5,
+        "abs_max": 8.0
+      },
+      "verified": false
+    },
+    {
+      "id": "beans",
+      "name": "Common bean",
+      "scientific_name": "Phaseolus vulgaris",
+      "family": "Fabaceae",
+      "is_legume": true,
+      "cycle_days": 90,
+      "temperature_c": {
+        "abs_min": 7.0,
+        "opt_min": 16.0,
+        "opt_max": 25.0,
+        "abs_max": 32.0
+      },
+      "rainfall_mm": {
+        "abs_min": 300.0,
+        "opt_min": 500.0,
+        "opt_max": 2000.0,
+        "abs_max": 4300.0
+      },
+      "soil_ph": {
+        "abs_min": 4.2,
+        "opt_min": 5.5,
+        "opt_max": 6.8,
+        "abs_max": 8.2
+      },
+      "verified": false
+    },
+    {
+      "id": "maize",
+      "name": "Maize",
+      "scientific_name": "Zea mays",
+      "family": "Poaceae",
+      "is_legume": false,
+      "cycle_days": 120,
+      "temperature_c": {
+        "abs_min": 10.0,
+        "opt_min": 18.0,
+        "opt_max": 33.0,
+        "abs_max": 47.0
+      },
+      "rainfall_mm": {
+        "abs_min": 400.0,
+        "opt_min": 600.0,
+        "opt_max": 1200.0,
+        "abs_max": 1800.0
+      },
+      "soil_ph": {
+        "abs_min": 4.5,
+        "opt_min": 5.0,
+        "opt_max": 7.0,
+        "abs_max": 8.5
+      },
+      "verified": false
+    }
+  ]
+}

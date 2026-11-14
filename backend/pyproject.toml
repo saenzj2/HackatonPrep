@@ -23,6 +23,7 @@ dev = [
     "ruff==0.17.4",  # keep in sync with .pre-commit-config.yaml
     "pre-commit>=3.7",
     "openapi-spec-validator>=0.7",
+    "jsonschema>=4.18,<5",  # tests/test_examples.py (already installed by openapi-spec-validator)
     "respx>=0.21",
     "mypy==1.18.2",
     "types-PyYAML",
@@ -84,8 +85,7 @@ known-first-party = ["app"]
 
 # ---------------------------------------------------------------- mypy
 [tool.mypy]
-python_version = "3.11"
-files = ["app"]
+files = ["app", "scripts"]
 strict = true
 plugins = ["pydantic.mypy"]
 warn_unreachable = true
@@ -94,6 +94,7 @@ warn_unreachable = true
 # ---------------------------------------------------------------- pytest
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]  # lets tests import scripts/
 markers = [
     "slow: tests that take more than ~1s (excluded from `make test`)",
     "network: tests that call real external APIs (excluded from `make test` and CI)",

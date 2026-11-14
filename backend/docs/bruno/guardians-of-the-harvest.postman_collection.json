@@ -1,0 +1,345 @@
+{
+  "info": {
+    "name": "Guardians of the Harvest API",
+    "description": "Requests for the backend API (docs/api-contract.yaml). Start the server with `make dev`; baseUrl defaults to http://localhost:8000. Demo field: Alajuela, Costa Rica (lat 10.0, lon -84.2). Expected responses: backend/docs/examples/.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000"
+    }
+  ],
+  "item": [
+    {
+      "name": "Meta",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Liveness, active data_mode and MVP region."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Crops",
+      "item": [
+        {
+          "name": "List crops",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/crops",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "crops"
+              ]
+            },
+            "description": "Crops in the MVP scope with tolerance ranges. Example: docs/examples/crops.json"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Conditions",
+      "item": [
+        {
+          "name": "Conditions - Alajuela",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/conditions?lat=10.0&lon=-84.2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conditions"
+              ],
+              "query": [
+                {
+                  "key": "lat",
+                  "value": "10.0"
+                },
+                {
+                  "key": "lon",
+                  "value": "-84.2"
+                }
+              ]
+            },
+            "description": "Monthly climate, season summary and soil. Example: docs/examples/conditions_alajuela.json"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Recommendations",
+      "item": [
+        {
+          "name": "Recommend - Alajuela vs current maize-maize",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/recommendations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "recommendations"
+              ]
+            },
+            "description": "Top 3 rotations plus the farmer's current one. Example: docs/examples/recommendation_alajuela.json",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lat\": 10.0,\n  \"lon\": -84.2,\n  \"priorities\": {\n    \"water\": 0.4,\n    \"soil\": 0.3,\n    \"climate\": 0.3\n  },\n  \"current_rotation\": [\n    \"maize\",\n    \"maize\"\n  ],\n  \"top_n\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Recommend - minimal (MVP defaults)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/recommendations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "recommendations"
+              ]
+            },
+            "description": "Only a location: MVP crops, priorities and top_n from config/mvp.yaml.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lat\": 10.0,\n  \"lon\": -84.2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Recommend - water first",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/recommendations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "recommendations"
+              ]
+            },
+            "description": "Same field, a farmer who cares mostly about water.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lat\": 10.0,\n  \"lon\": -84.2,\n  \"priorities\": {\n    \"water\": 0.7,\n    \"soil\": 0.15,\n    \"climate\": 0.15\n  },\n  \"current_rotation\": [\n    \"maize\",\n    \"maize\"\n  ],\n  \"top_n\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Errors (expected 422)",
+      "item": [
+        {
+          "name": "Outside region -> out_of_region",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/recommendations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "recommendations"
+              ]
+            },
+            "description": "Point outside the MVP bbox.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lat\": 40.0,\n  \"lon\": -3.7,\n  \"priorities\": {\n    \"water\": 0.4,\n    \"soil\": 0.3,\n    \"climate\": 0.3\n  },\n  \"current_rotation\": [\n    \"maize\",\n    \"maize\"\n  ],\n  \"top_n\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Unknown crop -> unknown_crop",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/recommendations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "recommendations"
+              ]
+            },
+            "description": "Crop id not in GET /crops.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lat\": 10.0,\n  \"lon\": -84.2,\n  \"priorities\": {\n    \"water\": 0.4,\n    \"soil\": 0.3,\n    \"climate\": 0.3\n  },\n  \"current_rotation\": [\n    \"maize\",\n    \"coffee\"\n  ],\n  \"top_n\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Wrong rotation length -> invalid_rotation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/recommendations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "recommendations"
+              ]
+            },
+            "description": "current_rotation needs one crop per season.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lat\": 10.0,\n  \"lon\": -84.2,\n  \"priorities\": {\n    \"water\": 0.4,\n    \"soil\": 0.3,\n    \"climate\": 0.3\n  },\n  \"current_rotation\": [\n    \"maize\"\n  ],\n  \"top_n\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Missing lat -> validation_failed",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/recommendations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "recommendations"
+              ]
+            },
+            "description": "Required field missing.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lon\": -84.2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Conditions outside region -> out_of_region",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/conditions?lat=40.0&lon=-3.7",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conditions"
+              ],
+              "query": [
+                {
+                  "key": "lat",
+                  "value": "40.0"
+                },
+                {
+                  "key": "lon",
+                  "value": "-3.7"
+                }
+              ]
+            },
+            "description": "Point outside the MVP bbox."
+          }
+        }
+      ]
+    }
+  ]
+}
