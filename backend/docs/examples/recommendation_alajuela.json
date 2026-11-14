@@ -200,9 +200,9 @@
       "is_current": false,
       "score_delta_vs_current": 0.1,
       "benefits": [
-        "Maize (Poaceae) → Common bean (Fabaceae): family change breaks pest and disease cycles",
-        "Common bean (legume) after Maize: fixes nitrogen for the next crop",
-        "Common bean (Fabaceae) → Maize (Poaceae): family change breaks pest and disease cycles",
+        "Maize (Poaceae) → Common bean (Fabaceae): family change helps break pest and disease cycles",
+        "Common bean (legume) after Maize, a heavy feeder: it takes most of its nitrogen from the air instead of the soil, and its residues leave a little for the next crop",
+        "Common bean (Fabaceae) → Maize (Poaceae): family change helps break pest and disease cycles",
         "Strong climate fit across the year (1.00)",
         "Strong water fit across the year (1.00)",
         "Strong soil fit across the year (1.00)"
@@ -225,9 +225,9 @@
         "Soil: pH 5.9, moisture 0.26 m³/m³ (mock data)"
       ],
       "notes": [
-        "Maize (Poaceae) → Common bean (Fabaceae): family change breaks pest and disease cycles",
-        "Common bean (legume) after Maize: fixes nitrogen for the next crop",
-        "Common bean (Fabaceae) → Maize (Poaceae): family change breaks pest and disease cycles",
+        "Maize (Poaceae) → Common bean (Fabaceae): family change helps break pest and disease cycles",
+        "Common bean (legume) after Maize, a heavy feeder: it takes most of its nitrogen from the air instead of the soil, and its residues leave a little for the next crop",
+        "Common bean (Fabaceae) → Maize (Poaceae): family change helps break pest and disease cycles",
         "Strong climate fit across the year (1.00)",
         "Strong water fit across the year (1.00)",
         "Strong soil fit across the year (1.00)",
@@ -288,9 +288,9 @@
       "is_current": false,
       "score_delta_vs_current": 0.1,
       "benefits": [
-        "Common bean (Fabaceae) → Maize (Poaceae): family change breaks pest and disease cycles",
-        "Maize (Poaceae) → Common bean (Fabaceae): family change breaks pest and disease cycles",
-        "Common bean (legume) after Maize: fixes nitrogen for the next crop",
+        "Common bean (Fabaceae) → Maize (Poaceae): family change helps break pest and disease cycles",
+        "Maize (Poaceae) → Common bean (Fabaceae): family change helps break pest and disease cycles",
+        "Common bean (legume) after Maize, a heavy feeder: it takes most of its nitrogen from the air instead of the soil, and its residues leave a little for the next crop",
         "Strong climate fit across the year (1.00)",
         "Strong water fit across the year (1.00)",
         "Strong soil fit across the year (1.00)"
@@ -311,9 +311,9 @@
         "Soil: pH 5.9, moisture 0.26 m³/m³ (mock data)"
       ],
       "notes": [
-        "Common bean (Fabaceae) → Maize (Poaceae): family change breaks pest and disease cycles",
-        "Maize (Poaceae) → Common bean (Fabaceae): family change breaks pest and disease cycles",
-        "Common bean (legume) after Maize: fixes nitrogen for the next crop",
+        "Common bean (Fabaceae) → Maize (Poaceae): family change helps break pest and disease cycles",
+        "Maize (Poaceae) → Common bean (Fabaceae): family change helps break pest and disease cycles",
+        "Common bean (legume) after Maize, a heavy feeder: it takes most of its nitrogen from the air instead of the soil, and its residues leave a little for the next crop",
         "Strong climate fit across the year (1.00)",
         "Strong water fit across the year (1.00)",
         "Strong soil fit across the year (1.00)"
@@ -378,7 +378,7 @@
         "Strong soil fit across the year (1.00)"
       ],
       "risks": [
-        "Common bean follows itself: monoculture builds up pests and depletes the soil"
+        "Common bean follows itself (monoculture): pests and diseases of Common bean build up season after season"
       ],
       "data_gaps": [
         "Soil pH and moisture are mock values, not measured for this location",
@@ -397,7 +397,7 @@
         "Strong climate fit across the year (1.00)",
         "Strong water fit across the year (1.00)",
         "Strong soil fit across the year (1.00)",
-        "Common bean follows itself: monoculture builds up pests and depletes the soil"
+        "Common bean follows itself (monoculture): pests and diseases of Common bean build up season after season"
       ]
     }
   ],
@@ -460,7 +460,7 @@
       "Strong soil fit across the year (1.00)"
     ],
     "risks": [
-      "Maize follows itself: monoculture builds up pests and depletes the soil",
+      "Maize follows itself (monoculture): pests and diseases of Maize build up season after season",
       "Maize cycle (120 d) is longer than postrera (~91 d)"
     ],
     "data_gaps": [
@@ -480,7 +480,7 @@
       "Strong climate fit across the year (1.00)",
       "Strong water fit across the year (1.00)",
       "Strong soil fit across the year (1.00)",
-      "Maize follows itself: monoculture builds up pests and depletes the soil",
+      "Maize follows itself (monoculture): pests and diseases of Maize build up season after season",
       "Maize cycle (120 d) is longer than postrera (~91 d)"
     ]
   },

@@ -9,6 +9,8 @@ import respx
 from pydantic import SecretStr
 
 from app.cache import JsonCache
+from app.domain.models import level_for
+from app.domain.rotation_rules import judge_transition
 from app.errors import (
     CacheMissError,
     ConfigError,
@@ -508,6 +510,17 @@ def _real_row_with(column: str, value: str) -> str:
 def test_ecocrop_bad_trait_is_config_error(tmp_path, column, value):
     with pytest.raises(ConfigError, match="line 2"):
         _catalog_with(tmp_path, _real_row_with(column, value)).all()
+
+
+def test_fungi_break_fires_with_real_crops():
+    """#24 reminder: skipped until the catalog has a mycorrhizal non-host (e.g. amaranth)."""
+    crops = EcoCropCatalog(BACKEND_DIR / "data" / "ecocrop_subset.csv").all().values()
+    non_hosts = [c for c in crops if level_for(c.mycorrhizal_affinity) == "none"]
+    dependents = [c for c in crops if level_for(c.mycorrhizal_affinity) == "high"]
+    if not non_hosts or not dependents:
+        pytest.skip("#24: add a mycorrhizal non-host crop so fungi_break is tested on real data")
+    rules = [h.rule for h in judge_transition(non_hosts[0], dependents[0]).hits]
+    assert "fungi_break" in rules
 
 
 # ---------------------------------------------------------------- mock + protocols

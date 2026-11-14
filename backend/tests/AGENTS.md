@@ -8,6 +8,7 @@ General backend rules: [`backend/AGENTS.md`](../AGENTS.md).
 |---|---|
 | `conftest.py` | fixtures: `client`, `make_client(**config_overrides)`, `env`, `config`, `load_fixture()` |
 | `test_domain.py` | scoring and ranking (pure, no app) |
+| `test_rotation_rules.py` | rotation rules: verdict and reason per crop pair |
 | `test_api.py` | every endpoint's happy path through `TestClient` |
 | `test_errors.py` | **every error response**: envelope, code, status, request id, logging (`assert_error`) |
 | `test_error_policy.py` | static enforcement of `docs/errors.md` across `app/` |
