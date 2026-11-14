@@ -30,7 +30,6 @@
       "Edit(**/.env)",
       "Bash(cat .env:*)",
       "Bash(cat backend/.env:*)",
-      "Bash(git commit:*)",
       "Bash(rm -rf:*)",
       "Bash(git push --force:*)",
       "Bash(git push -f:*)",
