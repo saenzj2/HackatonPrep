@@ -15,6 +15,27 @@ Template:
 
 ---
 
+## 2026-11-14 — Every strategy carries all five explanation parts (T4.4, #29)
+- **Decision:** No contract change and no score change. `ranking.score_rotation()` now ends `risks`
+  with two "Local review: …" items: (1) check sowing dates and varieties for each crop/season, since
+  seasons are fixed calendar months from `mvp.yaml`; (2) what the score does not see: actual pest and
+  disease pressure (only approximated by crop family in the #25 rules), field slope and erosion
+  (`erosion.py` is not part of the ranking), irrigation (seasons are rainfed), labour and market prices.
+  `benefits` says "No benefit found by the rotation rules and no strong climate, water or soil fit…"
+  instead of being empty (possible for monoculture or same family with a weak fit). `data_gaps` always
+  ends with "Scoring thresholds and rotation rule values are placeholders, not yet reviewed by an
+  agronomist". `explanation` (why) and `evidence` were already always filled.
+- **Why:** After #25, the top Alajuela strategy (maize → beans) still returned `risks: []`, so the
+  issue's "risks for local review" part was missing and nothing told the farmer where a local expert is
+  needed. With live data, verified crops and no generic variables, `data_gaps` could also be empty.
+- **Left out on purpose:** a legume inoculant note (no source in the repo supports it for these crops
+  and soils) and any list of individual rules in the no-benefit text (it would go stale as rules change).
+- **Alternatives considered:** a new `local_review` field (needs a contract change agreed with the
+  frontend; easy to split out later because every item starts with "Local review").
+- **Review limits:** wording not yet reviewed by `agro-logic`, an agronomist or the frontend.
+- **Revisit if:** the frontend wants local-review items as their own field, or an agronomist reviews
+  the rules (then drop the placeholder gap).
+
 ## 2026-11-14 — Monthly field indicators from daily data; no heat/frost days from the daily mean (T2.3, #19)
 - **Decision:** `app/domain/indicators.py` turns a daily series into one row per calendar month:
   mean temperature, rainfall total, dry days (< 1 mm), longest dry spell, extreme-rain days (>= 30 mm,
