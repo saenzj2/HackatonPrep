@@ -8,6 +8,9 @@
 This repo holds the **backend** (Python + FastAPI). The frontend's location (a `frontend/` folder here
 or a separate repo) is still to be decided. `backend/` is self-contained, so it can be moved either way.
 
+**New to the team?** Read the [shared project context](PROJECT_CONTEXT.md) for the challenge,
+participants, data-source candidates, provisional MVP status and 14–15 November local event plan.
+
 ## Quickstart
 
 Requirements: **Python ≥ 3.11** (macOS: `brew install python@3.12`), `make`, `git`.
