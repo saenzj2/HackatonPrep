@@ -16,7 +16,7 @@ info:
     Units: temperature °C, rainfall mm, soil moisture m³/m³, scores 0..1 (1 = ideal).
 
     Local server: http://localhost:8000 (interactive docs at /docs).'
-  version: 0.1.0-draft
+  version: 0.2.0-draft
 paths:
   /health:
     get:
@@ -94,7 +94,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Conditions'
         '422':
-          description: '`validation_failed`, `out_of_region`, `unknown_crop`, `invalid_priorities`'
+          description: '`validation_failed`, `out_of_region`, `unknown_crop`, `invalid_priorities`, `invalid_rotation`'
           content:
             application/json:
               schema:
@@ -138,7 +138,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/RecommendationResponse'
         '422':
-          description: '`validation_failed`, `out_of_region`, `unknown_crop`, `invalid_priorities`'
+          description: '`validation_failed`, `out_of_region`, `unknown_crop`, `invalid_priorities`, `invalid_rotation`'
           content:
             application/json:
               schema:
@@ -321,6 +321,7 @@ components:
       - out_of_region
       - unknown_crop
       - invalid_priorities
+      - invalid_rotation
       - not_found
       - method_not_allowed
       - http_error
@@ -399,12 +400,22 @@ components:
         rainfall_mm:
           type: number
           title: Rainfall Mm
+        temperature_max_c:
+          type: number
+          title: Temperature Max C
+          description: Mean of the daily maximum temperature, °C
+        temperature_min_c:
+          type: number
+          title: Temperature Min C
+          description: Mean of the daily minimum temperature, °C
       additionalProperties: false
       type: object
       required:
       - month
       - temperature_c
       - rainfall_mm
+      - temperature_max_c
+      - temperature_min_c
       title: MonthClimate
     Priorities:
       properties:
@@ -470,6 +481,18 @@ components:
             minimum: 1.0
           - type: 'null'
           title: Top N
+        current_rotation:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Current Rotation
+          description: 'The farmer''s current rotation: crop ids from GET /crops, one per season, in the
+            order of conditions.seasons. Scored as the baseline the other rotations compare to.'
+          examples:
+          - - maize
+            - maize
       additionalProperties: false
       type: object
       required:
@@ -491,6 +514,12 @@ components:
             $ref: '#/components/schemas/Rotation'
           type: array
           title: Rotations
+        current_rotation:
+          anyOf:
+          - $ref: '#/components/schemas/Rotation'
+          - type: 'null'
+          description: The farmer's rotation scored the same way; rank is its position among all combinations
+            (can be greater than top_n). Null without current_rotation.
         method_version:
           type: string
           title: Method Version
@@ -506,6 +535,7 @@ components:
       - priorities
       - conditions
       - rotations
+      - current_rotation
       - method_version
       - generated_at
       title: RecommendationResponse
@@ -549,11 +579,46 @@ components:
         explanation:
           type: string
           title: Explanation
+        is_current:
+          type: boolean
+          title: Is Current
+          description: True if this is the farmer's current_rotation
+        score_delta_vs_current:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Score Delta Vs Current
+          description: score minus the current rotation's score; null without current_rotation
+        benefits:
+          items:
+            type: string
+          type: array
+          title: Benefits
+          description: Why this rotation helps (soil, pests, fit)
+        risks:
+          items:
+            type: string
+          type: array
+          title: Risks
+          description: What could go wrong; check locally before acting
+        data_gaps:
+          items:
+            type: string
+          type: array
+          title: Data Gaps
+          description: Missing or approximate data behind this result
+        evidence:
+          items:
+            type: string
+          type: array
+          title: Evidence
+          description: The data values the score is based on, with sources
         notes:
           items:
             type: string
           type: array
           title: Notes
+          description: 'Deprecated: benefits + risks. Use those instead.'
       additionalProperties: false
       type: object
       required:
@@ -563,6 +628,12 @@ components:
       - viable
       - breakdown
       - explanation
+      - is_current
+      - score_delta_vs_current
+      - benefits
+      - risks
+      - data_gaps
+      - evidence
       - notes
       title: Rotation
     RotationStep:
@@ -615,6 +686,14 @@ components:
         rainfall_mm_per_month:
           type: number
           title: Rainfall Mm Per Month
+        temperature_max_c:
+          type: number
+          title: Temperature Max C
+          description: Mean daily maximum temperature over the season, °C (heat stress)
+        temperature_min_c:
+          type: number
+          title: Temperature Min C
+          description: Mean daily minimum of the season's coldest month, °C (frost risk)
       additionalProperties: false
       type: object
       required:
@@ -622,6 +701,8 @@ components:
       - months
       - temperature_c
       - rainfall_mm_per_month
+      - temperature_max_c
+      - temperature_min_c
       title: SeasonSummary
     Soil:
       properties:

@@ -15,6 +15,40 @@ Template:
 
 ---
 
+## 2026-11-14 — Contract v0.2: compare against the farmer's current rotation, structured explanations
+- **Decision:** `POST /recommendations` takes an optional `current_rotation` (one crop id per season).
+  It is scored like every other combination and returned as `current_rotation` (its `rank` is its
+  position among all combinations, so it can exceed `top_n`). Its crops join the candidate set.
+  Every `Rotation` gains `is_current`, `score_delta_vs_current`, `benefits`, `risks`, `data_gaps` and
+  `evidence`. `notes` is kept but deprecated (= benefits + risks). New error code `invalid_rotation`
+  (422) when the length doesn't match the seasons. `MonthClimate` / `SeasonSummary` gain
+  `temperature_max_c` / `temperature_min_c`. Additive only; `method_version` is now `suitability-v1`.
+- **Why:** The challenge asks to compare at least three strategies *including the existing rotation*
+  and to explain for each why it was suggested, the evidence, benefits, information gaps and risks.
+- **Alternatives considered:** Replacing `notes` (breaks the frontend); letting the frontend find the
+  baseline with `top_n=50` (fails when the farmer's crops aren't in `crops`).
+- **Revisit if:** The frontend no longer reads `notes` (remove it), or seasons become configurable per request.
+
+## 2026-11-14 — Same-family penalty in rotation scoring
+- **Decision:** `SAME_FAMILY_PENALTY = 0.05` per transition between *different* crops of the same
+  botanical family (e.g. rice → maize, both Poaceae), half of `MONOCULTURE_PENALTY` (0.10).
+  A family change is listed as a benefit.
+- **Why:** Crops of the same family share most pests and diseases, so the cycle isn't broken. Before
+  this, rice → maize scored like a real rotation. Placeholder value, pending `agro-logic` review.
+- **Revisit if:** An agronomist suggests per-family values, or pest data becomes available.
+
+## 2026-11-14 — Heat stress and frost risk variables (mvp.yaml: variables)
+- **Decision:** `heat` and `frost` added to `variables` in `mvp.yaml`, both in the climate category,
+  using POWER `T2M_MAX` / `T2M_MIN` (monthly means of daily max/min), which were already fetched.
+  - heat: season mean daily max vs the crop's absolute max temperature. 1 at or below it, linear to 0
+    at `abs_max + HEAT_MARGIN_C` (6 °C).
+  - frost: daily min of the season's coldest month. 0 at or below 0 °C, 1 from 5 °C (generic, all crops).
+- **Why:** The challenge names heat stress and frost risk. No extra requests; cached data still works.
+- **Alternatives considered:** Counting hot/frost days from daily POWER data (more requests, more
+  accurate); per-crop frost limits (no reliable source yet).
+- **Revisit if:** `agro-logic` review, or the pilot region includes highlands where frost matters.
+  Frost scores 1 almost everywhere in lowland Costa Rica.
+
 ## 2026-11-07 — Project-wide error guide, enforced
 - **Decision:** `docs/errors.md` is mandatory. One catalog (`app/errors.py`: `ErrorCode` + classes),
   one HTTP translator (`app/api/errors.py`), one response envelope for every error

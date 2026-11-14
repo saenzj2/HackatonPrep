@@ -46,9 +46,17 @@ class MonthlyClimate:
 
     temperature_c: tuple[float, ...]  # mean air temperature at 2 m
     rainfall_mm: tuple[float, ...]  # total rainfall in the month
+    temperature_max_c: tuple[float, ...]  # mean of the daily maximum temperature at 2 m
+    temperature_min_c: tuple[float, ...]  # mean of the daily minimum temperature at 2 m
 
     def __post_init__(self) -> None:
-        if len(self.temperature_c) != MONTHS or len(self.rainfall_mm) != MONTHS:
+        series = (
+            self.temperature_c,
+            self.rainfall_mm,
+            self.temperature_max_c,
+            self.temperature_min_c,
+        )
+        if any(len(v) != MONTHS for v in series):
             raise DomainInvariantError("MonthlyClimate needs 12 values per variable")
 
 
@@ -69,6 +77,8 @@ class SeasonClimate:
     season: Season
     temperature_c: float  # mean over the season's months
     rainfall_mm_per_month: float  # mean monthly total over the season's months
+    temperature_max_c: float  # mean daily maximum over the season's months (heat stress)
+    temperature_min_c: float  # mean daily minimum of the season's coldest month (frost risk)
 
 
 @dataclass(frozen=True)
@@ -98,7 +108,7 @@ class CropSeasonFit:
     variable_scores: dict[str, float]
     categories: CategoryScores
     score: float  # 0..1
-    notes: tuple[str, ...] = ()
+    risks: tuple[str, ...] = ()  # limits exceeded, partial stress, cycle too long
 
 
 @dataclass(frozen=True)
@@ -107,4 +117,5 @@ class RotationResult:
     score: float  # 0..1 after rotation adjustments
     breakdown: CategoryScores
     viable: bool
-    notes: tuple[str, ...] = field(default_factory=tuple)
+    benefits: tuple[str, ...] = field(default_factory=tuple)
+    risks: tuple[str, ...] = field(default_factory=tuple)

@@ -1,3 +1,5 @@
+import pytest
+
 CR = {"lat": 10.0, "lon": -84.2}
 
 
@@ -51,6 +53,59 @@ def test_recommendations_overrides(client):
     used = {s["crop_id"] for rot in body["rotations"] for s in rot["sequence"]}
     assert used <= {"beans", "sorghum"}
     assert body["priorities"] == {"water": 0.5, "soil": 0.25, "climate": 0.25}
+
+
+def test_conditions_include_daily_extremes(client):
+    body = client.get("/conditions", params=CR).json()
+    month = body["monthly"][0]
+    assert month["temperature_min_c"] < month["temperature_c"] < month["temperature_max_c"]
+    season = body["seasons"][0]
+    assert season["temperature_min_c"] < season["temperature_max_c"]
+
+
+def test_rotations_explain_benefits_risks_gaps_and_evidence(client):
+    rot = client.post("/recommendations", json=CR).json()["rotations"][0]
+    assert {"heat", "frost"} <= set(rot["sequence"][0]["variable_scores"])
+    assert any("mock" in g for g in rot["data_gaps"])
+    assert any("mm/month" in e for e in rot["evidence"])
+    assert rot["notes"] == rot["benefits"] + rot["risks"]
+
+
+def test_without_current_rotation_there_is_no_baseline(client):
+    body = client.post("/recommendations", json=CR).json()
+    assert body["current_rotation"] is None
+    assert all(r["score_delta_vs_current"] is None for r in body["rotations"])
+    assert not any(r["is_current"] for r in body["rotations"])
+
+
+def test_current_rotation_is_the_baseline(client):
+    body = client.post(
+        "/recommendations", json={**CR, "current_rotation": ["maize", "maize"], "top_n": 9}
+    ).json()
+    current = body["current_rotation"]
+    assert [s["crop_id"] for s in current["sequence"]] == ["maize", "maize"]
+    assert current["is_current"]
+    assert current["score_delta_vs_current"] == 0.0
+    (listed,) = [r for r in body["rotations"] if r["is_current"]]
+    assert listed["rank"] == current["rank"]
+    for r in body["rotations"]:
+        assert r["score_delta_vs_current"] == pytest.approx(r["score"] - current["score"], abs=1e-3)
+
+
+def test_current_rotation_can_rank_below_top_n(client):
+    body = client.post(
+        "/recommendations", json={**CR, "current_rotation": ["maize", "maize"], "top_n": 1}
+    ).json()
+    assert len(body["rotations"]) == 1
+    assert body["current_rotation"]["rank"] > 1
+
+
+def test_current_rotation_crops_join_the_candidates(client):
+    body = client.post(
+        "/recommendations",
+        json={**CR, "crops": ["beans", "maize"], "current_rotation": ["sorghum", "sorghum"]},
+    ).json()
+    assert body["current_rotation"]["sequence"][0]["crop_id"] == "sorghum"
 
 
 def test_same_input_same_output(client):

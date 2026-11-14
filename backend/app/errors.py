@@ -27,6 +27,7 @@ class ErrorCode(StrEnum):
     OUT_OF_REGION = "out_of_region"
     UNKNOWN_CROP = "unknown_crop"
     INVALID_PRIORITIES = "invalid_priorities"
+    INVALID_ROTATION = "invalid_rotation"
     NOT_FOUND = "not_found"
     METHOD_NOT_ALLOWED = "method_not_allowed"
     HTTP_ERROR = "http_error"
@@ -69,6 +70,12 @@ class UnknownCropError(InvalidInputError):
 
 class InvalidPrioritiesError(InvalidInputError):
     code = ErrorCode.INVALID_PRIORITIES
+
+
+class InvalidRotationError(InvalidInputError):
+    """current_rotation doesn't have exactly one crop per configured season."""
+
+    code = ErrorCode.INVALID_ROTATION
 
 
 # ---------------------------------------------- data source errors (abstract base)

@@ -15,7 +15,7 @@ from app.errors import ConfigError
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 
-Variable = Literal["temperature", "rainfall", "soil_ph", "soil_moisture"]
+Variable = Literal["temperature", "rainfall", "soil_ph", "soil_moisture", "heat", "frost"]
 
 
 class DataMode(StrEnum):

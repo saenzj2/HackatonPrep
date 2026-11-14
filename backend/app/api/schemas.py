@@ -63,6 +63,8 @@ class MonthClimate(Schema):
     month: int = Field(ge=1, le=12)
     temperature_c: float
     rainfall_mm: float
+    temperature_max_c: float = Field(description="Mean of the daily maximum temperature, °C")
+    temperature_min_c: float = Field(description="Mean of the daily minimum temperature, °C")
 
 
 class SeasonSummary(Schema):
@@ -70,6 +72,12 @@ class SeasonSummary(Schema):
     months: list[int]
     temperature_c: float
     rainfall_mm_per_month: float
+    temperature_max_c: float = Field(
+        description="Mean daily maximum temperature over the season, °C (heat stress)"
+    )
+    temperature_min_c: float = Field(
+        description="Mean daily minimum of the season's coldest month, °C (frost risk)"
+    )
 
 
 class Soil(Schema):
@@ -109,6 +117,14 @@ class RecommendationRequest(Schema):
         default=None, description="Relative importance; normalized to sum 1. Default: MVP weights."
     )
     top_n: int | None = Field(default=None, ge=1, le=50)
+    current_rotation: list[str] | None = Field(
+        default=None,
+        description=(
+            "The farmer's current rotation: crop ids from GET /crops, one per season, in the "
+            "order of conditions.seasons. Scored as the baseline the other rotations compare to."
+        ),
+        examples=[["maize", "maize"]],
+    )
 
 
 class CategoryBreakdown(Schema):
@@ -133,7 +149,15 @@ class Rotation(Schema):
     viable: bool
     breakdown: CategoryBreakdown
     explanation: str
-    notes: list[str]
+    is_current: bool = Field(description="True if this is the farmer's current_rotation")
+    score_delta_vs_current: float | None = Field(
+        description="score minus the current rotation's score; null without current_rotation"
+    )
+    benefits: list[str] = Field(description="Why this rotation helps (soil, pests, fit)")
+    risks: list[str] = Field(description="What could go wrong; check locally before acting")
+    data_gaps: list[str] = Field(description="Missing or approximate data behind this result")
+    evidence: list[str] = Field(description="The data values the score is based on, with sources")
+    notes: list[str] = Field(description="Deprecated: benefits + risks. Use those instead.")
 
 
 class RecommendationResponse(Schema):
@@ -142,6 +166,12 @@ class RecommendationResponse(Schema):
     priorities: Priorities
     conditions: Conditions
     rotations: list[Rotation]
+    current_rotation: Rotation | None = Field(
+        description=(
+            "The farmer's rotation scored the same way; rank is its position among all "
+            "combinations (can be greater than top_n). Null without current_rotation."
+        )
+    )
     method_version: str
     generated_at: datetime
 

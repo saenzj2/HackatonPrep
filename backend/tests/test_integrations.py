@@ -28,9 +28,16 @@ def test_parse_real_power_response():
     assert climate.rainfall_mm[9] > climate.rainfall_mm[1]  # Oct (wet) > Feb (dry)
 
 
-def test_parse_rejects_fill_values():
+def test_parse_reads_daily_max_and_min():
+    climate = parse_climatology(load_fixture(POWER_FIXTURE))
+    assert climate.temperature_max_c[0] == 31.3  # JAN T2M_MAX, mean daily max °C
+    assert climate.temperature_min_c[0] == 16.11  # JAN T2M_MIN, mean daily min °C
+
+
+@pytest.mark.parametrize("param", ["T2M", "T2M_MAX", "T2M_MIN", "PRECTOTCORR"])
+def test_parse_rejects_fill_values(param):
     raw = load_fixture(POWER_FIXTURE)
-    raw["properties"]["parameter"]["T2M"]["MAR"] = -999.0
+    raw["properties"]["parameter"][param]["MAR"] = -999.0
     with pytest.raises(SourceDataError, match="fill values"):
         parse_climatology(raw)
 

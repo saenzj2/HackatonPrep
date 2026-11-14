@@ -10,11 +10,13 @@ region:
 # Crop ids from data/ecocrop_subset.csv (2 to 8 crops). TBD: team to pick 3 to 5.
 crops: [rice, beans, maize]
 
-# Variables used in scoring. Options: temperature, rainfall, soil_ph, soil_moisture
-variables: [temperature, rainfall, soil_ph, soil_moisture]
+# Variables used in scoring. Options: temperature, rainfall, soil_ph, soil_moisture, heat, frost
+#   heat : mean daily max vs the crop's absolute max temperature (heat stress)
+#   frost: coldest month's mean daily min in the season (frost risk)
+variables: [temperature, rainfall, soil_ph, soil_moisture, heat, frost]
 
 # Default farmer priorities; must sum to 1.0. The request can override them.
-#   climate: temperature fit   water: rainfall + soil moisture fit   soil: soil pH fit
+#   climate: temperature + heat + frost   water: rainfall + soil moisture   soil: soil pH
 priority_weights:
   water: 0.4
   soil: 0.3
