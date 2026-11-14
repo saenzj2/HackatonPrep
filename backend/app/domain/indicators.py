@@ -5,8 +5,8 @@ indicator treats missing days are listed in docs/indicators.md.
 
 Heat-stress and frost days need the day's true maximum and minimum temperature. A daily MEAN
 (NASA POWER `T2M`) hides both: a day averaging 20 °C can still peak above 30 °C or drop near
-freezing at dawn. So those two indicators are only computed when daily extrema are passed in,
-and are `None` otherwise. They are never estimated from the mean.
+freezing at dawn. So those two indicators are only computed when daily extrema are passed in
+(NASA POWER daily `T2M_MAX` / `T2M_MIN`), and are `None` otherwise. Never estimated from the mean.
 """
 
 from __future__ import annotations

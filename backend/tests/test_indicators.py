@@ -182,15 +182,50 @@ def test_field_indicators_on_the_power_fixture():
         "days": 31,
         "temperature_days": 31,
         "rainfall_days": 31,
-        "extrema_days": 0,
+        "extrema_days": 31,
         "mean_temperature_c": 22.44,
         "total_rainfall_mm": 35.2,
         "dry_days": 20,
         "longest_dry_spell_days": 11,
         "extreme_rain_days": 0,
-        "heat_stress_days": None,
-        "frost_days": None,
+        # Real T2M_MAX peaks at 28.03 °C and T2M_MIN bottoms at 17.33 °C this month:
+        # no day reaches 35 °C or 0 °C, so both counts are a measured 0, not a missing value.
+        "heat_stress_days": 0,
+        "frost_days": 0,
     }
+
+
+def test_field_indicators_skips_days_with_a_missing_extremum():
+    raw = load_fixture("nasa_power/daily_san_jose_202601.json")
+    raw["properties"]["parameter"]["T2M_MAX"]["20260110"] = -999.0
+    raw["properties"]["parameter"]["T2M_MIN"]["20260120"] = -999.0
+
+    class GappyWeather(FixtureWeather):
+        def daily_weather(self, *, lat, lon, start, end):
+            return parse_daily(raw)
+
+    (row,) = field_indicators(weather_source=GappyWeather(), **JAN)
+    assert row["extrema_days"] == 29
+    assert row["temperature_days"] == 31
+    assert row["heat_stress_days"] == 0
+
+
+def test_field_indicators_counts_heat_and_frost_from_power_extrema_at_the_thresholds():
+    # The real fixture has no hot or frosty day, so two days are pushed to the thresholds in the
+    # test (not in the fixture) to exercise the POWER parse → indicator path end to end.
+    raw = load_fixture("nasa_power/daily_san_jose_202601.json")
+    raw["properties"]["parameter"]["T2M_MAX"]["20260102"] = 35.0  # == HEAT_STRESS_MAX_C counts
+    raw["properties"]["parameter"]["T2M_MAX"]["20260103"] = 34.99  # just below: does not count
+    raw["properties"]["parameter"]["T2M_MIN"]["20260104"] = 0.0  # == FROST_MIN_C counts
+
+    class EdgeWeather(FixtureWeather):
+        def daily_weather(self, *, lat, lon, start, end):
+            return parse_daily(raw)
+
+    (row,) = field_indicators(weather_source=EdgeWeather(), **JAN)
+    assert row["heat_stress_days"] == 1
+    assert row["frost_days"] == 1
+    assert row["mean_temperature_c"] == pytest.approx(22.44)  # the mean is untouched
 
 
 def test_field_indicators_keeps_fill_value_days_as_missing():

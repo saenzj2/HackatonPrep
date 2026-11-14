@@ -26,13 +26,17 @@ or the dawn reached 0 °C, so `heat_stress_days` and `frost_days` are **`None`**
 gives only the mean. They are never estimated from the mean or from monthly normals.
 
 They are computed only when the daily series also has `temperature_max_c` and `temperature_min_c`
-columns (true daily max / min). The NASA POWER daily adapter does not request `T2M_MAX` / `T2M_MIN`
-yet, so today both fields are always `None` for real data. Adding them needs a new real fixture
-(changing the request also changes the cache key) and is left as a follow-up.
+columns (true daily max / min). The NASA POWER daily adapter requests `T2M_MAX` / `T2M_MIN` (°C,
+that day's max / min of 2 m air temperature) alongside `T2M`, so both counts are real for POWER data.
+The mock source has no extrema, so in `mock` mode both stay `None`.
 
-Known limits when extrema are added:
-- 35 °C is a generic heat level often cited for flowering damage in maize and beans; it is not
-  crop-specific and has not had an `agro-logic` review. Do not score it before that review.
+Cache: adding the two parameters changed the daily cache key. Entries cached before that are never
+served (they have no extrema); refetch the point once in `live` mode (`docs/decisions.md`).
+
+Known limits:
+- 35 °C is a **provisional** generic heat level often cited for flowering damage in maize and
+  beans; it is not crop-specific and has not had an `agro-logic` review. Do not score it before that
+  review.
 - POWER temperatures are 2 m air on a ~50 km grid. Ground frost can happen with a 2 m minimum a few
   degrees above 0 °C, and valley bottoms are colder than the grid cell, so frost days are undercounted.
 
@@ -45,7 +49,8 @@ POWER fill values (−999) become NaN in `parse_daily`. In the indicators:
   Compare `rainfall_days` with `days` before trusting it.
 - A missing day **ends** a dry spell (we cannot call it dry).
 - A month with no data for a variable gives `None`, never `0`.
-- `extrema_days` counts days with both max and min present.
+- `extrema_days` counts days with both max and min present. A day missing either one is left out of
+  both heat-stress and frost counts (never filled from the mean).
 
 Other rules: months are calendar months, so a partial first or last month is reported as is (check
 `days`), and a dry spell crossing a month boundary is counted in each month separately.
@@ -58,16 +63,13 @@ asserted in `test_field_indicators_on_the_power_fixture`.
 
 | Month | Days (temp / rain / extrema) | Mean temp (°C) | Rain (mm) | Dry days | Longest dry spell | Extreme-rain days | Heat-stress days | Frost days |
 |---|---|---|---|---|---|---|---|---|
-| 2026-01 | 31 (31 / 31 / 0) | 22.44 | 35.2 | 20 | 11 (Jan 19–29) | 0 | n/a (no daily max) | n/a (no daily min) |
+| 2026-01 | 31 (31 / 31 / 31) | 22.44 | 35.2 | 20 | 11 (Jan 19–29) | 0 | 0 (max 28.03 °C) | 0 (min 17.33 °C) |
 
 To produce the table for a demo field once it is chosen, call `field_indicators` with that field's
 lat/lon and period in `cached` mode after the daily response has been cached.
 
 ## Open gaps (issue #19 stays open)
 
-- **No daily max / min from real data.** The daily adapter requests only `T2M` (mean) and
-  `PRECTOTCORR`. Until it also requests `T2M_MAX` / `T2M_MIN` (with a new real fixture),
-  `heat_stress_days` and `frost_days` are `None` for every real field.
 - **Unvalidated heat threshold.** `HEAT_STRESS_MAX_C = 35.0` is a generic placeholder with no
   `agro-logic` review and no crop-specific values. Nothing scores it yet.
 - **No demo-field tables.** Demo fields are not chosen (#15) and their daily responses are not

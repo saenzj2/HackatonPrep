@@ -15,6 +15,28 @@ Template:
 
 ---
 
+## 2026-11-14 — NASA POWER daily adapter requests true daily max / min (T2.3, #19)
+- **Decision:** The daily adapter now requests `T2M,T2M_MAX,T2M_MIN,PRECTOTCORR` and `parse_daily`
+  returns `temperature_max_c` / `temperature_min_c` (°C, as POWER sends them). `field_indicators`
+  already used those columns, so heat-stress and frost days are now real counts for POWER data.
+  The San José fixture was refetched from the public API on 2026-11-14 with the four parameters;
+  `T2M` and `PRECTOTCORR` are identical to the previous fixture. `parse_daily` also rejects a
+  response whose declared `parameters.<P>.units` differ from `C` / `mm/day` (no conversion is done).
+- **Why:** Heat-stress and frost days need the day's true extremes; the mean cannot show them.
+  POWER provides them in the same request at no extra cost.
+- **Cache:** the request string is the cache key, so daily entries cached before this change (key
+  with `T2M,PRECTOTCORR`) are never served. They have no extrema. In `cached` mode those points
+  raise `cache_miss` until refetched once in `live` mode. No daily cache is committed and demo
+  responses are not cached yet (#18), so nothing shipped is affected.
+- **Not changed:** `HEAT_STRESS_MAX_C = 35.0` stays a provisional generic placeholder (no
+  `agro-logic` review, not crop-specific, not scored). No scoring constant or crop scoring changed.
+  The mock daily source still has no extrema, so heat/frost stay `None` in `mock` mode.
+- **Alternatives considered:** serving old cache entries under the legacy key (would silently mix
+  responses with and without extrema); making extrema optional in `parse_daily` (a response that
+  drops them would quietly turn real counts into `None`).
+- **Revisit if:** demo fields are chosen and cached (#15, #18); the heat threshold gets an
+  `agro-logic` review or crop-specific values; an endpoint exposes the table (#40).
+
 ## 2026-11-14 — Every strategy carries all five explanation parts (T4.4, #29)
 - **Decision:** No contract change and no score change. `ranking.score_rotation()` now ends `risks`
   with two "Local review: …" items: (1) check sowing dates and varieties for each crop/season, since
