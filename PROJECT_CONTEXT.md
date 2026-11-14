@@ -15,6 +15,7 @@ For running the backend, use the [README](README.md); for contributor rules, rea
 | [Decision log](backend/docs/decisions.md) | Recorded technical choices and limitations |
 | [API contract](backend/docs/api-contract.yaml) | Frontend/backend agreement, currently `0.2.0-draft` |
 | [San Carlos pilot baseline](docs/pilot-baseline/README.md) | Selected example location, six research images, provenance, limitations and next steps |
+| [Farmer intake proposal](docs/farmer-input-proposal.md) | Proposed inputs, progressive disclosure and evidence/output gates; not implemented or approved API changes ([#73](https://github.com/saenzj2/HackatonPrep/issues/73)) |
 
 Challenge details below summarize the official-page text supplied by the team. The official
 URL was located in search, but a complete live-page fetch timed out during documentation.
