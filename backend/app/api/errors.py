@@ -36,6 +36,7 @@ STATUS_BY_CODE: dict[ErrorCode, int] = {
     ErrorCode.OUT_OF_REGION: 422,
     ErrorCode.UNKNOWN_CROP: 422,
     ErrorCode.INVALID_PRIORITIES: 422,
+    ErrorCode.INVALID_ROTATION: 422,
     ErrorCode.NOT_FOUND: 404,
     ErrorCode.METHOD_NOT_ALLOWED: 405,
     ErrorCode.HTTP_ERROR: 400,  # nominal; the real status comes from the HTTPException
@@ -57,7 +58,10 @@ GENERIC_5XX_MESSAGE = "Unexpected server error. Share the request_id with the ba
 
 _RESPONSE_DOCS: dict[int, str] = {
     404: "`not_found`: no such route",
-    422: "`validation_failed`, `out_of_region`, `unknown_crop`, `invalid_priorities`",
+    422: (
+        "`validation_failed`, `out_of_region`, `unknown_crop`, `invalid_priorities`, "
+        "`invalid_rotation`"
+    ),
     500: "`internal_error`, `config_invalid`, `domain_invariant`: a backend bug",
     502: "`source_unavailable`, `source_bad_data`: an external data source failed",
     503: "`cache_miss`: data_mode=cached and this location was never fetched",

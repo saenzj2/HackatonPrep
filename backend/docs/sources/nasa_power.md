@@ -23,8 +23,8 @@ https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2M,T2M_MA
 | Parameter | Meaning | Native unit | We convert to |
 |---|---|---|---|
 | `T2M` | Mean air temperature at 2 m | °C | °C (as is) |
-| `T2M_MAX` | Mean daily max temperature at 2 m | °C | not used yet (heat stress) |
-| `T2M_MIN` | Mean daily min temperature at 2 m | °C | not used yet (cold stress) |
+| `T2M_MAX` | Mean daily max temperature at 2 m | °C | `heat` variable: season mean vs crop abs max |
+| `T2M_MIN` | Mean daily min temperature at 2 m | °C | `frost` variable: coldest month in the season |
 | `PRECTOTCORR` | Bias-corrected precipitation | **mm/day** | **mm/month** (× days in month, Feb = 28.25) |
 
 Response shape: `properties.parameter.<PARAM>.{JAN..DEC, ANN}`. Missing data = `header.fill_value` (−999).
@@ -46,5 +46,5 @@ Response shape: `properties.parameter.<PARAM>.{JAN..DEC, ANN}`. Missing data = `
 - Latitude/longitude are rounded to 2 decimals for the cache key.
 
 ## Next steps
-- Use `T2M_MAX`/`T2M_MIN` for heat and cold stress, or the daily endpoint for extremes (dry spells, heat waves).
+- `T2M_MAX`/`T2M_MIN` now feed `heat` and `frost`. Next: the daily endpoint for extremes (dry spells, heat waves, frost-day counts).
 - Consider the `climatology` vs. recent-years trend to show climate shift (the "Field Shift" angle).

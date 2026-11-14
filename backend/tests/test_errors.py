@@ -74,6 +74,27 @@ def test_invalid_priorities(client):
     )
 
 
+@pytest.mark.parametrize("rotation", [["maize"], ["maize", "beans", "rice"], []])
+def test_invalid_rotation_length(client, config, rotation):
+    err = assert_error(
+        client.post("/recommendations", json={**CR, "current_rotation": rotation}),
+        422,
+        ErrorCode.INVALID_ROTATION,
+    )
+    assert err["details"]["expected_length"] == len(config.seasons)
+    assert err["details"]["seasons"] == [s.name for s in config.seasons]
+    assert err["details"]["got"] == rotation
+
+
+def test_unknown_crop_in_current_rotation(client):
+    err = assert_error(
+        client.post("/recommendations", json={**CR, "current_rotation": ["kale", "maize"]}),
+        422,
+        ErrorCode.UNKNOWN_CROP,
+    )
+    assert err["details"]["unknown"] == ["kale"]
+
+
 @pytest.mark.parametrize(
     ("body", "loc"),
     [

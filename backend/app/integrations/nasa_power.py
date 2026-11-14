@@ -29,23 +29,30 @@ DAYS_IN_MONTH = (31, 28.25, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 
 
 def parse_climatology(raw: dict[str, Any]) -> MonthlyClimate:
-    """POWER climatology JSON → MonthlyClimate (°C, mm/month)."""
+    """POWER climatology JSON → MonthlyClimate (°C, mm/month).
+
+    T2M_MAX / T2M_MIN in the climatology are monthly means of the daily max / min.
+    """
     try:
         params = raw["properties"]["parameter"]
         fill = raw.get("header", {}).get("fill_value", -999.0)
         t2m = [float(params["T2M"][m]) for m in MONTH_KEYS]
+        t2m_max = [float(params["T2M_MAX"][m]) for m in MONTH_KEYS]
+        t2m_min = [float(params["T2M_MIN"][m]) for m in MONTH_KEYS]
         prec_mm_day = [float(params["PRECTOTCORR"][m]) for m in MONTH_KEYS]
     except (KeyError, TypeError, ValueError) as e:
         raise SourceDataError(
             f"Unexpected NASA POWER payload ({type(e).__name__}: {e})", details={"source": SOURCE}
         ) from e
-    if any(v == fill for v in t2m + prec_mm_day):
+    if any(v == fill for v in t2m + t2m_max + t2m_min + prec_mm_day):
         raise SourceDataError(
             "NASA POWER returned fill values (no data for this point)", details={"source": SOURCE}
         )
     return MonthlyClimate(
         temperature_c=tuple(round(v, 2) for v in t2m),
         rainfall_mm=tuple(round(v * d, 1) for v, d in zip(prec_mm_day, DAYS_IN_MONTH, strict=True)),
+        temperature_max_c=tuple(round(v, 2) for v in t2m_max),
+        temperature_min_c=tuple(round(v, 2) for v in t2m_min),
     )
 
 

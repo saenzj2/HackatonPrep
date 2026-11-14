@@ -13,6 +13,8 @@ from app.domain.models import MonthlyClimate, SoilConditions
 # dry Dec–Apr, rains from May, short "veranillo" in Jul, peak Sep–Oct.
 _RAIN_SHAPE = (0.15, 0.10, 0.15, 0.45, 1.25, 1.20, 0.95, 1.10, 1.50, 1.65, 1.05, 0.40)
 _TEMP_SHAPE = (-0.6, 0.0, 0.9, 1.2, 0.5, 0.0, -0.1, -0.1, -0.3, -0.5, -0.6, -0.7)
+# Half the daily range (°C), wider in the dry season. Alajuela POWER normals: ~15 → ~13 °C.
+_HALF_DAILY_RANGE = (7.5, 8.0, 8.5, 8.5, 8.0, 7.0, 7.0, 7.0, 6.5, 6.5, 6.5, 7.0)
 
 
 def _rng(kind: str, lat: float, lon: float) -> random.Random:
@@ -27,9 +29,16 @@ class MockClimate:
         base_temp = rng.uniform(20.0, 28.0)
         annual_rain = rng.uniform(1400.0, 3200.0)
         shape_total = sum(_RAIN_SHAPE)
+        temps = [base_temp + d for d in _TEMP_SHAPE]
         return MonthlyClimate(
-            temperature_c=tuple(round(base_temp + d, 2) for d in _TEMP_SHAPE),
+            temperature_c=tuple(round(t, 2) for t in temps),
             rainfall_mm=tuple(round(annual_rain * s / shape_total, 1) for s in _RAIN_SHAPE),
+            temperature_max_c=tuple(
+                round(t + h, 2) for t, h in zip(temps, _HALF_DAILY_RANGE, strict=True)
+            ),
+            temperature_min_c=tuple(
+                round(t - h, 2) for t, h in zip(temps, _HALF_DAILY_RANGE, strict=True)
+            ),
         )
 
 

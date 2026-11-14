@@ -38,6 +38,7 @@ X-Request-ID: 7f3a9c1e2b4d
 | `out_of_region` | 422 | `OutOfRegionError` | lat/lon outside the MVP region bbox (`config/mvp.yaml`) | `lat`, `lon`, `bbox` |
 | `unknown_crop` | 422 | `UnknownCropError` | a crop id isn't in the catalog | `unknown`, `available` |
 | `invalid_priorities` | 422 | `InvalidPrioritiesError` | all priority weights are 0 | `priorities` |
+| `invalid_rotation` | 422 | `InvalidRotationError` | `current_rotation` doesn't have exactly one crop per season | `expected_length`, `seasons`, `got` |
 | `not_found` | 404 | HTTP layer | no such route | — |
 | `method_not_allowed` | 405 | HTTP layer | wrong HTTP method (see the `Allow` header) | — |
 | `http_error` | 4xx | HTTP layer | any other HTTP-level error from the framework | — |
