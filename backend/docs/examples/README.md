@@ -13,6 +13,9 @@ They follow [`../api-contract.yaml`](../api-contract.yaml); `tests/test_examples
 **Demo field:** Alajuela, Costa Rica (lat 10.0, lon −84.2).
 **Data behind it:** climate is real NASA POWER monthly normals (fixture `tests/fixtures/nasa_power/climatology_alajuela.json`).
 Soil is still mock, and crop ranges are approximate. The responses say so in `data_sources` and `data_gaps`.
+Every value is for that one point, not an area average: for a selected map area, send one explicitly
+labeled representative point. There is no pineapple example: it isn't in `GET /crops` yet, so a request
+with it returns `unknown_crop` (422) instead of a substitute (see `docs/decisions.md`, #41).
 
 ## Regenerate
 After a contract, scoring or `mvp.yaml` change:

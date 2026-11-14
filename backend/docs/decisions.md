@@ -15,6 +15,24 @@ Template:
 
 ---
 
+## 2026-11-14 — Recommendations: representative point, no-baseline path, unsupported crops (T8.2, #41)
+- **Decision:** No new fields. The contract now states what `POST /recommendations`
+  already does: `lat`/`lon` (and every `Location`) are **one representative point**, never an area or
+  polygon average; omitting `current_rotation` is the supported "no current crop" path (no baseline,
+  `score_delta_vs_current` null); crop ids not in `GET /crops`, such as `pineapple` for the San Carlos
+  walkthrough, fail with `unknown_crop` (422) and are never substituted. `unknown_crop` details now list
+  each unknown id once (`["pineapple", "pineapple"]` used to report it twice). Description-only contract
+  change; pending review by the frontend (#43) and contract owners.
+- **Why:** The pilot demo selects an area on a map and assumes pineapple as current crop. Saying the
+  boundaries in the contract keeps the frontend from labeling a point value as an area average or
+  silently swapping pineapple for a configured crop.
+- **Alternatives considered:** Accepting a bbox/polygon and averaging (needs a new contract, gridded
+  data and sampling rules; out of MVP scope); adding pineapple now (traits, cycle and season fit are
+  unvalidated, #24); adding a data-gap line to every response (changes responses and examples for a
+  limitation the contract can state once).
+- **Revisit if:** The team agrees an area input and point-selection rule, or pineapple is added to the
+  catalog with sourced traits (#24).
+
 ## 2026-11-14 — Rotation rules with verdicts and reasons (T3.3, #25)
 - **Decision:** `app/domain/rotation_rules.py` judges every consecutive crop pair (cyclic) and returns a
   verdict (favoured / allowed / discouraged), one reason per rule that fired, and a score adjustment.
