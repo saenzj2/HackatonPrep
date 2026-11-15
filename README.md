@@ -166,3 +166,14 @@ External Sentinel-2, WorldCover, SoilGrids and FTW research images are not backe
 
 Claude Code users can run `/new-source` to do the same thing. Not using Claude Code? See section 3b of
 [`learning/harness-cheatsheet.md`](learning/harness-cheatsheet.md) to get the same benefits with any editor or AI tool.
+
+## Use of AI tools (Space Apps SI disclosure)
+
+Parts of this repository's code, tests and documentation were written with AI coding assistants
+(Anthropic Claude Code and OpenAI Codex). The `.claude/` folder, `CLAUDE.md` and `AGENTS.md` hold the
+instructions those tools followed. Every change went through a pull request, CI (lint, type checks,
+tests) and team review. Crop data comes from FAO EcoCrop, and climate, soil and moisture data come
+from NASA POWER, NASA SMAP and OpenLandMap. None of it is AI-generated. The project uses no
+AI-generated images, video or audio. If any are added, they must carry a visible "AI-generated"
+watermark.
+Submission notes: [`docs/submission.md`](docs/submission.md).
