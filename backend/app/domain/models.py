@@ -110,6 +110,37 @@ class SoilConditions:
 
 
 @dataclass(frozen=True)
+class SoilLayer:
+    """Soil properties at one depth. None = the source has no valid value there (never guessed)."""
+
+    depth_cm: int
+    ph: float | None  # pH in water (H2O)
+    organic_carbon_g_kg: float | None
+    clay_pct: float | None  # % of fine earth by weight (kg/kg)
+    sand_pct: float | None
+    silt_pct: float | None  # derived: 100 - clay - sand, see domain/soil.py
+    bulk_density_kg_m3: float | None  # fine earth
+    field_capacity_m3m3: float | None  # volumetric water content at 33 kPa suction
+    texture_class: str | None  # USDA texture triangle class, e.g. "clay loam"
+
+
+@dataclass(frozen=True)
+class SoilProfile:
+    """Soil properties at one location, one layer per depth, shallowest first."""
+
+    lat: float
+    lon: float
+    layers: tuple[SoilLayer, ...]
+
+    def __post_init__(self) -> None:
+        depths = [layer.depth_cm for layer in self.layers]
+        if not depths or depths != sorted(set(depths)):
+            raise DomainInvariantError(
+                "SoilProfile needs layers with unique depths, shallowest first"
+            )
+
+
+@dataclass(frozen=True)
 class Season:
     name: str
     months: tuple[int, ...]  # 1..12

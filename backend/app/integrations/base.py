@@ -11,7 +11,13 @@ from typing import Protocol, runtime_checkable
 
 import pandas as pd
 
-from app.domain.models import CropProfile, MonthlyClimate, SoilConditions, TerrainSample
+from app.domain.models import (
+    CropProfile,
+    MonthlyClimate,
+    SoilConditions,
+    SoilProfile,
+    TerrainSample,
+)
 
 
 @runtime_checkable
@@ -49,3 +55,14 @@ class TerrainSource(Protocol):
     name: str
 
     def terrain_sample(self, lat: float, lon: float) -> TerrainSample: ...
+
+
+@runtime_checkable
+class SoilProfileSource(Protocol):
+    """Soil properties by depth (pH, carbon, texture, density, field capacity); None = no data."""
+
+    name: str
+    attribution: str  # credit line to show with the data (license terms)
+    resolution_m: int  # nominal pixel size of the maps
+
+    def soil_profile(self, lat: float, lon: float) -> SoilProfile: ...

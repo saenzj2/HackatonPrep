@@ -8,6 +8,7 @@ General backend rules: [`backend/AGENTS.md`](../../AGENTS.md).
 - `__init__.py`: `build_sources()` picks the adapter per data type from `data_mode`.
 - `nasa_power.py`: **the template**. Copy its structure for new sources.
 - `opentopography.py`: SRTM GL1 point elevation (API key, 5 calls per slope sample).
+- `openlandmap.py`: OpenLandMap soil by depth via Google Earth Engine (`ee` imported lazily; 1 request per 250 m pixel).
 - `ecocrop.py`: local CSV catalog. `mock.py`: deterministic fake data for `mock` mode.
 
 ## The adapter pattern (keep these three parts separate)

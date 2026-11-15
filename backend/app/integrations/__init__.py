@@ -12,12 +12,14 @@ from app.integrations.base import (
     ClimateSource,
     CropSource,
     DailyWeatherSource,
+    SoilProfileSource,
     SoilSource,
     TerrainSource,
 )
 from app.integrations.ecocrop import EcoCropCatalog
-from app.integrations.mock import MockClimate, MockSoil, MockTerrain
+from app.integrations.mock import MockClimate, MockSoil, MockSoilProfile, MockTerrain
 from app.integrations.nasa_power import NasaPowerClimate
+from app.integrations.openlandmap import EarthEngineSoil
 from app.integrations.opentopography import OpenTopographyElevation
 from app.settings import DataMode, EnvSettings, MvpConfig
 
@@ -29,6 +31,7 @@ class Sources:
     crops: CropSource
     daily: DailyWeatherSource  # erosion risk (services.erosion_risk); no endpoint yet
     terrain: TerrainSource
+    soil_profile: SoilProfileSource  # services.get_soil_data; no endpoint yet
 
     def names(self) -> dict[str, str]:
         # Only the sources the current API reports (DataSources in the contract).
@@ -40,7 +43,12 @@ def build_sources(config: MvpConfig, env: EnvSettings) -> Sources:
     if config.data_mode == DataMode.MOCK:
         climate = MockClimate()
         return Sources(
-            climate=climate, soil=MockSoil(), crops=crops, daily=climate, terrain=MockTerrain()
+            climate=climate,
+            soil=MockSoil(),
+            crops=crops,
+            daily=climate,
+            terrain=MockTerrain(),
+            soil_profile=MockSoilProfile(),
         )
     cache = JsonCache(env.cache_dir, config.data_mode)
     power = NasaPowerClimate(cache)
@@ -51,4 +59,10 @@ def build_sources(config: MvpConfig, env: EnvSettings) -> Sources:
         daily=power,
         # No key needed until a location isn't cached yet (then ConfigError names the variable).
         terrain=OpenTopographyElevation(cache, env.open_topography_key),
+        # Earth Engine starts on the first uncached request, never here (no network at startup).
+        soil_profile=EarthEngineSoil(
+            cache,
+            project_id=env.gee_project_id,
+            service_account_key_file=env.gee_service_account_key_file,
+        ),
     )

@@ -1,4 +1,4 @@
-"""Service-level tests for erosion_risk, with in-memory fake sources (no HTTP, no cache)."""
+"""Service-level tests for erosion_risk and get_soil_data, with fake or fixture-backed sources."""
 
 import math
 from datetime import date
@@ -6,6 +6,7 @@ from datetime import date
 import pandas as pd
 import pytest
 
+from app.cache import JsonCache
 from app.domain.models import (
     CropProfile,
     MonthlyClimate,
@@ -16,9 +17,12 @@ from app.domain.models import (
     Weights,
 )
 from app.domain.ranking import rank_rotations
-from app.errors import SourceDataError
-from app.integrations.mock import MockClimate, MockTerrain
-from app.services import PLACEHOLDER_RULES_GAP, _data_gaps, erosion_risk
+from app.errors import OutOfRegionError, SourceDataError
+from app.integrations.mock import MockClimate, MockSoilProfile, MockTerrain
+from app.integrations.openlandmap import EarthEngineSoil
+from app.services import PLACEHOLDER_RULES_GAP, _data_gaps, erosion_risk, get_soil_data
+from app.settings import DataMode
+from tests.conftest import load_fixture
 
 JAN = {"lat": 9.93, "lon": -84.08, "start": date(2026, 1, 1), "end": date(2026, 1, 10)}
 EXPECTED_KEYS = {
@@ -137,3 +141,70 @@ def test_data_gaps_are_never_empty_with_real_sources_and_verified_crops():
     )
     gaps = _data_gaps(r, {"climate": "nasa_power", "soil": "soilgrids"}, ["temperature"])
     assert gaps == [PLACEHOLDER_RULES_GAP]
+
+
+# ---------------------------------------------------------------- get_soil_data
+SOIL_PROPERTIES = {
+    "ph",
+    "organic_carbon_g_kg",
+    "clay_pct",
+    "sand_pct",
+    "silt_pct",
+    "bulk_density_kg_m3",
+    "field_capacity_m3m3",
+    "texture_class",
+}
+
+
+def fixture_soil_source(tmp_path, fixture="soil_san_jose.json"):
+    """The real adapter answering from a saved Earth Engine response (no network)."""
+    raw = load_fixture(f"openlandmap/{fixture}")
+    return EarthEngineSoil(
+        JsonCache(tmp_path, DataMode.LIVE), project_id="test", sampler=lambda lat, lon: raw
+    )
+
+
+def test_get_soil_data_shape_units_and_attribution(tmp_path):
+    out = get_soil_data(latitude=9.93, longitude=-84.08, soil_source=fixture_soil_source(tmp_path))
+    assert (out["latitude"], out["longitude"]) == (9.93, -84.08)
+    assert out["source"] == "OpenLandMap"
+    assert "CC-BY-SA" in out["attribution"]
+    assert out["resolution_m"] == 250
+    assert out["depths_cm"] == [0, 10, 30]
+    assert set(out["soil"]) == {"0cm", "10cm", "30cm"}
+    assert set(out["units"]) == SOIL_PROPERTIES
+    for layer in out["soil"].values():
+        assert set(layer) == SOIL_PROPERTIES
+
+
+def test_get_soil_data_real_values_san_jose(tmp_path):
+    out = get_soil_data(latitude=9.93, longitude=-84.08, soil_source=fixture_soil_source(tmp_path))
+    assert out["soil"]["0cm"] == {
+        "ph": 6.6,
+        "organic_carbon_g_kg": 10.0,
+        "clay_pct": 38.0,
+        "sand_pct": 34.0,
+        "silt_pct": 28.0,
+        "bulk_density_kg_m3": 1270.0,
+        "field_capacity_m3m3": 0.34,
+        "texture_class": "clay loam",
+    }
+
+
+def test_get_soil_data_masked_pixel_returns_nulls(tmp_path):
+    source = fixture_soil_source(tmp_path, "soil_pacific_ocean.json")
+    out = get_soil_data(latitude=9.5, longitude=-86.0, soil_source=source)
+    assert all(v is None for layer in out["soil"].values() for v in layer.values())
+
+
+@pytest.mark.parametrize(("lat", "lon"), [(91, 0), (-90.5, 0), (0, 180.1), (math.nan, 0)])
+def test_get_soil_data_rejects_impossible_coordinates(lat, lon):
+    with pytest.raises(OutOfRegionError, match="not a valid coordinate") as exc:
+        get_soil_data(latitude=lat, longitude=lon, soil_source=MockSoilProfile())
+    assert exc.value.details["bbox"] == [-180.0, -90.0, 180.0, 90.0]
+
+
+def test_get_soil_data_works_offline_with_mock_source():
+    out = get_soil_data(latitude=9.93, longitude=-84.08, soil_source=MockSoilProfile())
+    assert out["source"] == "mock"
+    assert out["soil"]["0cm"]["texture_class"] is not None

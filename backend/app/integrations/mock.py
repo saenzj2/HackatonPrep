@@ -11,7 +11,8 @@ from datetime import date
 
 import pandas as pd
 
-from app.domain.models import MonthlyClimate, SoilConditions, TerrainSample
+from app.domain.models import MonthlyClimate, SoilConditions, SoilLayer, SoilProfile, TerrainSample
+from app.domain.soil import silt_pct
 
 # Relative monthly rainfall for a Pacific-slope Costa Rica regime:
 # dry Dec–Apr, rains from May, short "veranillo" in Jul, peak Sep–Oct.
@@ -21,6 +22,10 @@ _TEMP_SHAPE = (-0.6, 0.0, 0.9, 1.2, 0.5, 0.0, -0.1, -0.1, -0.3, -0.5, -0.6, -0.7
 _HALF_DAILY_RANGE = (7.5, 8.0, 8.5, 8.5, 8.0, 7.0, 7.0, 7.0, 6.5, 6.5, 6.5, 7.0)
 _WET_DAY_PROBABILITY = 0.6  # share of days with rain; the monthly total is spread over them
 _MOCK_SPACING_M = 30.0  # about one SRTM sample
+# Mock soil profiles: (USDA texture class, clay %, sand %) near the middle of each class, so a
+# jitter of ±3 points keeps the fractions consistent with the class name.
+_MOCK_TEXTURES = (("clay loam", 33.0, 32.0), ("loam", 20.0, 40.0), ("clay", 50.0, 20.0))
+_MOCK_DEPTHS_CM = (0, 10, 30)
 
 
 def _rng(kind: str, lat: float, lon: float) -> random.Random:
@@ -94,3 +99,34 @@ class MockTerrain:
             spacing_ns_m=_MOCK_SPACING_M,
             spacing_ew_m=_MOCK_SPACING_M,
         )
+
+
+class MockSoilProfile:
+    name = "mock"
+    attribution = "Deterministic mock data, not real measurements"
+    resolution_m = 250  # same shape as the real source (OpenLandMap)
+
+    def soil_profile(self, lat: float, lon: float) -> SoilProfile:
+        """Fake 0/10/30 cm profile: carbon falls and density rises with depth, like real soils."""
+        rng = _rng("soil_profile", lat, lon)
+        texture, clay_base, sand_base = rng.choice(_MOCK_TEXTURES)
+        ph = rng.uniform(5.0, 6.8)
+        carbon_g_kg = rng.uniform(15.0, 45.0)
+        layers = []
+        for i, depth in enumerate(_MOCK_DEPTHS_CM):
+            clay = round(clay_base + rng.uniform(-3, 3))
+            sand = round(sand_base + rng.uniform(-3, 3))
+            layers.append(
+                SoilLayer(
+                    depth_cm=depth,
+                    ph=round(ph + 0.1 * i, 1),
+                    organic_carbon_g_kg=float(round(carbon_g_kg * (1 - 0.25 * i) / 5) * 5),
+                    clay_pct=float(clay),
+                    sand_pct=float(sand),
+                    silt_pct=silt_pct(clay, sand),
+                    bulk_density_kg_m3=float(round(rng.uniform(1100, 1300) + 40 * i, -1)),
+                    field_capacity_m3m3=round(rng.uniform(0.28, 0.40), 2),
+                    texture_class=texture,
+                )
+            )
+        return SoilProfile(lat=lat, lon=lon, layers=tuple(layers))
