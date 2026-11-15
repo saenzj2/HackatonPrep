@@ -58,7 +58,8 @@ Owner of both accounts: Andres (GitHub `AndresACV`). Ask him for dashboard chang
 **Railway**: project `guardians-of-the-harvest`, environment `production`
 - Service `harvest`. **No repo connected on purpose:** code arrives only through `railway up` from
   the Deploy workflow. Connecting the repo would deploy every push twice.
-- Build and health check come from `railway.json` (Dockerfile build, `/health`).
+- Build and health check come from `railway.json` (Dockerfile build, `/health`). Railway has
+  deprecated this format ("Config as Code"). It stops being read on **2026-12-01**; see Pending.
 - Service variable **`PORT=8000`**. Both domains route to port 8000, and Railway would otherwise
   inject its own `PORT`. Don't remove it.
 - Domains: the generated `harvest-production-3c6bc064.up.railway.app` and the custom
@@ -81,11 +82,16 @@ Owner of both accounts: Andres (GitHub `AndresACV`). Ask him for dashboard chang
 
 **Cloudflare MCP for AI assistants (optional, per person).** Claude Code can read the zone through
 Cloudflare's MCP server (`https://mcp.cloudflare.com/mcp`). Register it only in **local** scope
-(`claude mcp add --scope local …`) with your own Cloudflare API token. Local scope keeps it in your
-user config, outside the repo. **Never** add it to `.mcp.json`, `.claude/settings.json` or any
-file in the repo, and never paste the token in a chat, issue or PR. Read-only is enough: the token
-needs `user:read` and `account:read` to connect, plus zone read for DNS and settings. DNS changes
-are still made by the account owner in the dashboard.
+(`claude mcp add --scope local …`). Local scope keeps it in your user config, outside the repo.
+**Never** add it to `.mcp.json`, `.claude/settings.json` or any file in the repo, and never paste
+a token in a chat, issue or PR.
+- To connect, you approve an OAuth consent screen in the browser ("Cloudflare MCP Server wants to
+  access your account"). That screen requests broad access to the whole account, **including
+  "Account API Tokens Write"**. A token with only `user:read` and `account:read` added was not
+  enough to connect on its own.
+- Use it only to read (DNS records, zone settings). DNS changes are still made by the account owner
+  in the dashboard.
+- When you're done, revoke it in **My Profile → Access Management → Connected Applications**.
 
 ## Pending
 
@@ -93,14 +99,22 @@ are still made by the account owner in the dashboard.
       on 2026-11-15: `http://www.terracosmos.space/` gets a 301 to https from Cloudflare (no more
       522), then the www rule sends it to `https://terracosmos.space/`. `http://terracosmos.space`
       is redirected to https by Railway.
-- [ ] **Railway plan: the Trial ends on 2026-12-15 at the latest.** It started on 2026-11-15 and
-      lasts 30 days or until the USD 5 credit is spent, whichever comes first. Then the account
-      drops to the Free plan (USD 1/month credit).
+- [ ] **Railway plan: the Trial ends around 2026-12-15.** Railway doesn't show the date. It only
+      says "30 days or $5.00 left" (on 2026-11-15: USD 5.00 left, USD 0.0006 used). The date
+      assumes 30 days from 2026-11-15, and the trial ends sooner if the credit runs out. Then the
+      account drops to the Free plan (USD 1/month credit).
       **Risk:** Railway's pricing page lists custom domains on Free as "1 trial, then 0". On Free,
       `terracosmos.space` stops working. Only `harvest-production-3c6bc064.up.railway.app` would be
       left, and only if the USD 1 credit covers the service. The link we submitted to Space Apps
       would break during judging. To prevent it, upgrade to Hobby (USD 5/month, includes USD 5 of
       usage, 2 custom domains per service) before the trial ends. That's a team decision.
+- [ ] **`railway.json` stops working on 2026-12-01.** Railway's notice on the service settings
+      reads: "Existing config files keep working until 2026-12-01" (see
+      https://docs.railway.com/infrastructure-as-code). After that date the build still works,
+      because Railway always uses a root `Dockerfile`. We lose the `/health` check before traffic
+      switches (120 s) and the restart policy (`ON_FAILURE`, 3 retries).
+      Proposal, pending a decision: set the same values in Railway → `harvest` → Settings, then
+      remove `railway.json` in a follow-up PR.
 - [ ] Optional on Hobby: add `www.terracosmos.space` as a second custom domain in Railway, then
       drop the placeholder record and the redirect rule.
 - [ ] A teammate follows the README on their own laptop (issue #12).
