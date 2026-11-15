@@ -1,4 +1,4 @@
-# Keep the image small and secret-free: only backend/ and frontend/ are copied.
+# Keep the image small and secret-free: only backend/, frontend/ and frontend-app/ are copied.
 **/.env
 **/.venv
 **/.cache
@@ -18,3 +18,5 @@ Ecocrop
 NASA Power API
 odd
 backend/tests
+**/node_modules
+frontend-app/dist

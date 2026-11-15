@@ -6,7 +6,7 @@ from the root `Dockerfile`.
 | URL | What |
 |---|---|
 | `https://<service>.up.railway.app/` | Redirects to the app |
-| `/app/` | Frontend (static files from `frontend/`) |
+| `/app/` | Frontend: `frontend/` by default, or the React build from `frontend-app/` (see `FRONTEND_DIR`) |
 | `/docs` | Swagger UI for the API |
 | `/health` | Health check (Railway uses it before switching traffic) |
 
@@ -32,15 +32,18 @@ use **Redeploy** on a previous deployment in the Railway dashboard (the owner ca
 
 ## Run the production image locally
 
-Use this when you change `Dockerfile`, `frontend/` or startup code. You need Docker.
+Use this when you change `Dockerfile`, `frontend/`, `frontend-app/` or startup code. You need Docker.
+CI's `image` job runs the same build and a smoke test on every PR.
 
 ```bash
 docker build -t harvest .
 docker run --rm -p 8000:8000 harvest     # http://localhost:8000
+docker run --rm -p 8000:8000 -e FRONTEND_DIR=/srv/frontend-app harvest   # with the React app
 ```
 
 Without Docker, `make dev` serves the same thing: the app at http://localhost:8000/app/ and the API
-docs at `/docs`.
+docs at `/docs`. For the React app, run `make web-install` once, then `make dev` and `make web-dev`
+in two terminals and open http://localhost:5173/app/ (Vite sends API calls to :8000).
 
 ## One-time setup (done once by the Railway owner and the repo owner)
 
@@ -68,7 +71,7 @@ the image:
 | Variable | Default in the image | Notes |
 |---|---|---|
 | `DATA_MODE` | `cached` | Keep `cached` for the demo. `live` needs the Earth Engine credentials. |
-| `FRONTEND_DIR` | `/srv/frontend` | Unset it to serve the API only. |
+| `FRONTEND_DIR` | `/srv/frontend` | `/srv/frontend-app` serves the React app. Unset it to serve the API only. |
 | `CORS_ORIGINS` | localhost dev ports | Only needed if a frontend is hosted on another domain. |
 | `PORT` | set by Railway | Don't set it. |
 

@@ -25,3 +25,44 @@ jobs:
 
       - name: Tests (includes API contract check)
         run: make test
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend-app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend-app/package-lock.json
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck and build
+        run: npm run build
+
+      - name: Built assets use the /app/ base
+        run: grep -q 'src="/app/assets/' dist/index.html
+
+  image:
+    # Builds the production image and serves both frontends, so a broken build fails here, not on Railway.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t harvest .
+
+      - name: Smoke test
+        run: |
+          docker run -d --name harvest -p 8000:8000 -e FRONTEND_DIR=/srv/frontend-app harvest
+          for i in $(seq 1 30); do curl -fs http://localhost:8000/health && break; sleep 2; done
+          curl -fs http://localhost:8000/app/ | grep -q 'Guardians of the Harvest'
+          asset=$(curl -fs http://localhost:8000/app/ | grep -o '/app/assets/[^"]*\.js' | head -1)
+          curl -fs "http://localhost:8000$asset" > /dev/null
+          docker exec harvest test -f /srv/frontend/index.html

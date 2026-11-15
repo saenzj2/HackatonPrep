@@ -15,6 +15,22 @@ Template:
 
 ---
 
+## 2026-11-15 — Frontend: React + Vite + TypeScript in `frontend-app/`
+- **Decision:** the real UI is a React app in `frontend-app/` (Vite, TypeScript, hash routes). The
+  root `Dockerfile` builds it in a Node stage and ships `dist/` at `/srv/frontend-app` next to the
+  static skeleton at `/srv/frontend`. `FRONTEND_DIR` stays on the skeleton until the React app covers
+  the demo flow; then the switch is one Railway variable, with no rebuild and an instant rollback.
+  CI gains a `frontend` job (typecheck + build) and an `image` job (build the image, smoke-test `/app/`).
+- **Why:** team choice after comparing it with extending the static skeleton and with Streamlit.
+  React scales best to the planned screens (map, profile, priorities, comparison, calendar,
+  glossary). `base: '/app/'` matches where FastAPI mounts the files; hash routes avoid 404s on reload
+  because `StaticFiles` has no SPA fallback. The `image` job catches a broken build before Railway does.
+- **Alternatives considered:** extend `frontend/` without a build (least deploy risk, harder to
+  maintain); Streamlit (the team reads Python, but it is a second server and gives little design
+  control); replace `frontend/` in place (production could serve the unbuilt source `index.html`
+  and current tests would not notice).
+- **Revisit if:** nobody on the team can review or debug the React code before the demo.
+
 ## 2026-11-15 — Deploy: one Railway service (API + static frontend), deployed from GitHub Actions
 - **Decision:** the root `Dockerfile` builds one image that runs the API and serves `frontend/` at
   `/app` (`FRONTEND_DIR`; `/` redirects there). Railway runs it in `cached` mode, so production

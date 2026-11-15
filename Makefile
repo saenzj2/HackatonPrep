@@ -20,7 +20,7 @@ PYTHON ?= $(shell for p in python3.13 python3.12 python3.11 python3 python py; d
 FAST := -m "not slow and not network"
 
 .DEFAULT_GOAL := help
-.PHONY: help setup install hooks dev test test-all lint fmt check clean cache-snapshot
+.PHONY: help setup install hooks dev test test-all lint fmt check clean cache-snapshot web-install web-dev web-build
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
@@ -45,6 +45,15 @@ hooks: ## Install pre-commit git hooks
 
 dev: ## Run API + frontend with auto-reload on http://localhost:8000 (app at /app, docs at /docs)
 	cd $(BACKEND) && FRONTEND_DIR=../frontend $(BIN)/uvicorn app.main:create_app --factory --reload --port 8000
+
+web-install: ## Install the React app dependencies (frontend-app/, needs Node >= 22)
+	cd frontend-app && npm ci
+
+web-dev: ## React app with hot reload on http://localhost:5173/app/ (run make dev in another terminal)
+	cd frontend-app && npm run dev
+
+web-build: ## Typecheck and build the React app into frontend-app/dist
+	cd frontend-app && npm run build
 
 test: ## Fast tests (no network, no slow)
 	cd $(BACKEND) && $(BIN)/pytest -q $(FAST)
