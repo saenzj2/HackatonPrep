@@ -1,11 +1,10 @@
 import { Link } from "react-router";
-import { VideoEmbed } from "../components/VideoEmbed";
-import { VIDEOS } from "../videos";
 
 export function Home() {
   return (
     <div className="stack">
       <section className="hero">
+        <p className="tagline">Earth insights from space for more productive, resilient, and sustainable agriculture.</p>
         <h1>Compare crop rotations for your field</h1>
         <p className="lead">
           See how each rotation fits your field's climate, water and soil, using NASA Earth
@@ -37,15 +36,6 @@ export function Home() {
             <p>See ranked rotations with the reasons, the risks and what the data cannot tell.</p>
           </li>
         </ol>
-      </section>
-
-      <section aria-labelledby="videos">
-        <h2 id="videos">Videos</h2>
-        <div className="grid grid--3">
-          {VIDEOS.map((video) => (
-            <VideoEmbed key={video.id} video={video} />
-          ))}
-        </div>
       </section>
 
       <p className="notice notice--info small">

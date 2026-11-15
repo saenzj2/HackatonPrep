@@ -156,9 +156,9 @@ function RotationCard({ rotation, hasCurrent }: { rotation: Rotation; hasCurrent
       </div>
 
       <div aria-label="Score by part">
-        <Bar label="Climate" value={rotation.breakdown.climate} />
-        <Bar label="Water" value={rotation.breakdown.water} />
-        <Bar label="Soil" value={rotation.breakdown.soil} soil />
+        <Bar label="Climate" value={rotation.breakdown.climate} kind="climate" />
+        <Bar label="Water" value={rotation.breakdown.water} kind="water" />
+        <Bar label="Soil" value={rotation.breakdown.soil} kind="soil" />
       </div>
 
       <p>{rotation.explanation.en}</p>
@@ -210,13 +210,13 @@ function RotationCard({ rotation, hasCurrent }: { rotation: Rotation; hasCurrent
   );
 }
 
-function Bar({ label, value, soil = false }: { label: string; value: number | null; soil?: boolean }) {
+function Bar({ label, value, kind }: { label: string; value: number | null; kind: "climate" | "water" | "soil" }) {
   return (
     <div className="bar">
       <span>{label}</span>
       <span className="bar__track" aria-hidden="true">
         {value != null && (
-          <span className={`bar__fill${soil ? " bar__fill--soil" : ""}`} style={{ width: `${value * 100}%`, display: "block" }} />
+          <span className={`bar__fill bar__fill--${kind}`} style={{ width: `${value * 100}%`, display: "block" }} />
         )}
       </span>
       <span>{value != null ? value.toFixed(2) : "Not scored"}</span>

@@ -1,4 +1,5 @@
 import { HashRouter, Link, NavLink, Route, Routes } from "react-router";
+import { BackgroundVideo } from "./components/BackgroundVideo";
 import { Field } from "./pages/Field";
 import { Home } from "./pages/Home";
 import { Learn } from "./pages/Learn";
@@ -20,12 +21,14 @@ export function App() {
   return (
     <HashRouter>
       <PlanProvider>
+        <BackgroundVideo />
         <a href="#main" className="skip-link">
           Skip to content
         </a>
         <header className="site-header">
           <div className="site-header__inner">
             <Link to="/" className="brand">
+              <img src={`${import.meta.env.BASE_URL}logo-96.png`} alt="" width={40} height={40} />
               Terra Cosmos
             </Link>
             <nav className="nav" aria-label="Main">
