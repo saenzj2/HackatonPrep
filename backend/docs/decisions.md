@@ -15,6 +15,21 @@ Template:
 
 ---
 
+## 2026-11-14 — Restore daily extrema (#85) and the recommendations contract test (#84)
+- **Decision:** Re-apply the code, fixture, tests and docs of PRs #85 and #84 that the merge
+  `9dc6b76` (main into `feat/planting-windows`, shipped with #86) dropped. Main still had the #85
+  decision entry below, but `DAILY_PARAMETERS` was back to `T2M,PRECTOTCORR`, the San José fixture had
+  no extrema and `tests/test_recommendations_contract.py` / `contract_validator()` were gone. The
+  planting-windows (#86) and OpenLandMap (#87) changes are kept as they are.
+- **Cache:** same as the #85 entry: daily requests are keyed by `T2M,T2M_MAX,T2M_MIN,PRECTOTCORR` again.
+  Daily entries cached while main requested `T2M,PRECTOTCORR` have no extrema and sit under
+  the old key. They are **not compatible** and are never served. In `cached` mode those points raise
+  `cache_miss` until refetched once in `live` mode.
+- **Why:** The #85 entry and `docs/indicators.md` described behavior main no longer had, and #41's
+  contract coverage on the real POWER fixture had disappeared without anyone deciding to remove it.
+- **Revisit if:** a future merge touches `nasa_power.py` or `tests/conftest.py`; check that these
+  tests still exist.
+
 ## 2026-11-14 — Planting windows per crop from NASA POWER monthly climate
 - **Decision:** `app/domain/planting_windows.py` scores each crop for every sowing month (Jan..Dec)
   over the months it spends in the field (cycle rounded up to whole months, wrapping the year), with

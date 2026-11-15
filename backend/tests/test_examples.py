@@ -7,14 +7,12 @@ If this fails after a contract change, regenerate them:
 import json
 
 import pytest
-import yaml
-from jsonschema import Draft202012Validator, FormatChecker
 
 from app.settings import BACKEND_DIR
 from scripts.make_examples import build_examples, render
+from tests.conftest import contract_validator
 
 EXAMPLES_DIR = BACKEND_DIR / "docs" / "examples"
-CONTRACT = yaml.safe_load((BACKEND_DIR / "docs" / "api-contract.yaml").read_text(encoding="utf-8"))
 
 # example file → contract schema it must satisfy
 EXAMPLES = {
@@ -25,14 +23,6 @@ EXAMPLES = {
 }
 
 
-def _validator(schema_name: str) -> Draft202012Validator:
-    schema = {
-        "$ref": f"#/components/schemas/{schema_name}",
-        "components": CONTRACT["components"],
-    }
-    return Draft202012Validator(schema, format_checker=FormatChecker())
-
-
 def test_every_example_file_is_checked():
     assert {p.name for p in EXAMPLES_DIR.glob("*.json")} == set(EXAMPLES)
 
@@ -40,7 +30,7 @@ def test_every_example_file_is_checked():
 @pytest.mark.parametrize(("file_name", "schema_name"), sorted(EXAMPLES.items()))
 def test_example_matches_contract(file_name, schema_name):
     body = json.loads((EXAMPLES_DIR / file_name).read_text(encoding="utf-8"))
-    errors = [e.message for e in _validator(schema_name).iter_errors(body)]
+    errors = [e.message for e in contract_validator(schema_name).iter_errors(body)]
     assert errors == []
 
 

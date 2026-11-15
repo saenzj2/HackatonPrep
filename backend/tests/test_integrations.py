@@ -180,11 +180,59 @@ JAN_2026 = {"lat": 9.93, "lon": -84.08, "start": date(2026, 1, 1), "end": date(2
 
 def test_parse_daily_real_response():
     df = parse_daily(load_fixture(DAILY_FIXTURE))
-    assert list(df.columns) == ["date", "temperature_c", "rainfall_mm"]
+    assert list(df.columns) == [
+        "date",
+        "temperature_c",
+        "temperature_max_c",
+        "temperature_min_c",
+        "rainfall_mm",
+    ]
     assert len(df) == 31
     assert df["date"].iloc[0] == pd.Timestamp("2026-01-01")
     assert df["temperature_c"].iloc[0] == pytest.approx(22.43)  # T2M, °C
     assert df["rainfall_mm"].iloc[-1] == pytest.approx(8.67)  # PRECTOTCORR, mm/day as is
+
+
+def test_parse_daily_reads_true_daily_max_and_min():
+    df = parse_daily(load_fixture(DAILY_FIXTURE))
+    assert df["temperature_max_c"].iloc[0] == pytest.approx(27.06)  # T2M_MAX, °C
+    assert df["temperature_min_c"].iloc[0] == pytest.approx(19.48)  # T2M_MIN, °C
+
+
+def test_parse_daily_extrema_bracket_the_daily_mean():
+    # Sanity check on the real response: max >= mean >= min every day (they are distinct values).
+    df = parse_daily(load_fixture(DAILY_FIXTURE))
+    assert (df["temperature_max_c"] >= df["temperature_c"]).all()
+    assert (df["temperature_c"] >= df["temperature_min_c"]).all()
+
+
+@pytest.mark.parametrize("param", ["T2M_MAX", "T2M_MIN"])
+def test_parse_daily_extrema_fill_value_becomes_nan_for_that_variable_only(param):
+    raw = load_fixture(DAILY_FIXTURE)
+    raw["properties"]["parameter"][param]["20260105"] = -999.0
+    df = parse_daily(raw)
+    column = {"T2M_MAX": "temperature_max_c", "T2M_MIN": "temperature_min_c"}[param]
+    assert pd.isna(df.loc[4, column])
+    assert df.loc[4, "temperature_c"] == pytest.approx(22.19)  # mean is kept
+
+
+@pytest.mark.parametrize("param", ["T2M_MAX", "T2M_MIN"])
+def test_parse_daily_rejects_a_response_without_extrema(param):
+    raw = load_fixture(DAILY_FIXTURE)
+    del raw["properties"]["parameter"][param]
+    with pytest.raises(SourceDataError, match=f"Unexpected NASA POWER daily payload.*{param}"):
+        parse_daily(raw)
+
+
+@pytest.mark.parametrize(
+    ("param", "unit"), [("T2M_MAX", "F"), ("T2M_MIN", "K"), ("PRECTOTCORR", "mm/hour")]
+)
+def test_parse_daily_rejects_unexpected_units(param, unit):
+    raw = load_fixture(DAILY_FIXTURE)
+    raw["parameters"][param]["units"] = unit
+    with pytest.raises(SourceDataError, match=f"daily {param} is in") as exc:
+        parse_daily(raw)
+    assert exc.value.details == {"source": "nasa_power_daily", "parameter": param}
 
 
 def test_parse_daily_turns_fill_values_into_nan():
@@ -216,8 +264,26 @@ def test_parse_daily_rejects_all_fill_values():
     "raw",
     [
         {"messages": ["boom"]},
-        {"properties": {"parameter": {"T2M": {"2026-01-01": 22.0}, "PRECTOTCORR": {}}}},
-        {"properties": {"parameter": {"T2M": {"20260101": "hot"}, "PRECTOTCORR": {}}}},
+        {
+            "properties": {
+                "parameter": {
+                    "T2M": {"2026-01-01": 22.0},
+                    "T2M_MAX": {},
+                    "T2M_MIN": {},
+                    "PRECTOTCORR": {},
+                }
+            }
+        },
+        {
+            "properties": {
+                "parameter": {
+                    "T2M": {"20260101": "hot"},
+                    "T2M_MAX": {},
+                    "T2M_MIN": {},
+                    "PRECTOTCORR": {},
+                }
+            }
+        },
     ],
     ids=["missing_keys", "bad_date", "non_numeric"],
 )
@@ -237,6 +303,7 @@ def test_daily_weather_fetches_and_caches(tmp_path):
     sent = route.calls[0].request.url.params
     assert sent["start"] == "20260101"
     assert sent["end"] == "20260131"
+    assert sent["parameters"] == "T2M,T2M_MAX,T2M_MIN,PRECTOTCORR"
 
     offline = NasaPowerClimate(JsonCache(tmp_path, DataMode.CACHED))
     assert len(offline.daily_weather(**JAN_2026)) == 31
@@ -250,6 +317,18 @@ def test_daily_weather_http_error_is_source_unavailable(tmp_path):
         NasaPowerClimate(JsonCache(tmp_path, DataMode.LIVE)).daily_weather(**JAN_2026)
 
 
+def test_daily_weather_ignores_cache_entries_saved_without_extrema(tmp_path):
+    # Entries cached before T2M_MAX / T2M_MIN were requested sit under the old key. They are never
+    # served (they have no extrema), so cached mode asks for one live refetch instead.
+    cache = JsonCache(tmp_path, DataMode.LIVE)
+    params = NasaPowerClimate.daily_request_params(9.93, -84.08, JAN_2026["start"], JAN_2026["end"])
+    legacy = {**params, "parameters": "T2M,PRECTOTCORR"}
+    cache.get_or_fetch("nasa_power_daily", legacy, lambda: load_fixture(DAILY_FIXTURE))
+    assert cache.path_for("nasa_power_daily", legacy) != cache.path_for("nasa_power_daily", params)
+    with pytest.raises(CacheMissError, match="data_mode=live"):
+        NasaPowerClimate(JsonCache(tmp_path, DataMode.CACHED)).daily_weather(**JAN_2026)
+
+
 def test_daily_weather_cached_mode_miss(tmp_path):
     with pytest.raises(CacheMissError, match="data_mode=live"):
         NasaPowerClimate(JsonCache(tmp_path, DataMode.CACHED)).daily_weather(**JAN_2026)
@@ -260,6 +339,8 @@ def test_real_power_daily_api(tmp_path):
     """Calls the real API. Run with `make test-all`. Not part of CI."""
     df = NasaPowerClimate(JsonCache(tmp_path, DataMode.LIVE)).daily_weather(**JAN_2026)
     assert len(df) == 31
+    assert df["temperature_max_c"].notna().all()
+    assert df["temperature_min_c"].notna().all()
 
 
 # ---------------------------------------------------------------- OpenTopography (SRTM GL1)

@@ -6,11 +6,12 @@ General backend rules: [`backend/AGENTS.md`](../AGENTS.md).
 ## Files
 | File | Tests |
 |---|---|
-| `conftest.py` | fixtures: `client`, `make_client(**config_overrides)`, `env`, `config`, `load_fixture()` |
+| `conftest.py` | fixtures: `client`, `make_client(**config_overrides)`, `env`, `config`, `load_fixture()`, `contract_validator()` |
 | `test_domain.py` | scoring and ranking (pure, no app) |
 | `test_planting_windows.py` | best sowing months per crop (toy climate) |
 | `test_rotation_rules.py` | rotation rules: verdict and reason per crop pair |
 | `test_api.py` | every endpoint's happy path through `TestClient` |
+| `test_recommendations_contract.py` | `POST /recommendations` on the real NASA POWER fixture (`cached` mode) validated against the contract |
 | `test_errors.py` | **every error response**: envelope, code, status, request id, logging (`assert_error`) |
 | `test_error_policy.py` | static enforcement of `docs/errors.md` across `app/` |
 | `test_architecture.py` | layer import rules |
