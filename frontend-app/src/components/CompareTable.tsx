@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { api, type Rotation } from "../api/client";
+import { useCropName } from "../cropNames";
 import { capitalize, monthSpan, signed } from "../format";
+import { useI18n } from "../i18n";
 
 // Side-by-side comparison of the recommended options and the farmer's current rotation: one column
 // per option, one row per measure. The best value in each row is marked with a check and bold text
@@ -15,20 +17,24 @@ interface Column {
 /** Worst crop of a rotation in the past-weather check: failed years out of evaluated years. */
 type Failures = { failed: number; of: number } | null;
 
-function columnsOf(rotations: Rotation[], current: Rotation | null): Column[] {
+type Tr = (en: string, es: string) => string;
+
+function columnsOf(rotations: Rotation[], current: Rotation | null, tr: Tr): Column[] {
   const cols = rotations.map((r) => ({
     key: `opt-${r.rank}`,
-    title: r.is_current ? "Your current rotation" : `Option ${r.rank}`,
+    title: r.is_current ? tr("Your current rotation", "Su rotación actual") : tr(`Option ${r.rank}`, `Opción ${r.rank}`),
     rotation: r,
   }));
   if (current && !rotations.some((r) => r.is_current)) {
-    cols.push({ key: "current", title: "Your current rotation", rotation: current });
+    cols.push({ key: "current", title: tr("Your current rotation", "Su rotación actual"), rotation: current });
   }
   return cols;
 }
 
 export function CompareTable({ lat, lon, rotations, current }: { lat: number; lon: number; rotations: Rotation[]; current: Rotation | null }) {
-  const cols = columnsOf(rotations, current);
+  const { tr, lang, num } = useI18n();
+  const cropName = useCropName();
+  const cols = columnsOf(rotations, current, tr);
   const [failures, setFailures] = useState<Record<string, Failures> | null>(null);
   const key = JSON.stringify({ lat, lon, cols: cols.map((c) => c.rotation.sequence.map((s) => s.crop_id)) });
 
@@ -61,7 +67,7 @@ export function CompareTable({ lat, lon, rotations, current }: { lat: number; lo
   if (cols.length < 2) return null;
 
   const seasons = cols[0].rotation.sequence.map((s) => ({ name: s.season, months: s.months }));
-  const num = (v: number | null) => (v == null ? "Not scored" : v.toFixed(2));
+  const score2 = (v: number | null) => (v == null ? tr("Not scored", "Sin puntaje") : num(v));
 
   // Columns with the best value in a row (ties all count); empty when every column ties.
   const best = (values: (number | null)[], higherIsBetter = true): number[] => {
@@ -82,45 +88,51 @@ export function CompareTable({ lat, lon, rotations, current }: { lat: number; lo
 
   const rows: Row[] = [
     ...seasons.map((s, i) => ({
-      label: `${capitalize(s.name)} (${monthSpan(s.months)})`,
-      cells: cols.map((c) => c.rotation.sequence[i]?.crop_name ?? "–"),
+      label: `${capitalize(s.name)} (${monthSpan(s.months, lang)})`,
+      cells: cols.map((c) => {
+        const step = c.rotation.sequence[i];
+        return step ? cropName(step.crop_id, step.crop_name) : "–";
+      }),
       bestIndex: [],
     })),
-    { label: "Overall score (0 to 1)", cells: score.map((v) => v.toFixed(2)), bestIndex: best(score) },
-    { label: "Climate", cells: climate.map(num), bestIndex: best(climate) },
-    { label: "Water", cells: water.map(num), bestIndex: best(water) },
-    { label: "Soil", cells: soil.map(num), bestIndex: best(soil) },
+    { label: tr("Overall score (0 to 1)", "Puntaje total (0 a 1)"), cells: score.map((v) => num(v)), bestIndex: best(score) },
+    { label: tr("Climate", "Clima"), cells: climate.map(score2), bestIndex: best(climate) },
+    { label: tr("Water", "Agua"), cells: water.map(score2), bestIndex: best(water) },
+    { label: tr("Soil", "Suelo"), cells: soil.map(score2), bestIndex: best(soil) },
     ...(current
       ? [
           {
-            label: "Compared with what you grow now",
+            label: tr("Compared with what you grow now", "Comparada con lo que siembra hoy"),
             cells: cols.map((c) =>
-              c.rotation.is_current || c.key === "current" ? "Baseline" : c.rotation.score_delta_vs_current != null ? signed(c.rotation.score_delta_vs_current) : "–",
+              c.rotation.is_current || c.key === "current" ? tr("Baseline", "Punto de partida") : c.rotation.score_delta_vs_current != null ? signed(c.rotation.score_delta_vs_current, lang) : "–",
             ),
             bestIndex: [],
           },
         ]
       : []),
     {
-      label: "Past seasons with a failed crop",
-      hint: "Worst crop of the rotation in NASA daily weather since 2000, sown on the 15th of each season's first month",
+      label: tr("Past seasons with a failed crop", "Temporadas pasadas con un cultivo perdido"),
+      hint: tr(
+        "Worst crop of the rotation in NASA daily weather since 2000, sown on the 15th of each season's first month",
+        "Cultivo con peor resultado de la rotación según el clima diario de la NASA desde el 2000, sembrado el 15 del primer mes de cada época",
+      ),
       cells: cols.map((c) => {
-        if (!failures) return "Checking…";
+        if (!failures) return tr("Checking…", "Revisando…");
         const f = failures[c.key];
-        return f ? `${f.failed} of ${f.of}` : "Not available";
+        return f ? tr(`${f.failed} of ${f.of}`, `${f.failed} de ${f.of}`) : tr("Not available", "No disponible");
       }),
       bestIndex: failures ? best(failed, false) : [],
     },
-    { label: "Benefits", cells: benefits.map(String), bestIndex: best(benefits) },
-    { label: "Things to watch", cells: risks.map(String), bestIndex: best(risks, false) },
+    { label: tr("Benefits", "Beneficios"), cells: benefits.map(String), bestIndex: best(benefits) },
+    { label: tr("Things to watch", "Aspectos a vigilar"), cells: risks.map(String), bestIndex: best(risks, false) },
   ];
 
   return (
     <section className="panel stack compare" aria-labelledby="compare-title">
       <div>
-        <span className="eyebrow">Compare</span>
-        <h2 id="compare-title">Options side by side</h2>
-        <p className="muted small">The best value in each row is marked with ✓.</p>
+        <span className="eyebrow">{tr("Compare", "Comparar")}</span>
+        <h2 id="compare-title">{tr("Options side by side", "Opciones lado a lado")}</h2>
+        <p className="muted small">{tr("The best value in each row is marked with ✓.", "El mejor valor de cada fila lleva ✓.")}</p>
       </div>
       <div className="table-scroll">
         <table className="compare__table">
@@ -130,7 +142,7 @@ export function CompareTable({ lat, lon, rotations, current }: { lat: number; lo
               {cols.map((c, i) => (
                 <th key={c.key} scope="col" className={i === 0 ? "compare__col--best" : undefined}>
                   {c.title}
-                  {i === 0 && !c.rotation.is_current && <span className="tag compare__tag">Recommended</span>}
+                  {i === 0 && !c.rotation.is_current && <span className="tag compare__tag">{tr("Recommended", "Recomendada")}</span>}
                 </th>
               ))}
             </tr>
@@ -150,7 +162,7 @@ export function CompareTable({ lat, lon, rotations, current }: { lat: number; lo
                       </span>
                     )}
                     {cell}
-                    {row.bestIndex.includes(i) && <span className="visually-hidden"> (best)</span>}
+                    {row.bestIndex.includes(i) && <span className="visually-hidden">{tr(" (best)", " (mejor)")}</span>}
                   </td>
                 ))}
               </tr>

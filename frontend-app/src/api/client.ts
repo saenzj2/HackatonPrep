@@ -22,6 +22,7 @@ export interface HealthResponse {
 export interface Crop {
   id: string;
   name: string;
+  name_es?: string;
   family: string;
   is_legume: boolean;
   is_cover_crop: boolean;

@@ -5,22 +5,33 @@ import { ErrorNotice } from "../components/ErrorNotice";
 import { NeedsField } from "../components/NeedsField";
 import { Stepper } from "../components/Stepper";
 import { capitalize, monthSpan } from "../format";
+import { useI18n, type Bilingual } from "../i18n";
 import { usePlan } from "../state/PlanContext";
 
-const PRIORITY_INFO: { key: keyof Priorities; label: string; hint: string }[] = [
-  { key: "water", label: "Water", hint: "Rainfall and soil moisture fit the crop" },
-  { key: "soil", label: "Soil", hint: "Soil pH fits the crop" },
-  { key: "climate", label: "Climate", hint: "Temperature, heat stress and frost risk" },
+const PRIORITY_INFO: { key: keyof Priorities; label: Bilingual; hint: Bilingual }[] = [
+  {
+    key: "water",
+    label: { en: "Water", es: "Agua" },
+    hint: { en: "Rainfall and soil moisture fit the crop", es: "La lluvia y la humedad del suelo le sirven al cultivo" },
+  },
+  { key: "soil", label: { en: "Soil", es: "Suelo" }, hint: { en: "Soil pH fits the crop", es: "El pH del suelo le sirve al cultivo" } },
+  {
+    key: "climate",
+    label: { en: "Climate", es: "Clima" },
+    hint: { en: "Temperature, heat stress and frost risk", es: "Temperatura, estrés por calor y riesgo de helada" },
+  },
 ];
 
 type CropsState = { kind: "loading" } | { kind: "ready"; crops: Crop[] } | { kind: "error"; error: unknown };
 
 export function Plan() {
+  const { tr, pick, lang } = useI18n();
   const { plan, setCrops, setCurrentRotation, setPriorities } = usePlan();
   const navigate = useNavigate();
   const [crops, setCropsState] = useState<CropsState>({ kind: "loading" });
-  const [formError, setFormError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<Bilingual | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const cropName = (c: Crop) => (lang === "es" && c.name_es ? c.name_es : c.name);
 
   useEffect(() => {
     let active = true;
@@ -77,11 +88,18 @@ export function Plan() {
   function submit(event: FormEvent) {
     event.preventDefault();
     const filled = plan.currentRotation.filter(Boolean).length;
-    if (selected.length === 0) return setFormError("Select at least one crop to consider.");
-    if (filled > 0 && filled < field.seasons.length) {
-      return setFormError("Choose a crop for every season of your current rotation, or leave all empty.");
+    if (selected.length === 0) {
+      return setFormError({ en: "Select at least one crop to consider.", es: "Elija al menos un cultivo para comparar." });
     }
-    if (weights && total === 0) return setFormError("Move at least one priority above zero.");
+    if (filled > 0 && filled < field.seasons.length) {
+      return setFormError({
+        en: "Choose a crop for every season of your current rotation, or leave all empty.",
+        es: "Elija un cultivo para cada época de su rotación actual, o deje todas vacías.",
+      });
+    }
+    if (weights && total === 0) {
+      return setFormError({ en: "Move at least one priority above zero.", es: "Suba al menos una prioridad por encima de cero." });
+    }
     setFormError(null);
     navigate("/results");
   }
@@ -89,36 +107,39 @@ export function Plan() {
   return (
     <div className="stack">
       <Stepper current="plan" />
-      <h1>Crops and priorities</h1>
+      <h1>{tr("Crops and priorities", "Cultivos y prioridades")}</h1>
       <p className="lead">
-        For <strong>{field.name}</strong>. <Link to="/field">Change field</Link>
+        {tr("For", "Para")} <strong>{field.name}</strong>. <Link to="/field">{tr("Change field", "Cambiar de campo")}</Link>
       </p>
 
-      {crops.kind === "loading" && <div className="skeleton" role="status" aria-label="Loading crops" />}
+      {crops.kind === "loading" && <div className="skeleton" role="status" aria-label={tr("Loading crops", "Cargando cultivos")} />}
       {crops.kind === "error" && <ErrorNotice error={crops.error} onRetry={() => setAttempt((n) => n + 1)} />}
 
       {crops.kind === "ready" && (
         <form className="stack" onSubmit={submit} noValidate>
           <fieldset>
-            <legend>What you grow now (optional)</legend>
+            <legend>{tr("What you grow now (optional)", "Lo que siembra hoy (opcional)")}</legend>
             <p className="hint">
-              One crop per season. We compare every option with it. Leave all empty if you have no current crop.
+              {tr(
+                "One crop per season. We compare every option with it. Leave all empty if you have no current crop.",
+                "Un cultivo por época. Comparamos cada opción con esto. Deje todo vacío si hoy no siembra nada.",
+              )}
             </p>
             <div className="grid grid--2">
               {field.seasons.map((season, i) => (
                 <div key={season.name}>
                   <label htmlFor={`season-${season.name}`}>
-                    {capitalize(season.name)} <span className="hint">({monthSpan(season.months)})</span>
+                    {capitalize(season.name)} <span className="hint">({monthSpan(season.months, lang)})</span>
                   </label>
                   <select
                     id={`season-${season.name}`}
                     value={plan.currentRotation[i] ?? ""}
                     onChange={(e) => setSeasonCrop(i, e.target.value)}
                   >
-                    <option value="">No crop / not sure</option>
+                    <option value="">{tr("No crop / not sure", "Ningún cultivo / no sé")}</option>
                     {crops.crops.map((crop) => (
                       <option key={crop.id} value={crop.id}>
-                        {crop.name}
+                        {cropName(crop)}
                       </option>
                     ))}
                   </select>
@@ -128,55 +149,58 @@ export function Plan() {
           </fieldset>
 
           <fieldset>
-            <legend>What matters most to you</legend>
+            <legend>{tr("What matters most to you", "Lo que más le importa")}</legend>
             <p className="hint">
-              Each slider sets how much that part counts in the ranking.
-              {!plan.priorities && " Now showing the default weights."}
+              {tr("Each slider sets how much that part counts in the ranking.", "Cada control define cuánto pesa esa parte en el orden.")}
+              {!plan.priorities && tr(" Now showing the default weights.", " Ahora se muestran los pesos por defecto.")}
             </p>
-            {!weights && <div className="skeleton" role="status" aria-label="Loading default weights" />}
+            {!weights && <div className="skeleton" role="status" aria-label={tr("Loading default weights", "Cargando pesos por defecto")} />}
             <div className="stack">
-              {weights && PRIORITY_INFO.map(({ key, label, hint }) => {
-                const share = total > 0 ? Math.round((weights[key] / total) * 100) : 0;
-                return (
-                  <div key={key}>
-                    <label htmlFor={`priority-${key}`}>
-                      {label}: {share}% <span className="hint">· {hint}</span>
-                    </label>
-                    <input
-                      id={`priority-${key}`}
-                      type="range"
-                      min={0}
-                      max={10}
-                      step={1}
-                      value={weights[key]}
-                      aria-valuetext={`${share}% of the ranking`}
-                      onChange={(e) => setPriorities({ ...weights, [key]: Number(e.target.value) })}
-                    />
-                  </div>
-                );
-              })}
+              {weights &&
+                PRIORITY_INFO.map(({ key, label, hint }) => {
+                  const share = total > 0 ? Math.round((weights[key] / total) * 100) : 0;
+                  return (
+                    <div key={key}>
+                      <label htmlFor={`priority-${key}`}>
+                        {pick(label)}: {share} % <span className="hint">· {pick(hint)}</span>
+                      </label>
+                      <input
+                        id={`priority-${key}`}
+                        type="range"
+                        min={0}
+                        max={10}
+                        step={1}
+                        value={weights[key]}
+                        aria-valuetext={tr(`${share}% of the ranking`, `${share} % del orden`)}
+                        onChange={(e) => setPriorities({ ...weights, [key]: Number(e.target.value) })}
+                      />
+                    </div>
+                  );
+                })}
             </div>
           </fieldset>
 
           <details className="panel" open={selected.length === 0}>
             <summary>
-              Crops to compare:{" "}
+              {tr("Crops to compare", "Cultivos para comparar")}:{" "}
               {selected.length === allIds.length
-                ? "all available"
+                ? tr("all available", "todos los disponibles")
                 : crops.crops
                     .filter((c) => selected.includes(c.id))
-                    .map((c) => c.name)
-                    .join(", ") || "none"}
+                    .map(cropName)
+                    .join(", ") || tr("none", "ninguno")}
             </summary>
             <fieldset className="fieldset--plain">
-              <legend className="visually-hidden">Crops you can grow</legend>
-              <p className="hint">Rotations are built only from the crops you select.</p>
+              <legend className="visually-hidden">{tr("Crops you can grow", "Cultivos que puede sembrar")}</legend>
+              <p className="hint">
+                {tr("Rotations are built only from the crops you select.", "Las rotaciones se arman solo con los cultivos que elija.")}
+              </p>
               {crops.crops.map((crop) => (
                 <label key={crop.id} className="check">
                   <input type="checkbox" checked={selected.includes(crop.id)} onChange={() => toggleCrop(crop.id)} />
-                  {crop.name}
-                  {crop.is_legume && <span className="tag">Legume</span>}
-                  {crop.is_cover_crop && <span className="tag">Cover crop</span>}
+                  {cropName(crop)}
+                  {crop.is_legume && <span className="tag">{tr("Legume", "Leguminosa")}</span>}
+                  {crop.is_cover_crop && <span className="tag">{tr("Cover crop", "Cultivo de cobertura")}</span>}
                 </label>
               ))}
             </fieldset>
@@ -184,16 +208,16 @@ export function Plan() {
 
           {formError && (
             <p className="field-error" role="alert">
-              {formError}
+              {pick(formError)}
             </p>
           )}
 
           <div className="btn-row">
             <Link to="/field" className="btn btn--secondary">
-              Back
+              {tr("Back", "Atrás")}
             </Link>
             <button type="submit" className="btn">
-              Compare rotations
+              {tr("Compare rotations", "Comparar rotaciones")}
             </button>
           </div>
         </form>

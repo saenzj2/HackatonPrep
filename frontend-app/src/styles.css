@@ -1396,3 +1396,52 @@ details[open] > :not(summary) {
 .compare__check {
   color: var(--agri-green);
 }
+
+/* ---- Language switch (App.tsx): EN | ES, English by default ---- */
+.header-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.lang-switch {
+  display: inline-flex;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.lang-switch button {
+  min-width: 40px;
+  min-height: 34px;
+  padding: 4px 10px;
+  border: 0;
+  background: transparent;
+  color: #d4e4ef;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lang-switch button[aria-pressed="true"] {
+  background: var(--growth-lime);
+  color: var(--space-navy);
+}
+
+.lang-switch button:hover:not([aria-pressed="true"]) {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--white);
+}
+
+/* Desktop: brand, nav, then the switch at the far right. */
+@media (min-width: 761px) {
+  .header-tools {
+    order: 3;
+    margin-left: 0;
+  }
+  .nav {
+    margin-left: auto;
+  }
+}
