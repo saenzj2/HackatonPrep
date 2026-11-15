@@ -42,7 +42,7 @@ pass the interpreter explicitly: `make setup PYTHON=py` (Windows launcher) or th
 |------|-------|--------|
 | Backend API | `make dev` → http://localhost:8000/docs | Works with mock data out of the box |
 | Local MVP preview | `python tools/local-mvp-preview/serve.py` → http://127.0.0.1:8765 | Independent offline explorer, not the team frontend |
-| Team frontend | — | Not in this repo yet; tracked in issue #14 |
+| Team frontend | — | Not in this repo yet; tracked in issue #14. Start with [`backend/docs/frontend-guide.md`](backend/docs/frontend-guide.md) |
 
 ### Try it
 
@@ -129,6 +129,7 @@ External Sentinel-2, WorldCover, SoilGrids and FTW research images are not backe
 | `backend/app/cache/` | On-disk cache so the demo doesn't depend on the internet |
 | `backend/config/mvp.yaml` | MVP scope (region, crops, variables, weights) |
 | `backend/docs/api-contract.yaml` | **API contract** (OpenAPI), the agreement with the frontend |
+| `backend/docs/frontend-guide.md` | **Frontend guide**: every endpoint and field, real examples, errors, how to display each piece, TS types |
 | `backend/docs/errors.md` | **Error guide** (mandatory): codes, envelope, rules, frontend handling |
 | `backend/docs/decisions.md` | Log of technical decisions |
 | `backend/docs/sources/` | One page per dataset: variables, units, coverage, license |
