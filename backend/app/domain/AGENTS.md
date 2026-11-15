@@ -12,6 +12,7 @@ General backend rules: [`backend/AGENTS.md`](../../AGENTS.md).
 - `indicators.py`: daily series → monthly indicators (rain, dry spells, extremes; heat/frost only from true max/min).
 - `planting_windows.py`: best sowing months per crop (each month scored over the crop's cycle with
   `crop_season_fit`), grouped into windows. Extra info; rotations still use the configured seasons.
+- `text.py`: `Text(en, es)` for every farmer-facing sentence, plus month, family and number helpers.
 - `rotation_rules.py`: one crop after another → verdict (favoured / allowed / discouraged), reasons, score
   adjustment. Add a rule: one function + one entry in `RULES`.
 - `ranking.py`: builds every rotation, applies the rotation rules to each pair, sorts, writes the explanation.

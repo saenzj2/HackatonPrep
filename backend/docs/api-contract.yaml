@@ -293,6 +293,10 @@ components:
         name:
           type: string
           title: Name
+        name_es:
+          type: string
+          title: Name Es
+          description: Name in Spanish (Costa Rica)
         scientific_name:
           type: string
           title: Scientific Name
@@ -355,6 +359,7 @@ components:
       required:
       - id
       - name
+      - name_es
       - scientific_name
       - family
       - is_legume
@@ -699,8 +704,7 @@ components:
         breakdown:
           $ref: '#/components/schemas/CategoryBreakdown'
         explanation:
-          type: string
-          title: Explanation
+          $ref: '#/components/schemas/LocalizedText'
         is_current:
           type: boolean
           title: Is Current
@@ -713,31 +717,31 @@ components:
           description: score minus the current rotation's score; null without current_rotation
         benefits:
           items:
-            type: string
+            $ref: '#/components/schemas/LocalizedText'
           type: array
           title: Benefits
           description: Why this rotation helps (soil, pests, fit)
         risks:
           items:
-            type: string
+            $ref: '#/components/schemas/LocalizedText'
           type: array
           title: Risks
           description: What could go wrong; check locally before acting
         data_gaps:
           items:
-            type: string
+            $ref: '#/components/schemas/LocalizedText'
           type: array
           title: Data Gaps
           description: Missing or approximate data behind this result
         evidence:
           items:
-            type: string
+            $ref: '#/components/schemas/LocalizedText'
           type: array
           title: Evidence
           description: The data values the score is based on, with sources
         notes:
           items:
-            type: string
+            $ref: '#/components/schemas/LocalizedText'
           type: array
           title: Notes
           description: 'Deprecated: benefits + risks. Use those instead.'
@@ -932,7 +936,7 @@ components:
           description: Always 12, January first
         fixed_limits:
           items:
-            type: string
+            $ref: '#/components/schemas/LocalizedText'
           type: array
           title: Fixed Limits
           description: Factors that are the same in every month (soil pH) and limit this crop here
@@ -1028,9 +1032,8 @@ components:
             the same every month: see fixed_limits). Waterlogging never makes a month not good: see waterlogging_risk'
         dry_month_note:
           anyOf:
-          - type: string
+          - $ref: '#/components/schemas/LocalizedText'
           - type: 'null'
-          title: Dry Month Note
           description: Why this sowing month fails the dry-month check (a month in the field, harvest excluded,
             gets too little rain to establish and grow); null when it passes
         waterlogging_risk:
@@ -1061,6 +1064,21 @@ components:
       - limiting_factor
       - variable_scores
       title: SowingMonth
+    LocalizedText:
+      properties:
+        en:
+          type: string
+          title: En
+        es:
+          type: string
+          title: Es
+      additionalProperties: false
+      type: object
+      required:
+      - en
+      - es
+      title: LocalizedText
+      description: Farmer-facing text in English and Spanish (Costa Rica). Show the one the user picked.
 servers:
 - url: http://localhost:8000
   description: Local dev (make dev)

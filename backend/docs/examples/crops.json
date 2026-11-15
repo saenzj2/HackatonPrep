@@ -3,6 +3,7 @@
     {
       "id": "rice",
       "name": "Rice",
+      "name_es": "Arroz",
       "scientific_name": "Oryza sativa",
       "family": "Poaceae",
       "is_legume": false,
@@ -48,13 +49,15 @@
       "sources": [
         "FAO EcoCrop ecoportcode 1574 via Adaptation Atlas parquet (tolerance ranges, 2026-11-14)",
         "FAO-56 Table 22 (root depth)",
-        "team estimate (cover crop, forage, nutrition, mycorrhizal, nitrogen demand)"
+        "team estimate (cover crop, forage, nutrition, nitrogen demand)",
+        "Vallino et al. 2014, doi:10.1111/pce.12177 (mycorrhizal: low in flooded rice)"
       ],
       "verified": true
     },
     {
       "id": "beans",
       "name": "Common bean",
+      "name_es": "Frijol",
       "scientific_name": "Phaseolus vulgaris",
       "family": "Fabaceae",
       "is_legume": true,
@@ -107,6 +110,7 @@
     {
       "id": "maize",
       "name": "Maize",
+      "name_es": "Maíz",
       "scientific_name": "Zea mays",
       "family": "Poaceae",
       "is_legume": false,
@@ -133,8 +137,8 @@
       "is_cover_crop": false,
       "needs_good_drainage": true,
       "forage_value": {
-        "level": "high",
-        "score": 1.0
+        "level": "medium",
+        "score": 0.67
       },
       "nutrition_density": {
         "level": "medium",
@@ -148,11 +152,12 @@
         "level": "high",
         "score": 1.0
       },
-      "market_note": "Staple grain and its stover is valued as cattle feed",
+      "market_note": "Staple grain and its fibrous low-protein stover is still valued as cattle feed",
       "sources": [
         "FAO EcoCrop ecoportcode 238663 via Adaptation Atlas parquet (tolerance ranges, 2026-11-14)",
         "FAO-56 Table 22 (root depth)",
-        "team estimate (cover crop, forage, nutrition, mycorrhizal, nitrogen demand)"
+        "team estimate (cover crop, nutrition, mycorrhizal, nitrogen demand)",
+        "Feedipedia, maize stover (forage: fibrous, low digestibility)"
       ],
       "verified": true
     }

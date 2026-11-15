@@ -57,6 +57,8 @@ class EcoCropCatalog:
                 crop = CropProfile(
                     id=row["id"].strip(),
                     name=row["name"].strip(),
+                    name_es=row["name_es"].strip() or None,
+                    gender_es=row["gender_es"].strip(),
                     scientific_name=row["scientific_name"].strip(),
                     family=row["family"].strip(),
                     is_legume=_bool(row["is_legume"]),

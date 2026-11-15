@@ -19,6 +19,13 @@ class Schema(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+class LocalizedText(Schema):
+    """Farmer-facing text in English and Spanish (Costa Rica). Show the one the user picked."""
+
+    en: str
+    es: str
+
+
 class TraitValue(Schema):
     """A crop trait as a word for display plus its 0..1 score (e.g. for a hover)."""
 
@@ -76,6 +83,7 @@ class ToleranceRange(Schema):
 class Crop(Schema):
     id: str
     name: str
+    name_es: str = Field(description="Name in Spanish (Costa Rica)")
     scientific_name: str
     family: str
     is_legume: bool
@@ -215,16 +223,24 @@ class Rotation(Schema):
     score: float = Field(ge=0, le=1)
     viable: bool
     breakdown: CategoryBreakdown
-    explanation: str
+    explanation: LocalizedText
     is_current: bool = Field(description="True if this is the farmer's current_rotation")
     score_delta_vs_current: float | None = Field(
         description="score minus the current rotation's score; null without current_rotation"
     )
-    benefits: list[str] = Field(description="Why this rotation helps (soil, pests, fit)")
-    risks: list[str] = Field(description="What could go wrong; check locally before acting")
-    data_gaps: list[str] = Field(description="Missing or approximate data behind this result")
-    evidence: list[str] = Field(description="The data values the score is based on, with sources")
-    notes: list[str] = Field(description="Deprecated: benefits + risks. Use those instead.")
+    benefits: list[LocalizedText] = Field(description="Why this rotation helps (soil, pests, fit)")
+    risks: list[LocalizedText] = Field(
+        description="What could go wrong; check locally before acting"
+    )
+    data_gaps: list[LocalizedText] = Field(
+        description="Missing or approximate data behind this result"
+    )
+    evidence: list[LocalizedText] = Field(
+        description="The data values the score is based on, with sources"
+    )
+    notes: list[LocalizedText] = Field(
+        description="Deprecated: benefits + risks. Use those instead."
+    )
 
 
 class RecommendationResponse(Schema):
@@ -254,7 +270,7 @@ class SowingMonth(Schema):
         "(soil pH is the same every month: see fixed_limits). Waterlogging never makes a month "
         "not good: see waterlogging_risk"
     )
-    dry_month_note: str | None = Field(
+    dry_month_note: LocalizedText | None = Field(
         description="Why this sowing month fails the dry-month check (a month in the field, "
         "harvest excluded, gets too little rain to establish and grow); null when it passes"
     )
@@ -280,7 +296,7 @@ class CropPlanting(Schema):
     crop_name: str
     cycle_days: int
     sowing_months: list[SowingMonth] = Field(description="Always 12, January first")
-    fixed_limits: list[str] = Field(
+    fixed_limits: list[LocalizedText] = Field(
         description="Factors that are the same in every month (soil pH) and limit this crop here"
     )
     windows: list[PlantingWindow] = Field(

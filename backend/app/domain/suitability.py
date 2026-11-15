@@ -38,6 +38,7 @@ from app.domain.models import (
     SoilConditions,
     Weights,
 )
+from app.domain.text import Text, num, pct
 
 DAYS_PER_MONTH = 30.44
 
@@ -143,20 +144,21 @@ def crop_season_fit(
 ) -> CropSeasonFit:
     rain = cycle_rainfall_mm(sc, crop)
     raw = {
-        "temperature": (sc.temperature_c, crop.temperature_c, "°C"),
-        "rainfall": (rain, crop.rainfall_mm, "mm/cycle"),
-        "soil_ph": (soil.ph, crop.soil_ph, ""),
-        "soil_moisture": (soil.moisture_for(sc.season.months), GENERIC_SOIL_MOISTURE, "m³/m³"),
-        "heat": (sc.temperature_max_c, heat_range(crop), "°C"),
-        "frost": (sc.temperature_min_c, FROST_RANGE, "°C"),
+        "temperature": (sc.temperature_c, crop.temperature_c),
+        "rainfall": (rain, crop.rainfall_mm),
+        "soil_ph": (soil.ph, crop.soil_ph),
+        "soil_moisture": (soil.moisture_for(sc.season.months), GENERIC_SOIL_MOISTURE),
+        "heat": (sc.temperature_max_c, heat_range(crop)),
+        "frost": (sc.temperature_min_c, FROST_RANGE),
     }
+    where = _where(crop, sc.season.name)
     scores: dict[str, float] = {}
-    risks: list[str] = []
+    risks: list[Text] = []
     for var in variables:
-        value, rng, unit = raw[var]
+        value, rng = raw[var]
         s = trapezoid(value, rng)
         scores[var] = s
-        risk = _risk_note(crop, sc.season.name, var=var, value=value, rng=rng, unit=unit, score=s)
+        risk = _risk_note(where, var=var, value=value, rng=rng, score=s)
         if risk:
             risks.append(risk)
 
@@ -175,23 +177,19 @@ def crop_season_fit(
         score *= factor
         warning = wetness >= WATERLOGGING_NOTE
         if warning:
-            texture = soil.texture_class
-            clay_note = (
-                f"; {texture} soil drains slowly, which raises the risk"
-                if texture is not None and "clay" in texture.lower()
-                else ""
-            )
-            risks.append(
-                f"{crop.name} in {sc.season.name}: waterlogging risk, root zone {wetness:.0%} "
-                f"saturated on average (NASA SMAP) and {crop.name} needs well-drained soil"
-                f"{clay_note}; check drainage or use raised beds"
-            )
+            risks.append(_waterlogging_note(where, crop, wetness, soil.texture_class))
 
     season_days = len(sc.season.months) * DAYS_PER_MONTH
     if crop.cycle_days > season_days:
+        a, d, sd = crop.label, crop.cycle_days, f"{season_days:.0f}"
+        season = sc.season.name
         risks.append(
-            f"{crop.name} cycle ({crop.cycle_days} d) is longer than {sc.season.name} "
-            f"(~{season_days:.0f} d)"
+            Text(
+                f"{a.en} needs about {d} days but {season} lasts about {sd}: the harvest falls "
+                "in the dry months, or use a shorter-cycle variety",
+                f"{_cap(crop.the_es)} necesita unos {d} días y la {season} dura unos {sd}: la "
+                "cosecha caería en verano, o use una variedad más precoz",
+            )
         )
     return CropSeasonFit(
         crop=crop,
@@ -214,28 +212,75 @@ def waterlogging_factor(wetness: float) -> float:
     return 1.0 - share * (1.0 - WATERLOGGING_MIN_FACTOR)
 
 
-def _risk_note(
-    crop: CropProfile,
-    season: str,
-    *,
-    var: str,
-    value: float,
-    rng: Range,
-    unit: str,
-    score: float,
-) -> str | None:
+# Textures that drain slowly (clay loam drains moderately, so it isn't flagged), with Spanish names.
+SLOW_DRAINING_TEXTURES = {
+    "clay": "arcilloso",
+    "silty clay": "arcillo-limoso",
+    "sandy clay": "arcillo-arenoso",
+}
+
+# Farmer-facing names and units of the scored variables.
+VARIABLE_LABELS = {
+    "temperature": (Text("average temperature", "temperatura promedio"), " °C", 1),
+    "rainfall": (Text("rain over the crop cycle", "lluvia durante el ciclo"), " mm", 0),
+    "soil_ph": (Text("soil pH", "pH del suelo"), "", 1),
+}
+
+
+def _cap(s: str) -> str:
+    """'el maíz' → 'El maíz'."""
+    return s[:1].upper() + s[1:]
+
+
+def _where(crop: CropProfile, season: str) -> Text:
+    """'Maize in primera' / 'Maíz en primera': how every crop/season note starts."""
+    return Text(f"{crop.label.en} in {season}", f"{crop.label.es} en {season}")
+
+
+def _waterlogging_note(where: Text, crop: CropProfile, wetness: float, texture: str | None) -> Text:
+    """Coarse, modelled data: say so, never claim a field measurement."""
+    share = pct(wetness)
+    slow = SLOW_DRAINING_TEXTURES.get((texture or "").lower())
+    clay_en = f" The soil map shows {texture}, which can drain slowly." if slow else ""
+    clay_es = f" El mapa de suelos indica suelo {slow}, que puede drenar lento." if slow else ""
+    return Text(
+        f"{where.en}: risk of waterlogged soil. Satellite data for the area (~9 km) shows the soil "
+        f"near saturation ({share.en} on average), and {crop.label.lower().en} doesn't tolerate "
+        f"standing water.{clay_en} Check how your field drains; raised beds help.",
+        f"{where.es}: riesgo de encharcamiento. Los datos satelitales de la zona (~9 km) muestran "
+        f"el suelo casi saturado ({share.es} en promedio) y {crop.the_es} no aguanta "
+        f"el agua empozada.{clay_es} Revise cómo drena su terreno; sembrar en lomillos o camas "
+        "levantadas ayuda.",
+    )
+
+
+def _risk_note(where: Text, *, var: str, value: float, rng: Range, score: float) -> Text | None:
     """Plain-language risk for one variable, or None when the variable is not a concern."""
-    where = f"{crop.name} in {season}"
     if var in _OWN_WORDING:
-        return _stress_note(where, var=var, value=value, rng=rng, unit=unit, score=score)
+        return _stress_note(where, var=var, value=value, rng=rng, score=score)
+    label, unit, decimals = VARIABLE_LABELS[var]
+    v = num(value, decimals)
     if score == 0.0:
-        side = "below" if value <= rng.abs_min else "above"
-        limit = rng.abs_min if side == "below" else rng.abs_max
-        return f"{where}: {var} {value:.1f}{unit} is {side} the absolute limit ({limit:g}{unit})"
+        low = value <= rng.abs_min
+        limit = num(rng.abs_min if low else rng.abs_max, decimals)
+        if low:
+            return Text(
+                f"{where.en}: {label.en} too low (~{v.en}{unit}; needs at least {limit.en}{unit})",
+                f"{where.es}: {label.es} muy por debajo de lo necesario (~{v.es}{unit}; necesita "
+                f"al menos {limit.es}{unit})",
+            )
+        return Text(
+            f"{where.en}: {label.en} too high (~{v.en}{unit}; tolerates up to {limit.en}{unit})",
+            f"{where.es}: {label.es} por encima de lo que tolera (~{v.es}{unit}; aguanta hasta "
+            f"{limit.es}{unit})",
+        )
     if score < MARGINAL_SCORE:
-        return (
-            f"{where}: {var} {value:.1f}{unit} is marginal "
-            f"(optimal {rng.opt_min:g} to {rng.opt_max:g}{unit})"
+        lo, hi = num(rng.opt_min, decimals), num(rng.opt_max, decimals)
+        return Text(
+            f"{where.en}: {label.en} ~{v.en}{unit}, outside the best range "
+            f"({lo.en} to {hi.en}{unit})",
+            f"{where.es}: {label.es} ~{v.es}{unit}, fuera del rango ideal "
+            f"({lo.es} a {hi.es}{unit})",
         )
     return None
 
@@ -243,24 +288,33 @@ def _risk_note(
 _OWN_WORDING = {"heat", "frost", "soil_moisture"}  # variables with their own plain-language note
 
 
-def _stress_note(
-    where: str, *, var: str, value: float, rng: Range, unit: str, score: float
-) -> str | None:
+def _stress_note(where: Text, *, var: str, value: float, rng: Range, score: float) -> Text | None:
     """Heat, frost and dry soil, worded for a farmer instead of as a range check."""
+    v = num(value, 1)
     if var == "heat" and score < 1.0:
-        return (
-            f"{where}: heat stress, average daily max {value:.1f}{unit} is above the crop's "
-            f"limit ({rng.opt_max:g}{unit})"
+        limit = num(rng.opt_max, 0)
+        return Text(
+            f"{where.en}: strong heat, the average daily high ({v.en} °C) is above what the crop "
+            f"tolerates ({limit.en} °C)",
+            f"{where.es}: calor fuerte, la máxima promedio ({v.es} °C) supera lo que aguanta el "
+            f"cultivo ({limit.es} °C)",
         )
     if var == "frost" and score < 1.0:
-        return (
-            f"{where}: frost risk, coldest month's average daily min is {value:.1f}{unit} "
-            f"(safe from {FROST_SAFE_C:g}{unit})"
+        safe = num(FROST_SAFE_C, 0)
+        return Text(
+            f"{where.en}: frost risk, the coldest month's average low is {v.en} °C (safe at "
+            f"{safe.en} °C or above)",
+            f"{where.es}: riesgo de helada, la mínima promedio del mes más frío es {v.es} °C (sin "
+            f"riesgo desde {safe.es} °C)",
         )
     if var == "soil_moisture" and score < MARGINAL_SCORE:
-        severity = "very dry, near the wilting point" if score == 0.0 else "dry"
-        return (
-            f"{where}: root-zone soil is {severity} (NASA SMAP, about {value:.2f} m³/m³); "
-            "expect water stress without irrigation"
+        very = score == 0.0
+        return Text(
+            f"{where.en}: satellite data for the area (~9 km) shows "
+            f"{'very' if very else 'fairly'} dry soil around the roots; the crop may lack water "
+            "without irrigation",
+            f"{where.es}: los datos satelitales de la zona (~9 km) muestran el suelo "
+            f"{'muy' if very else 'algo'} seco donde están las raíces; el cultivo podría sufrir "
+            "falta de agua si no se riega",
         )
     return None

@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
+from app.domain.text import Text
 from app.errors import DomainInvariantError
 
 MONTHS = 12
@@ -72,9 +73,32 @@ class CropProfile:
     # EcoCrop: the crop doesn't tolerate poorly drained soil (all but rice here). Enables the
     # waterlogging check; False = no check.
     needs_good_drainage: bool = False
+    name_es: str | None = None  # Spanish (Costa Rica) name; None = same as `name`
+    gender_es: str = "m"  # grammatical gender of `name_es`: "m" (el maíz) or "f" (la yuca)
     verified: bool = False  # True once the tolerance ranges come from a cited source (EcoCrop)
 
+    @property
+    def label(self) -> Text:
+        """The crop's name in both languages, for farmer-facing text."""
+        return Text(self.name, self.name_es or self.name)
+
+    @property
+    def the_es(self) -> str:
+        """'el maíz' / 'la yuca': the crop name with its article, lower case, mid-sentence."""
+        name = (self.name_es or self.name).lower()
+        return f"{'la' if self.gender_es == 'f' else 'el'} {name}"
+
+    @property
+    def of_the_es(self) -> str:
+        """'del maíz' / 'de la yuca'."""
+        name = (self.name_es or self.name).lower()
+        return f"de la {name}" if self.gender_es == "f" else f"del {name}"
+
     def __post_init__(self) -> None:
+        if self.gender_es not in ("m", "f"):
+            raise DomainInvariantError(
+                f"{self.id}: gender_es must be 'm' or 'f', got {self.gender_es!r}"
+            )
         if not 0 < self.root_depth_m <= MAX_ROOT_DEPTH_M:
             raise DomainInvariantError(
                 f"{self.id}: root_depth_m must be in (0, {MAX_ROOT_DEPTH_M}], "
@@ -224,7 +248,7 @@ class CropSeasonFit:
     variable_scores: dict[str, float]
     categories: CategoryScores
     score: float  # 0..1
-    risks: tuple[str, ...] = ()  # limits exceeded, partial stress, cycle too long
+    risks: tuple[Text, ...] = ()  # limits exceeded, partial stress, cycle too long
     waterlogging_factor: float = 1.0  # already applied to score; < 1 = some waterlogging risk
     waterlogging_warning: bool = False  # wet enough to warn the farmer (WATERLOGGING_NOTE)
 
@@ -235,8 +259,9 @@ class RotationResult:
     score: float  # 0..1 after rotation adjustments
     breakdown: CategoryScores
     viable: bool
-    benefits: tuple[str, ...] = field(default_factory=tuple)
-    risks: tuple[str, ...] = field(default_factory=tuple)
+    benefits: tuple[Text, ...] = field(default_factory=tuple)
+    risks: tuple[Text, ...] = field(default_factory=tuple)
+    rules_fired: tuple[str, ...] = ()  # rotation rule ids that fired, in order (explanations)
 
 
 @dataclass(frozen=True)

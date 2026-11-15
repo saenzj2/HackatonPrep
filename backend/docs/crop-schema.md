@@ -13,6 +13,7 @@ explanations need lives here, so nothing about a crop is hardcoded in Python.
 
 | Issue attribute | Column(s) | Type / unit | Used by |
 |---|---|---|---|
+| — | `name_es`, `gender_es` | Spanish (Costa Rica) name, and its grammatical gender (`m` = el maíz, `f` = la yuca) so sentences get the right article | `Text` labels, `CropProfile.the_es` |
 | — | `id`, `name`, `scientific_name` | string; `id` is lowercase snake_case, unique | everything |
 | Plant family | `family` | botanical family, Latin (`Fabaceae`) | rotation rules #25 (family succession, pest breaks) |
 | Nitrogen fixing | `is_legume` | bool | rotation rules #25, legume bonus |

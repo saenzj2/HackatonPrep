@@ -15,6 +15,44 @@ Template:
 
 ---
 
+## 2026-11-15 — Farmer-facing texts in English and Spanish, reworded after review
+- **Decision (engine owner):** every text a farmer or judge reads is returned as
+  `{"en": ..., "es": ...}` (`LocalizedText`): `explanation`, `benefits`, `risks`, `data_gaps`,
+  `evidence`, `notes`, `fixed_limits`, `dry_month_note`. The domain builds them as `Text(en, es)`
+  (`app/domain/text.py`), both languages side by side so they can't drift. Spanish uses Costa Rican
+  terms (frijol, maíz, primera, postrera, encharcamiento, "setiembre"), a decimal comma and Spanish
+  month names. Crops gain `name_es` (CSV and `Crop` schema). Error messages stay English.
+- **Breaking for clients:** those fields change from string to object. There is no frontend yet,
+  so nothing breaks today.
+- **Rewording (`farmer-language` review):** no more "Strong water fit (1.00)" next to a
+  waterlogging warning; the explanation names what helps and what to watch instead of "balanced
+  fit" for every rotation; waterlogging and dry-soil notes say the data is satellite + model over
+  ~9 km (no field-level claims, no m³/m³); "can drain slowly" only for clay, silty clay and sandy clay
+  (not clay loam); pH notes cite the 250 m map and suggest a soil test (and liming); plain labels
+  instead of variable ids, Latin family names and "heavy feeder"; crop names lower-case mid-sentence.
+- **Data corrections (`fact-checker`, with sources):** maize `forage_value` 1 → 0.67 (Feedipedia:
+  stover is fibrous, low digestibility); rice `mycorrhizal_affinity` 0.33 now cites Vallino et al.
+  2014 (flooded rice); the legume reason says beans take *part* of their nitrogen from the air
+  (~39 %, Reinprecht et al. 2020), not most.
+- **`agro-logic` review follow-ups (2026-11-15):** the clay note now says "can drain slowly" (texture
+  is a hint, not a measurement: clayey Oxisols/Ultisols in Zona Norte are often well aggregated and
+  drain fine, and the 250 m texture can disagree with the ~9 km SMAP wetness); texture never changes
+  the score. The benefit list now depends on the waterlogging warning: when water scores strong but
+  a waterlogging warning exists, "rain and soil moisture suit" is replaced by "enough rain, but watch
+  drainage" (ranking score unchanged). Maize `market_note` now says its stover is fibrous and
+  low-protein, matching `forage_value` 0.67.
+- **Spanish gender (2026-11-15):** the CSV gains `gender_es` (`m`/`f`, required, validated), and
+  sentences use `CropProfile.the_es` / `of_the_es` ("el maíz", "la yuca", "del maíz", "de la yuca")
+  instead of a hardcoded "el". All current crops are masculine, so no output changed. Adding a
+  feminine crop now only needs `f` in its row. No runtime machine translation: it needs the network
+  (the demo is offline), mis-words Costa Rican terms ("setiembre", "frijol") and is not deterministic.
+- **Sorghum `forage_value` 1 → 0.67 (`fact-checker`, 2026-11-15):** no source rates sorghum above
+  maize stover. Feedipedia sorghum straw (node 12618): crude protein 3.7 %, organic-matter
+  digestibility 53 %, vs maize stover ~3.9 % and ~49 %. Whole-plant forage or silage sorghum is a
+  different use; the field values the crop *or its residue*, as for maize. Cowpea (1, team
+  estimate) and rice (0.33, team estimate) are still uncited.
+- **Revisit if:** the frontend prefers message codes plus parameters.
+
 ## 2026-11-15 — Planting windows: dry-month check (no more dry-season maize sowing)
 - **Problem:** the cycle's rain total hid dry months. Maize sown in March in Alajuela gets 29 and
   76 mm in its first two months, but May and June bring the total to 534 mm, so March counted as a

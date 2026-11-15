@@ -5,7 +5,6 @@ The only module that knows about all three layers (api schemas, integrations, do
 
 from __future__ import annotations
 
-import calendar
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -34,6 +33,9 @@ from app.domain.planting_windows import SowingMonth, fixed_limits, sowing_calend
 from app.domain.planting_windows import planting_windows as find_planting_windows
 from app.domain.ranking import explain, rank_rotations
 from app.domain.suitability import MARGINAL_SCORE, cycle_rainfall_mm, season_climate
+from app.domain.text import Text, num, pct
+from app.domain.text import month as text_month
+from app.domain.text import month_span as text_month_span
 from app.errors import (
     InvalidPrioritiesError,
     InvalidRotationError,
@@ -104,6 +106,7 @@ def crop_schema(c: CropProfile) -> s.Crop:
     return s.Crop(
         id=c.id,
         name=c.name,
+        name_es=c.label.es,
         scientific_name=c.scientific_name,
         family=c.family,
         is_legume=c.is_legume,
@@ -195,61 +198,159 @@ def _crop_ids(r: RotationResult) -> tuple[str, ...]:
     return tuple(f.crop.id for f in r.sequence)
 
 
-def _month_span(months: Sequence[int]) -> str:
-    return f"{calendar.month_abbr[months[0]]}–{calendar.month_abbr[months[-1]]}"
+SOURCE_TEXT = {
+    "nasa_power": Text("NASA POWER, long-term averages", "NASA POWER, promedios de largo plazo"),
+    "mock": Text("simulated data", "datos simulados"),
+}
+
+
+def _source(name: str) -> Text:
+    return SOURCE_TEXT.get(name, Text(name, name))
+
+
+def _lt(text: Text) -> s.LocalizedText:
+    return s.LocalizedText(en=text.en, es=text.es)
+
+
+def _lt_or_none(text: Text | None) -> s.LocalizedText | None:
+    return None if text is None else _lt(text)
 
 
 def _evidence(
     r: RotationResult, climate: MonthlyClimate, soil: SoilConditions, sources: dict[str, str]
-) -> list[str]:
+) -> list[Text]:
     """The data values behind the score, so a farmer or agronomist can check them."""
-    climate_src = SOURCE_LABELS.get(sources["climate"], sources["climate"])
-    soil_src = SOURCE_LABELS.get(sources["soil"], sources["soil"])
-    lines: list[str] = []
+    src = _source(sources["climate"])
+    lines: list[Text] = []
     for f in r.sequence:
         sc = season_climate(climate, f.season)
+        span = text_month_span(f.season.months)
+        t, hi, lo = (
+            num(sc.temperature_c, 1),
+            num(sc.temperature_max_c, 1),
+            num(sc.temperature_min_c, 1),
+        )
+        rain_month = num(sc.rainfall_mm_per_month)
         lines.append(
-            f"{f.season.name} ({_month_span(f.season.months)}): mean {sc.temperature_c:.1f} °C, "
-            f"average daily max {sc.temperature_max_c:.1f} °C, coldest-month daily min "
-            f"{sc.temperature_min_c:.1f} °C, {sc.rainfall_mm_per_month:.0f} mm/month "
-            f"({climate_src})"
+            Text(
+                f"{f.season.name} ({span.en}): average {t.en} °C, hottest hours ~{hi.en} °C, "
+                f"coolest nights ~{lo.en} °C, ~{rain_month.en} mm of rain per month ({src.en})",
+                f"{f.season.name} ({span.es}): promedio {t.es} °C, máximas ~{hi.es} °C, mínimas "
+                f"~{lo.es} °C, ~{rain_month.es} mm de lluvia al mes ({src.es})",
+            )
         )
         rain = f.crop.rainfall_mm
+        cycle = num(cycle_rainfall_mm(sc, f.crop))
+        lo_r, hi_r = num(rain.opt_min), num(rain.opt_max)
+        a = f.crop.label
         lines.append(
-            f"{f.crop.name} in {f.season.name}: ~{cycle_rainfall_mm(sc, f.crop):.0f} mm over its "
-            f"{f.crop.cycle_days}-day cycle (optimal {rain.opt_min:g} to {rain.opt_max:g} mm)"
+            Text(
+                f"{a.en} in {f.season.name}: ~{cycle.en} mm of rain over its "
+                f"{f.crop.cycle_days}-day cycle (best {lo_r.en} to {hi_r.en} mm)",
+                f"{a.es} en {f.season.name}: ~{cycle.es} mm de lluvia en su ciclo de "
+                f"{f.crop.cycle_days} días (lo ideal es {lo_r.es} a {hi_r.es} mm)",
+            )
         )
-    lines.append(f"Soil: pH {soil.ph:.1f}, moisture {soil.moisture_m3m3:.2f} m³/m³ ({soil_src})")
+    lines.append(_soil_evidence(r, soil, sources["soil"]))
     return list(dict.fromkeys(lines))
 
 
+def _soil_evidence(r: RotationResult, soil: SoilConditions, source: str) -> Text:
+    """pH plus, when known, how saturated the root zone is in each season (the data behind a
+    waterlogging warning). Scales and sources stated, no m³/m³."""
+    ph = num(soil.ph, 1)
+    if source != MEASURED_SOIL_SOURCE:
+        src = _source(source)
+        moist = num(soil.moisture_m3m3, 2)
+        return Text(
+            f"Soil: pH {ph.en}, moisture {moist.en} m³/m³ ({src.en})",
+            f"Suelo: pH {ph.es}, humedad {moist.es} m³/m³ ({src.es})",
+        )
+    seasons = [
+        (f.season.name, w)
+        for f in r.sequence
+        if (w := soil.wetness_for(f.season.months)) is not None
+    ]
+    seasons = list(dict.fromkeys(seasons))
+    sat_en = " and ".join(f"{name} ({pct(w).en})" for name, w in seasons)
+    sat_es = " y ".join(f"{name} ({pct(w).es})" for name, w in seasons)
+    return Text(
+        f"Soil: pH {ph.en} (OpenLandMap soil map, 250 m); root zone saturation in {sat_en} "
+        "(NASA SMAP, ~9 km)",
+        f"Suelo: pH {ph.es} (mapa de suelos OpenLandMap, 250 m); saturación del suelo en {sat_es} "
+        "(NASA SMAP, ~9 km)",
+    )
+
+
 MEASURED_SOIL_GAPS = (
-    "Soil pH is the OpenLandMap 250 m map (0-30 cm), not a soil test of this field",
-    "Soil moisture is NASA SMAP L4 (satellite plus model, ~9 km), monthly means of 2020-2024",
-    "Waterlogging uses SMAP relative saturation over ~9 km; it can't see a field's own drainage",
+    Text(
+        "Soil pH comes from the OpenLandMap soil map (250 m, 0-30 cm), not a soil test of your "
+        "field",
+        "El pH sale del mapa de suelos OpenLandMap (250 m, 0-30 cm), no de un análisis de suelo de "
+        "su finca",
+    ),
+    Text(
+        "Soil moisture comes from NASA SMAP (satellite + model), averaged over ~9 km and the years "
+        "2020-2024, not measured in your field",
+        "La humedad del suelo viene de NASA SMAP (satélite + modelo), promedio de un área de ~9 km "
+        "y de los años 2020-2024; no se midió en su finca",
+    ),
+    Text(
+        "The waterlogging warning uses how close to saturated the soil is over ~9 km; it can't see "
+        "your field's own drainage (slope, ditches)",
+        "El aviso de encharcamiento usa qué tan saturado está el suelo en un área de ~9 km; no ve "
+        "el drenaje propio de su terreno (pendiente, zanjas)",
+    ),
 )
-PLACEHOLDER_RULES_GAP = (
-    "Scoring thresholds and rotation rule values are placeholders, "
-    "not yet reviewed by an agronomist"
+PLACEHOLDER_RULES_GAP = Text(
+    "Scoring thresholds and rotation rule values are provisional, not yet reviewed by an "
+    "agronomist",
+    "Los límites de puntaje y las reglas de rotación son provisionales; aún no los revisa un "
+    "agrónomo",
 )
 
 
-def _data_gaps(r: RotationResult, sources: dict[str, str], variables: Sequence[str]) -> list[str]:
+def _data_gaps(r: RotationResult, sources: dict[str, str], variables: Sequence[str]) -> list[Text]:
     """What is missing or approximate behind this result. Shown so nobody over-trusts it."""
-    gaps: list[str] = []
+    gaps: list[Text] = []
     if sources["climate"] == "mock":
-        gaps.append("Climate values are mock data, not NASA POWER measurements")
+        gaps.append(
+            Text(
+                "Climate values are simulated, not NASA POWER data",
+                "Los datos de clima son simulados, no de NASA POWER",
+            )
+        )
     if sources["soil"] == "mock":
-        gaps.append("Soil pH and moisture are mock values, not measured for this location")
+        gaps.append(
+            Text(
+                "Soil pH and moisture are simulated, not measured for this location",
+                "El pH y la humedad del suelo son simulados, no medidos en este lugar",
+            )
+        )
     elif sources["soil"] == MEASURED_SOIL_SOURCE:
         gaps.extend(MEASURED_SOIL_GAPS)
     if "soil_moisture" in variables:
-        gaps.append("Soil moisture uses one generic range for all crops")
+        gaps.append(
+            Text(
+                "The dry-soil limit is the same for all crops",
+                "El límite de suelo seco es el mismo para todos los cultivos",
+            )
+        )
     if "frost" in variables:
-        gaps.append("Frost risk uses one generic threshold for all crops")
+        gaps.append(
+            Text(
+                "Frost risk uses the same limit for all crops",
+                "El riesgo de helada usa el mismo límite para todos los cultivos",
+            )
+        )
     for c in dict.fromkeys(f.crop for f in r.sequence):
         if not c.verified:
-            gaps.append(f"{c.name} tolerance ranges are approximate (not yet verified)")
+            gaps.append(
+                Text(
+                    f"{c.label.en} tolerance ranges are approximate (not yet verified)",
+                    f"Los rangos de tolerancia {c.of_the_es} son aproximados (aún sin verificar)",
+                )
+            )
     # True until an agronomist reviews them (docs/decisions.md), so data_gaps is never empty.
     gaps.append(PLACEHOLDER_RULES_GAP)
     return gaps
@@ -288,14 +389,14 @@ def _rotation_schema(r: RotationResult, rank: int, rc: _RotationContext) -> s.Ro
             water=_score(r.breakdown.water),
             soil=_score(r.breakdown.soil),
         ),
-        explanation=explain(r),
+        explanation=_lt(explain(r)),
         is_current=is_current,
         score_delta_vs_current=(None if rc.current is None else _score(r.score - rc.current.score)),
-        benefits=list(r.benefits),
-        risks=list(r.risks),
-        data_gaps=_data_gaps(r, rc.sources, rc.variables),
-        evidence=_evidence(r, rc.climate, rc.soil, rc.sources),
-        notes=[*r.benefits, *r.risks],
+        benefits=[_lt(t) for t in r.benefits],
+        risks=[_lt(t) for t in r.risks],
+        data_gaps=[_lt(t) for t in _data_gaps(r, rc.sources, rc.variables)],
+        evidence=[_lt(t) for t in _evidence(r, rc.climate, rc.soil, rc.sources)],
+        notes=[_lt(t) for t in (*r.benefits, *r.risks)],
     )
 
 
@@ -490,43 +591,68 @@ def _limiting_factor(variable_scores: dict[str, float]) -> str | None:
     return name if variable_scores[name] < 1 else None
 
 
-def _dry_month_note(crop: CropProfile, m: SowingMonth) -> str | None:
+def _dry_month_note(crop: CropProfile, m: SowingMonth) -> Text | None:
     """Farmer note when a sowing month fails the dry-month check, else None."""
     dry = m.dry_month
     if dry is None or dry.score >= MARGINAL_SCORE:
         return None
-    sown, driest = calendar.month_name[m.sowing_month], calendar.month_name[dry.month]
-    needs = (
-        f"{crop.name} needs about {dry.pass_mm:.0f} mm a month to establish and grow "
-        f"(at least {dry.limit_mm:.0f})"
+    sown, driest, a = text_month(m.sowing_month), text_month(dry.month), crop.label
+    al = a.lower()
+    rain, need, least = num(dry.rainfall_mm), num(dry.pass_mm), num(dry.limit_mm)
+    needs_en = (
+        f"{al.en} needs about {need.en} mm a month to establish and grow (at least {least.en})"
+    )
+    needs_es = (
+        f"{crop.the_es} necesita unos {need.es} mm al mes para establecerse y crecer "
+        f"(mínimo {least.es})"
     )
     if dry.month == m.sowing_month:
-        return (
-            f"Too dry to establish {crop.name} sown in {sown}: {sown} usually gets only "
-            f"{dry.rainfall_mm:.0f} mm of rain, and {needs}"
+        return Text(
+            f"Too dry to establish {al.en} sown in {sown.en}: {sown.en} usually gets only "
+            f"{rain.en} mm of rain, and {needs_en}",
+            f"Muy seco para establecer {a.es.lower()} sembrado en {sown.es}: {sown.es} suele "
+            f"tener solo {rain.es} mm de lluvia, y {needs_es}",
         )
-    return (
-        f"Sowing {crop.name} in {sown} is risky: {driest} usually gets only "
-        f"{dry.rainfall_mm:.0f} mm of rain, and {needs}"
+    return Text(
+        f"Sowing {al.en} in {sown.en} is risky: {driest.en} usually gets only {rain.en} mm of "
+        f"rain, and {needs_en}",
+        f"Sembrar {a.es.lower()} en {sown.es} es riesgoso: {driest.es} suele tener solo {rain.es} "
+        f"mm de lluvia, y {needs_es}",
     )
 
 
 def _fixed_limit_notes(
     crop: CropProfile, soil: SoilConditions, limits: dict[str, float]
-) -> list[str]:
-    """Plain-language notes for the fixed factors (same every month) that limit this crop."""
+) -> list[Text]:
+    """Notes for the fixed factors (same every month) that limit this crop. The pH comes from a
+    250 m map: say so and suggest a soil test, never an absolute verdict on the field."""
     notes = []
     if "soil_ph" in limits:
-        r = crop.soil_ph
+        r, a, ph = crop.soil_ph, crop.label, num(soil.ph, 1)
+        al = a.lower()
         if limits["soil_ph"] == 0:
+            lo, hi = num(r.abs_min, 1), num(r.abs_max, 1)
             notes.append(
-                f"Soil pH {soil.ph:.1f} is outside the {r.abs_min:g}-{r.abs_max:g} that "
-                f"{crop.name} tolerates: it can't be grown here in any month"
+                Text(
+                    f"Soil pH {ph.en} (soil map, 250 m) is outside what {al.en} tolerates "
+                    f"({lo.en}-{hi.en}). Confirm with a soil test; if it is right, {al.en} won't "
+                    "do well here in any month without liming",
+                    f"El pH del suelo {ph.es} (mapa de suelos, 250 m) está fuera de lo que tolera "
+                    f"{crop.the_es} ({lo.es}-{hi.es}). Confírmelo con un análisis de suelo; si "
+                    f"es correcto, {crop.the_es} no se daría bien en ningún mes sin encalar",
+                )
             )
         else:
+            lo, hi = num(r.opt_min, 1), num(r.opt_max, 1)
             notes.append(
-                f"Soil pH {soil.ph:.1f} is outside the ideal {r.opt_min:g}-{r.opt_max:g} for "
-                f"{crop.name}: it lowers the score in every month"
+                Text(
+                    f"Soil pH {ph.en} (soil map) is a bit outside the best range for {al.en} "
+                    f"({lo.en}-{hi.en}); expect somewhat lower yields in any month. A soil test "
+                    "can confirm it",
+                    f"El pH del suelo {ph.es} (mapa de suelos) está un poco fuera del rango ideal "
+                    f"para {crop.the_es} ({lo.es}-{hi.es}); puede rendir algo menos en "
+                    "cualquier mes. Un análisis de suelo lo confirma",
+                )
             )
     return notes
 
@@ -558,13 +684,13 @@ def planting_windows(
                         score=_score(m.score),
                         is_good=m.is_good(),
                         waterlogging_risk=m.fit.waterlogging_warning,
-                        dry_month_note=_dry_month_note(crop, m),
+                        dry_month_note=_lt_or_none(_dry_month_note(crop, m)),
                         limiting_factor=_limiting_factor(m.fit.variable_scores),
                         variable_scores={k: _score(v) for k, v in m.fit.variable_scores.items()},
                     )
                     for m in months
                 ],
-                fixed_limits=_fixed_limit_notes(crop, soil, fixed_limits(months)),
+                fixed_limits=[_lt(t) for t in _fixed_limit_notes(crop, soil, fixed_limits(months))],
                 windows=[
                     s.PlantingWindow(
                         first_month=w.first_month,

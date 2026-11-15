@@ -73,6 +73,12 @@ improvement; it changes results, so it needs its own `decisions.md` entry.
 Known effect: every EcoCrop rice entry asks for 1500–2000 mm (flooded or irrigated rice), so rainfed
 rice never fits by rainfall alone. Upland-rice values would need another source.
 
+## Sources outside EcoCrop
+Two values in `data/ecocrop_subset.csv` are not from EcoCrop; they are cited in its `sources`
+column and logged in `decisions.md`:
+- Maize `forage_value` 0.67 (was 1): stover is fibrous and low in digestibility (Feedipedia).
+- Rice `mycorrhizal_affinity` 0.33: Vallino et al. 2014.
+
 ## Refresh
 ```bash
 cd backend && .venv/bin/pip install -e ".[data]"

@@ -1,8 +1,9 @@
 # Follow-up PR: farmer texts, translations and fact-check corrections
 
-> **For the next PR (owner: marceconejo).** Collected 2026-11-15 from the `farmer-language` and
-> `fact-checker` reviews of `feat/real-soil-scoring`. Nothing here is fixed yet. Rerun both agents
-> after the changes (`.claude/agents/`).
+> **Status (2026-11-15, branch `feat/farmer-texts-bilingual`): sections 1–5 done**, except the
+> "Local review" field split (section 4) and the calendar source (section 5, still no current
+> MAG/INTA calendar). **Section 6 is still open** for the `agro-logic` agent. Collected from the
+> `farmer-language` and `fact-checker` reviews of `feat/real-soil-scoring`; see decisions.md.
 
 ## 1. Decision: every farmer-facing text is bilingual
 Return each text as an object instead of a plain string, so the frontend shows Spanish without

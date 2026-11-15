@@ -24,6 +24,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from app.domain.models import CropProfile, level_for
+from app.domain.text import Text, family
 
 MONOCULTURE_PENALTY = 0.10  # placeholder (decisions.md 2026-11-06)
 SAME_FAMILY_PENALTY = 0.05  # placeholder, half of monoculture (decisions.md 2026-11-14)
@@ -42,7 +43,7 @@ Effect = Literal["benefit", "risk"]
 class RuleHit:
     rule: str
     effect: Effect
-    reason: str  # one line for the farmer
+    reason: Text  # one line for the farmer, English and Spanish
     adjustment: float  # score change for this transition, before dividing by the number of seasons
 
 
@@ -68,11 +69,16 @@ def _is_heavy_feeder(c: CropProfile) -> bool:
 def _same_family(prev: CropProfile, cur: CropProfile) -> RuleHit | None:
     if cur.family != prev.family:
         return None
+    a, bl, fam = cur.label, prev.label.lower(), family(cur.family)
     return RuleHit(
         "same_family",
         "risk",
-        f"{cur.name} after {prev.name}: same family ({cur.family}), "
-        "they share some pests and diseases, so the break is weaker",
+        Text(
+            f"{a.en} after {bl.en}: same {fam.en}, they share some pests and diseases, so the "
+            "break is weaker",
+            f"{a.es} después de {bl.es}: misma {fam.es}, comparten plagas y enfermedades, así que "
+            "el descanso sirve menos",
+        ),
         -SAME_FAMILY_PENALTY,
     )
 
@@ -80,11 +86,17 @@ def _same_family(prev: CropProfile, cur: CropProfile) -> RuleHit | None:
 def _family_change(prev: CropProfile, cur: CropProfile) -> RuleHit | None:
     if cur.family == prev.family:
         return None
+    a, bl = cur.label, prev.label.lower()
+    fa, fb = family(cur.family), family(prev.family)
     return RuleHit(
         "family_change",
         "benefit",
-        f"{prev.name} ({prev.family}) → {cur.name} ({cur.family}): "
-        "family change helps break pest and disease cycles",
+        Text(
+            f"{a.en} after {bl.en}: changing from the {fb.en} to the {fa.en} helps cut pest and "
+            "disease cycles",
+            f"{a.es} después de {bl.es}: pasar de la {fb.es} a la {fa.es} ayuda a cortar el ciclo "
+            "de plagas y enfermedades",
+        ),
         0.0,
     )
 
@@ -92,16 +104,25 @@ def _family_change(prev: CropProfile, cur: CropProfile) -> RuleHit | None:
 def _legume_restores_nitrogen(prev: CropProfile, cur: CropProfile) -> RuleHit | None:
     if not cur.is_legume or prev.is_legume:
         return None
+    a, al, bl = cur.label, cur.label.lower(), prev.label.lower()
+    # Beans take roughly 40 % of their nitrogen from the air (Reinprecht et al. 2020) and most of
+    # it leaves with the grain: say "part" and "a little", never "most" or "less fertilizer".
     if _is_heavy_feeder(prev):
-        reason = (
-            f"{cur.name} (legume) after {prev.name}, a heavy feeder: it takes most of its "
-            "nitrogen from the air instead of the soil, "
-            "and its residues leave a little for the next crop"
+        reason = Text(
+            f"{a.en} after {bl.en}, which needs a lot of nitrogen: {al.en} (bean family) takes "
+            "part of its nitrogen from the air, so it draws less from the soil; its crop residues "
+            "add a little for the next crop",
+            f"{a.es} después de {bl.es}, que pide mucho nitrógeno: {cur.the_es} (leguminosa) "
+            "toma parte de su nitrógeno del aire y gasta menos del suelo; los rastrojos dejan un "
+            "poco para el siguiente cultivo",
         )
     else:
-        reason = (
-            f"{cur.name} (legume) after {prev.name}: it takes nitrogen from the air, "
-            "so the next crop may need less fertilizer"
+        reason = Text(
+            f"{a.en} after {bl.en}: {al.en} (bean family) takes part of its nitrogen from the air, "
+            "so it draws less from the soil; its crop residues add a little for the next crop",
+            f"{a.es} después de {bl.es}: {cur.the_es} (leguminosa) toma parte de su nitrógeno "
+            "del aire y gasta menos del suelo; los rastrojos dejan un poco para el siguiente "
+            "cultivo",
         )
     return RuleHit("legume_restores_nitrogen", "benefit", reason, LEGUME_BONUS)
 
@@ -109,11 +130,16 @@ def _legume_restores_nitrogen(prev: CropProfile, cur: CropProfile) -> RuleHit | 
 def _heavy_after_heavy(prev: CropProfile, cur: CropProfile) -> RuleHit | None:
     if not (_is_heavy_feeder(prev) and _is_heavy_feeder(cur)):
         return None
+    a, al, bl = cur.label, cur.label.lower(), prev.label.lower()
     return RuleHit(
         "heavy_after_heavy",
         "risk",
-        f"{cur.name} after {prev.name}: both need a lot of nitrogen, "
-        f"so expect to fertilize more for {cur.name}",
+        Text(
+            f"{a.en} after {bl.en}: both need a lot of nitrogen, so expect to fertilize more "
+            f"for {al.en}",
+            f"{a.es} después de {bl.es}: los dos piden mucho nitrógeno; cuente con abonar más "
+            f"{cur.the_es}",
+        ),
         -HEAVY_AFTER_HEAVY_PENALTY,
     )
 
@@ -123,11 +149,16 @@ def _fungi_break(prev: CropProfile, cur: CropProfile) -> RuleHit | None:
         return None
     if level_for(cur.mycorrhizal_affinity) != "high":
         return None
+    a, al, bl = cur.label, cur.label.lower(), prev.label.lower()
     return RuleHit(
         "fungi_break",
         "risk",
-        f"{prev.name} before {cur.name}: {prev.name} doesn't feed the soil fungi (mycorrhizae), "
-        f"so fewer are left for {cur.name}, which relies on them to take up phosphorus",
+        Text(
+            f"{a.en} after {bl.en}: {bl.en} doesn't feed the helpful soil fungi (mycorrhizae), so "
+            f"fewer are left for {al.en}, which relies on them to take up phosphorus",
+            f"{a.es} después de {bl.es}: {prev.the_es} no alimenta los hongos buenos del suelo "
+            f"(micorrizas), y {cur.the_es} los necesita para aprovechar el fósforo",
+        ),
         -FUNGI_BREAK_PENALTY,
     )
 
@@ -153,13 +184,18 @@ def _verdict(hits: tuple[RuleHit, ...]) -> Verdict:
 def judge_transition(prev: CropProfile, cur: CropProfile) -> TransitionJudgement:
     """Verdict and reasons for `cur` planted in the season right after `prev`."""
     if cur.id == prev.id:
+        c = cur.label.lower()
         # Monoculture says it all; stacking heavy_after_heavy etc. would double-count.
         hits: tuple[RuleHit, ...] = (
             RuleHit(
                 "monoculture",
                 "risk",
-                f"{cur.name} follows itself (monoculture): pests and diseases of {cur.name} "
-                "build up season after season",
+                Text(
+                    f"{cur.label.en} after {c.en} (monoculture): pests and diseases of "
+                    f"{c.en} build up season after season",
+                    f"{cur.label.es} después de {c.es} (monocultivo): las plagas y "
+                    f"enfermedades {cur.of_the_es} se acumulan época tras época",
+                ),
                 -MONOCULTURE_PENALTY,
             ),
         )

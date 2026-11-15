@@ -18,6 +18,11 @@ General backend rules: [`backend/AGENTS.md`](../../AGENTS.md).
 - **Crop traits** (`forage_value`, `nutrition_density`, … listed in `TRAIT_FIELDS`) are 0..1 scores in
   the domain and `{"level": word, "score": number}` in responses. Type them `Trait` in any schema and
   pass the score: it adds the matching word. `tests/test_trait_levels.py` fails if a trait field isn't a `Trait`.
+- **Farmer-facing text is bilingual.** Explanations, benefits, risks, data gaps, evidence and notes
+  are `LocalizedText` (`{"en", "es"}`), built in the domain as `app.domain.text.Text` and converted
+  in `services.py`. Write both languages together (helpers in `text.py`: months, families,
+  decimal comma). `tests/test_api.py::test_every_farmer_text_comes_in_english_and_spanish` checks it.
+  Error messages are not farmer text and stay English (`docs/errors.md`).
 - **Prefer additive changes** (new optional fields). Removing or renaming fields breaks the frontend:
   call it out in the PR.
 - **Routes are thin**, about 5 lines: take `ctx: Ctx` and the request, call `app.services`, return a schema.
