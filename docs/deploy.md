@@ -107,7 +107,14 @@ a token in a chat, issue or PR.
       `terracosmos.space` stops working. Only `harvest-production-3c6bc064.up.railway.app` would be
       left, and only if the USD 1 credit covers the service. The link we submitted to Space Apps
       would break during judging. To prevent it, upgrade to Hobby (USD 5/month, includes USD 5 of
-      usage, 2 custom domains per service) before the trial ends. That's a team decision.
+      usage, 2 custom domains per service) before the trial ends.
+      **Team decision (2026-11-15):** we decide on **2026-12-03**, when Space Apps announces the
+      Global Nominees. Local judging (around 16–22 Nov) ends well inside the trial.
+      - **If we are nominated:** Andres upgrades to Hobby that day, by **2026-12-10** at the latest.
+        Finalists (December) and winners (January) are judged after the trial ends, and the
+        submitted link can't be changed.
+      - **If we are not nominated:** we let the account drop to Free. The domain stays ours; it
+        just stops serving the app.
 - [ ] **`railway.json` stops working on 2026-12-01.** Railway's notice on the service settings
       reads: "Existing config files keep working until 2026-12-01" (see
       https://docs.railway.com/infrastructure-as-code). After that date the build still works,
