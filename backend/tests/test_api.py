@@ -317,3 +317,10 @@ def test_soil_real_openlandmap_values(real_client):
         "field_capacity_m3m3": 0.34,
         "texture_class": "clay loam",
     }
+
+
+@pytest.mark.parametrize("path", ["/weather/daily", "/erosion", "/soil"])
+def test_field_data_endpoints_ignore_unknown_query_parameters(client, path):
+    """Like every GET endpoint: a cache-busting `_` or a shared `lang` must not fail."""
+    r = client.get(path, params={**JAN_2026, "lang": "es", "_": "1731700000"})
+    assert r.status_code == 200, r.text

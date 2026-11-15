@@ -21,7 +21,8 @@ Template:
   `/erosion?lat&lon&start&end` (`erosion_risk()` + `terrain_erosion_level` / `combined_erosion_level`
   words, `ErosionRiskResponse`) and `/soil?lat&lon` (`get_soil_data()` with depths as a list of
   layers, `SoilProfileResponse`). Points must be inside the MVP region (`out_of_region`). Periods:
-  `start` and `end` required, inclusive, at most 366 days, from 1981-01-01, not in the future. The
+  `start` and `end` required, inclusive, at most 366 days, from 1981-01-01, and `end` at least 30
+  days before today (see the PR #94 review below). The
   rules live in `schemas.PointPeriodQuery`, so a bad period is the existing `validation_failed`:
   no new error code. Routes are thin; `services.*_response()` only convert the existing results.
 - **Why:** The region limit protects the OpenTopography key (50 calls a day) and matches the other
@@ -35,7 +36,14 @@ Template:
   so in `cached` mode `/weather/daily` and `/erosion` return `cache_miss` there (`/soil` works).
 - **Alternatives considered:** monthly field indicators instead of the daily series (left for #40);
   any point on Earth; optional dates defaulting to last year; up to 5 years; depths as `"0cm"` keys.
-- **Revisit if:** demo dates are chosen (fill the snapshot); the frontend needs indicators or longer periods.
+- **PR #94 review (applied):** (1) POWER publishes daily data late, so a period inside the delay
+  returned an empty series and a misleading `502 source_bad_data`. Now `end` must be at least
+  `POWER_DAILY_DELAY_DAYS` = 30 days ago, a clear `422`. The delay measured on 2026-11-15 was 3 days;
+  30 is the reviewer's safety margin, chosen over 7 or 3 days, at the cost of the most recent month.
+  (2) `PointPeriodQuery` ignores unknown query parameters (`extra="ignore"`), like every other GET
+  endpoint, so a cache-busting `_` or a shared `lang` doesn't fail. Request bodies still forbid them.
+- **Revisit if:** demo dates are chosen (fill the snapshot); the frontend needs indicators or longer
+  periods; POWER's delay is measured over time and 30 days proves too strict.
 
 ## 2026-11-15 — Production at terracosmos.space (Railway Trial + Cloudflare DNS)
 - **Decision:** production is live at https://terracosmos.space. The domain is registered at

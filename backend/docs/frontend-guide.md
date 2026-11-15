@@ -310,7 +310,12 @@ over a chosen period. Real example for San José, January 2026:
 | Parameter | Type | Required | Rules |
 |---|---|---|---|
 | `lat`, `lon` | number | yes | Decimal degrees, inside the MVP region (else `422 out_of_region`) |
-| `start`, `end` | date `YYYY-MM-DD` | yes | Inclusive. `start ≤ end`, at most **366 days**, `start` ≥ 1981-01-01, `end` not in the future (else `422 validation_failed`) |
+| `start`, `end` | date `YYYY-MM-DD` | yes | Inclusive. `start ≤ end`, at most **366 days**, `start` ≥ 1981-01-01, and `end` **at least 30 days before today** (else `422 validation_failed`) |
+
+**Why 30 days:** NASA POWER publishes daily data with a delay. A period inside it would come back
+empty, so the API rejects it with a clear `422` instead of a `502`. In a date picker, set the
+latest selectable day to today − 30. The `422` message names the latest allowed `end`.
+Unknown query parameters (e.g. `lang`, a cache-busting `_`) are ignored, as on every GET endpoint.
 
 ```json
 {
@@ -333,7 +338,7 @@ over a chosen period. Real example for San José, January 2026:
 | `days[].rainfall_mm` | Rain that day, mm | POWER `PRECTOTCORR`. A ~55 km average: local storms look smaller than at a rain gauge |
 | `source` | `nasa_power`, or `mock` | |
 
-Any value can be `null` (POWER has no data that day, often the last few days before today): leave a
+Any value can be `null` (POWER has no data that day): leave a
 gap in the chart instead of drawing 0.
 
 ---
@@ -437,7 +442,8 @@ and optionally compares them with the farmer's current rotation.
 | `top_n` | no | How many rotations to return (1–50). Default 5 |
 | `current_rotation` | no | The farmer's rotation: **one crop id per season, in season order** (`["maize", "maize"]` = maize in primera and postrera). Wrong length → `422 invalid_rotation` |
 
-Unknown fields are rejected (`422 validation_failed`): don't send extra keys.
+Unknown fields in this JSON body are rejected (`422 validation_failed`): don't send extra keys.
+(Query parameters are different: GET endpoints ignore unknown ones.)
 
 ```json
 { "lat": 11.0, "lon": -84.6, "current_rotation": ["maize", "maize"], "top_n": 3,
@@ -879,8 +885,9 @@ Things the backend doesn't do yet, so you don't build on wrong assumptions (trac
 - `is_good` already includes the dry-month check: don't recompute "good" from `score`.
 - Arrays like `moisture_monthly_m3m3` / `wetness_monthly` can be `null`.
 - `generated_at` changes every call.
-- `/weather/daily` and `/erosion` take **both** `start` and `end` (inclusive, ≤ 366 days); a bad
-  period is `422 validation_failed` with `details.fields[0].loc = "query"`.
+- `/weather/daily` and `/erosion` take **both** `start` and `end` (inclusive, ≤ 366 days, `end` at
+  least 30 days ago); a bad period is `422 validation_failed` with `details.fields[0].loc = "query"`.
+- Request **bodies** reject unknown fields; **query strings** ignore unknown parameters.
 - Erosion and soil `null`s and levels: show words, never turn `null` into 0.
 
 ---

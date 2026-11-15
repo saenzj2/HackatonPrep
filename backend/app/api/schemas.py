@@ -317,21 +317,29 @@ class PlantingWindowsResponse(Schema):
 
 POWER_DAILY_FIRST_DAY = dt.date(1981, 1, 1)  # NASA POWER daily data starts here
 MAX_PERIOD_DAYS = 366  # one leap year; keeps live responses fast and payloads small
+# NASA POWER publishes daily data late (3 days on 2026-11-15; longer at times). A period inside the
+# delay would come back empty and fail as a 502, so `end` must be at least this many days ago.
+# Margin chosen in the PR #94 review (docs/decisions.md).
+POWER_DAILY_DELAY_DAYS = 30
 RiskLevel = Literal["low", "medium", "high"]
 
 
 class PointPeriodQuery(Schema):
     """Query parameters of GET /weather/daily and GET /erosion: one point and a date range.
 
-    Never a response component: FastAPI turns it into the four query parameters.
+    Never a response component: FastAPI turns it into the four query parameters. Unknown query
+    parameters are ignored, like on every other GET endpoint (a cache-busting `_=` or a shared
+    `lang` must not fail), unlike request bodies, which reject unknown fields.
     """
+
+    model_config = ConfigDict(extra="ignore")
 
     lat: float = Field(ge=-90, le=90, examples=[9.93])
     lon: float = Field(ge=-180, le=180, examples=[-84.08])
     start: dt.date = Field(description="First day, YYYY-MM-DD (inclusive)", examples=["2026-01-01"])
     end: dt.date = Field(
-        description="Last day, YYYY-MM-DD (inclusive). At most 366 days from start, not in the "
-        "future",
+        description="Last day, YYYY-MM-DD (inclusive). At most 366 days from start, and at least "
+        "30 days before today: NASA POWER publishes daily data late",
         examples=["2026-01-31"],
     )
 
@@ -344,8 +352,13 @@ class PointPeriodQuery(Schema):
             raise ValueError(f"the period can be at most {MAX_PERIOD_DAYS} days")
         if self.start < POWER_DAILY_FIRST_DAY:
             raise ValueError(f"start must be on or after {POWER_DAILY_FIRST_DAY.isoformat()}")
-        if self.end > datetime.now(dt.UTC).date():
-            raise ValueError("end must not be in the future")
+        latest_end = datetime.now(dt.UTC).date() - dt.timedelta(days=POWER_DAILY_DELAY_DAYS)
+        if self.end > latest_end:
+            raise ValueError(
+                f"end must be on or before {latest_end.isoformat()}: NASA POWER publishes "
+                f"daily data with a delay, so the last {POWER_DAILY_DELAY_DAYS} days are not "
+                "available yet"
+            )
         return self
 
 

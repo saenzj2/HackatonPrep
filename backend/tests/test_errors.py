@@ -5,6 +5,7 @@ request-reachable code appears in this file.
 """
 
 import logging
+from datetime import UTC, datetime, timedelta
 
 import httpx
 import pytest
@@ -160,6 +161,11 @@ def test_planting_windows_input_errors(client, params, code):
 
 JAN = {**CR, "start": "2026-01-01", "end": "2026-01-31"}
 PERIOD_ENDPOINTS = ("/weather/daily", "/erosion")
+TODAY = datetime.now(UTC).date()
+
+
+def days_ago(n: int) -> str:
+    return (TODAY - timedelta(days=n)).isoformat()
 
 
 @pytest.mark.parametrize("path", PERIOD_ENDPOINTS)
@@ -169,7 +175,9 @@ PERIOD_ENDPOINTS = ("/weather/daily", "/erosion")
         ("2026-02-01", "2026-01-31", "start must be on or before end"),
         ("2024-01-01", "2025-01-01", "at most 366 days"),  # 367 days
         ("1980-12-31", "1981-01-31", "on or after 1981-01-01"),
-        ("2999-01-01", "2999-01-31", "not be in the future"),
+        ("2999-01-01", "2999-01-31", "not available yet"),  # future
+        (days_ago(40), days_ago(10), "not available yet"),  # inside NASA POWER's delay
+        (days_ago(29), days_ago(29), "not available yet"),  # one day inside it
         ("2026-01-01", "31/01/2026", "date"),
     ],
 )
@@ -186,6 +194,12 @@ def test_invalid_period_is_validation_failed(client, path, start, end, match):
 def test_period_endpoints_need_start_and_end(client, path):
     err = assert_error(client.get(path, params=CR), 422, ErrorCode.VALIDATION_FAILED)
     assert {f["loc"] for f in err["details"]["fields"]} == {"query.start", "query.end"}
+
+
+@pytest.mark.parametrize("path", PERIOD_ENDPOINTS)
+def test_period_ending_exactly_30_days_ago_is_valid(client, path):
+    r = client.get(path, params={**CR, "start": days_ago(60), "end": days_ago(30)})
+    assert r.status_code == 200, r.text
 
 
 def test_full_leap_year_is_a_valid_period(client):

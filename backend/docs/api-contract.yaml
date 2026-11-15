@@ -235,11 +235,13 @@ paths:
         schema:
           type: string
           format: date
-          description: Last day, YYYY-MM-DD (inclusive). At most 366 days from start, not in the future
+          description: 'Last day, YYYY-MM-DD (inclusive). At most 366 days from start, and at least 30 days
+            before today: NASA POWER publishes daily data late'
           examples:
           - '2026-01-31'
           title: End
-        description: Last day, YYYY-MM-DD (inclusive). At most 366 days from start, not in the future
+        description: 'Last day, YYYY-MM-DD (inclusive). At most 366 days from start, and at least 30 days
+          before today: NASA POWER publishes daily data late'
       responses:
         '200':
           description: Successful Response
@@ -319,11 +321,13 @@ paths:
         schema:
           type: string
           format: date
-          description: Last day, YYYY-MM-DD (inclusive). At most 366 days from start, not in the future
+          description: 'Last day, YYYY-MM-DD (inclusive). At most 366 days from start, and at least 30 days
+            before today: NASA POWER publishes daily data late'
           examples:
           - '2026-01-31'
           title: End
-        description: Last day, YYYY-MM-DD (inclusive). At most 366 days from start, not in the future
+        description: 'Last day, YYYY-MM-DD (inclusive). At most 366 days from start, and at least 30 days
+          before today: NASA POWER publishes daily data late'
       responses:
         '200':
           description: Successful Response
