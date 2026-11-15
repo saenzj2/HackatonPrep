@@ -1,4 +1,6 @@
 import { Link } from "react-router";
+import { VideoEmbed } from "../components/VideoEmbed";
+import { VIDEOS } from "../videos";
 
 export function Home() {
   return (
@@ -35,6 +37,15 @@ export function Home() {
             <p>See ranked rotations with the reasons, the risks and what the data cannot tell.</p>
           </li>
         </ol>
+      </section>
+
+      <section aria-labelledby="videos">
+        <h2 id="videos">Videos</h2>
+        <div className="grid grid--3">
+          {VIDEOS.map((video) => (
+            <VideoEmbed key={video.id} video={video} />
+          ))}
+        </div>
       </section>
 
       <p className="notice notice--info small">
