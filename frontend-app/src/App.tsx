@@ -26,7 +26,7 @@ export function App() {
         <header className="site-header">
           <div className="site-header__inner">
             <Link to="/" className="brand">
-              Guardians of the Harvest
+              Terra Cosmos
             </Link>
             <nav className="nav" aria-label="Main">
               {NAV.map((item) => (

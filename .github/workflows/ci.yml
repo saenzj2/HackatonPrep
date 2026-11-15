@@ -62,7 +62,7 @@ jobs:
         run: |
           docker run -d --name harvest -p 8000:8000 -e FRONTEND_DIR=/srv/frontend-app harvest
           for i in $(seq 1 30); do curl -fs http://localhost:8000/health && break; sleep 2; done
-          curl -fs http://localhost:8000/app/ | grep -q 'Guardians of the Harvest'
+          curl -fs http://localhost:8000/app/ -o page.html && grep -q 'Terra Cosmos' page.html
           asset=$(curl -fs http://localhost:8000/app/ | grep -o '/app/assets/[^"]*\.js' | head -1)
           curl -fs "http://localhost:8000$asset" > /dev/null
           docker exec harvest test -f /srv/frontend/index.html
