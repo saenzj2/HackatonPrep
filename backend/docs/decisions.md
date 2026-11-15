@@ -109,7 +109,9 @@ Template:
 - **Open:** `GENERIC_SOIL_MOISTURE` is still one placeholder range for every crop and penalises wet
   areas; per-crop values need an `agro-logic` review. Demo points must be fetched once in `live`
   mode (~30 s each for SMAP) before `cached` mode works there.
-- **Revisit if:** the team moves to Jeff's Earth Engine project (only `GEE_PROJECT_ID` changes);
+- **Earth Engine project:** the team project `advance-topic-243700` (the default `GEE_PROJECT_ID`).
+  Each teammate needs the IAM roles Service Usage Consumer and Earth Engine Resource Viewer on it.
+- **Revisit if:**
   year-to-year variability (#34); per-crop moisture ranges.
 
 ## 2026-11-15 — Crop tolerance ranges imported from FAO EcoCrop (Adaptation Atlas copy)

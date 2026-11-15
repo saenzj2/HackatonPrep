@@ -10,7 +10,7 @@
 | **Resolution** | 9 km EASE-Grid (catalog pixel size ~11 km); 3-hourly (hh:30 UTC) |
 | **License** | Public domain per the Earth Engine catalog; NSIDC asks users to cite the data set: Reichle et al., SMAP L4 Global 3-hourly 9 km EASE-Grid Surface and Root Zone Soil Moisture Geophysical Data, Version 8, NSIDC DAAC, doi:10.5067/T5RUATAQREF8 |
 | **Fixtures** | `tests/fixtures/smap/monthly_alajuela.json` (lat 10.0, lon −84.2) and `monthly_san_carlos.json` (lat 11.0, lon −84.6), fetched 2026-11-15 with the adapter's own request |
-| **Access** | Earth Engine project (`GEE_PROJECT_ID`) + `earthengine authenticate`, same as OpenLandMap |
+| **Access** | Team Earth Engine project `advance-topic-243700` (default `GEE_PROJECT_ID`) + `earthengine authenticate` with the Google account that has the IAM roles **Service Usage Consumer** and **Earth Engine Resource Viewer** on it. Only needed to fetch new points (`live`); `cached` mode needs none |
 
 ## What the adapter asks for
 One Earth Engine request per location, returning 12 numbers:
