@@ -11,7 +11,7 @@ Only the last click on **Submit for Judging** counts, and nothing can be edited 
 | 1 | Project Name | yes | ✅ "Guardians of the Harvest" | — |
 | 2 | Summary (≤ 1,500 characters) | yes | ✏️ Draft below | ? |
 | 3 | Project Demonstration (public link) | yes | ❌ **Missing:** a video **≤ 30 s** *or* slides **≤ 7** (title included) | ? |
-| 4 | Project (public link) | yes | ✅ https://terracosmos.space (see the note on the private repo) | — |
+| 4 | Project (public link) | yes | ✅ https://terracosmos.space (the repo is public too, see below) | — |
 | 5 | Project Details | yes | ✏️ Draft below | ? |
 | 6 | Use of Super Intelligence (SI) | yes | ✏️ Draft below, and the team must confirm what each person used | all |
 | 7 | NASA Data (links) | yes | ✅ List below | — |
@@ -24,11 +24,10 @@ Tips from the form: use **Lock** while editing so two people don't overwrite eac
 
 ### Links must work without a login
 
-- **Repo is PRIVATE.** Judges can't open `github.com/saenzj2/HackatonPrep`. Options:
-  1. Use only https://terracosmos.space as the Project link. It's public, and `/docs` shows the API.
-  2. Have the repo owner make it public (Settings → General → Change visibility). The history
-     never contained `.env` files or API keys, and a test checks that the data snapshot has none.
-     **This is the owner's decision.**
+- **The repo is now PUBLIC** (checked on 2026-11-15): judges can open
+  https://github.com/saenzj2/HackatonPrep. The Project link is still https://terracosmos.space
+  (`/docs` shows the API). Mention the repo link in Project Details if you want. The history never
+  contained `.env` files or API keys, and a test checks that the data snapshot has none.
 - Demo: YouTube (Public or Unlisted), Google Drive or GitHub with "anyone with the link can view".
   Open it in a private window before you paste it.
 - Paste full URLs, starting with `https://`.
