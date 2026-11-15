@@ -125,7 +125,7 @@ External Sentinel-2, WorldCover, SoilGrids and FTW research images are not backe
 | Path | What |
 |------|------|
 | `frontend/` | Static frontend skeleton served at `/app` (replace freely, keep `index.html`) |
-| `Dockerfile`, `railway.json`, `.github/workflows/deploy.yml` | Production image and deploy ([`docs/deploy.md`](docs/deploy.md)) |
+| `Dockerfile`, `.github/workflows/deploy.yml` | Production image and deploy ([`docs/deploy.md`](docs/deploy.md)) |
 | `backend/app/api/` | HTTP routes and request/response schemas |
 | `backend/app/domain/` | Suitability scoring and rotation ranking (pure Python, no I/O) |
 | `backend/app/integrations/` | One adapter per data source (NASA POWER, EcoCrop, soil, mock) |
