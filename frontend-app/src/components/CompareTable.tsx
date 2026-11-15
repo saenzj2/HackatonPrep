@@ -12,6 +12,8 @@ interface Column {
   key: string;
   title: string;
   rotation: Rotation;
+  /** The farmer's current rotation (highlighted). */
+  mine: boolean;
 }
 
 /** Worst crop of a rotation in the past-weather check: failed years out of evaluated years. */
@@ -24,9 +26,10 @@ function columnsOf(rotations: Rotation[], current: Rotation | null, tr: Tr): Col
     key: `opt-${r.rank}`,
     title: r.is_current ? tr("Your current rotation", "Su rotación actual") : tr(`Option ${r.rank}`, `Opción ${r.rank}`),
     rotation: r,
+    mine: r.is_current,
   }));
   if (current && !rotations.some((r) => r.is_current)) {
-    cols.push({ key: "current", title: tr("Your current rotation", "Su rotación actual"), rotation: current });
+    cols.push({ key: "current", title: tr("Your current rotation", "Su rotación actual"), rotation: current, mine: true });
   }
   return cols;
 }
@@ -65,6 +68,9 @@ export function CompareTable({ lat, lon, rotations, current }: { lat: number; lo
   }, [key]);
 
   if (cols.length < 2) return null;
+
+  const colClass = (i: number) =>
+    cols[i].mine ? "compare__col--mine" : i === 0 ? "compare__col--best" : undefined;
 
   const seasons = cols[0].rotation.sequence.map((s) => ({ name: s.season, months: s.months }));
   const score2 = (v: number | null) => (v == null ? tr("Not scored", "Sin puntaje") : num(v));
@@ -140,9 +146,10 @@ export function CompareTable({ lat, lon, rotations, current }: { lat: number; lo
             <tr>
               <td />
               {cols.map((c, i) => (
-                <th key={c.key} scope="col" className={i === 0 ? "compare__col--best" : undefined}>
+                <th key={c.key} scope="col" className={colClass(i)}>
                   {c.title}
                   {i === 0 && !c.rotation.is_current && <span className="tag compare__tag">{tr("Recommended", "Recomendada")}</span>}
+                  {c.mine && <span className="tag compare__tag compare__tag--mine">{tr("Your choice", "Su elección")}</span>}
                 </th>
               ))}
             </tr>
@@ -155,7 +162,7 @@ export function CompareTable({ lat, lon, rotations, current }: { lat: number; lo
                   {row.hint && <span className="compare__hint">{row.hint}</span>}
                 </th>
                 {row.cells.map((cell, i) => (
-                  <td key={cols[i].key} className={[i === 0 ? "compare__col--best" : "", row.bestIndex.includes(i) ? "compare__best" : ""].join(" ").trim() || undefined}>
+                  <td key={cols[i].key} className={[colClass(i), row.bestIndex.includes(i) ? "compare__best" : ""].join(" ").trim() || undefined}>
                     {row.bestIndex.includes(i) && (
                       <span aria-hidden="true" className="compare__check">
                         ✓{" "}

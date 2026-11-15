@@ -1446,3 +1446,77 @@ details[open] > :not(summary) {
     margin-left: auto;
   }
 }
+
+/* ---- The farmer's own rotation: one warm accent wherever it appears ---- */
+.why-current {
+  border-top: 5px solid var(--solar-gold);
+}
+
+.why-current h2 {
+  margin-top: 4px;
+}
+
+.why-current h3 {
+  margin-bottom: 6px;
+}
+
+.eyebrow--current {
+  color: #6b4e00;
+}
+
+.why-current__weak,
+.why-current__parts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.why-current__weak li {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #fdf1cc;
+  border: 1px solid var(--solar-gold);
+}
+
+.why-current__where {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b4e00;
+}
+
+.why-current__parts li {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--ivory);
+  border: 1px solid var(--border);
+}
+
+.compare__col--mine {
+  background: #fdf3d6;
+}
+
+.compare__tag--mine {
+  border-color: var(--solar-gold);
+  color: #6b4e00;
+}
+
+/* ---- About and Terms: readable text width ---- */
+.prose p,
+.prose li {
+  max-width: 75ch;
+}
+
+.toc {
+  columns: 2 220px;
+  margin: 0;
+}
+
+/* Sections reached by a jump (Terms contents, footer "How we used AI") clear the sticky header. */
+main [id] {
+  scroll-margin-top: 96px;
+}

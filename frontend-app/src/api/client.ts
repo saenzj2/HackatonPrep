@@ -109,6 +109,8 @@ export interface RotationStep {
   crop_id: string;
   crop_name: string;
   score: number;
+  /** 0..1 fit per scored variable (temperature, rainfall, soil_ph, soil_moisture, heat, frost). */
+  variable_scores?: Record<string, number>;
 }
 
 export interface Rotation {

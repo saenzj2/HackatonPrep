@@ -7,6 +7,7 @@ import { NeedsField } from "../components/NeedsField";
 import { PlanRisk } from "../components/PlanRisk";
 import { SoilHealth } from "../components/SoilHealth";
 import { Stepper } from "../components/Stepper";
+import { WhyNotCurrent } from "../components/WhyNotCurrent";
 import { useCropName } from "../cropNames";
 import { capitalize, monthSpan, scoreOf1, signed } from "../format";
 import { useI18n, type Bilingual } from "../i18n";
@@ -155,6 +156,8 @@ function ResultsView({ data }: { data: RecommendationResponse }) {
         <Breakdown rotation={best} />
         <Details rotation={best} />
       </article>
+
+      {current && !bestIsCurrent && <WhyNotCurrent best={best} current={current} />}
 
       <CompareTable lat={data.location.lat} lon={data.location.lon} rotations={data.rotations} current={current} />
 
