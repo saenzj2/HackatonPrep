@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { HashRouter, Link, NavLink, Route, Routes, useLocation } from "react-router";
 import { BackgroundVideo } from "./components/BackgroundVideo";
 import { Field } from "./pages/Field";
@@ -26,26 +26,7 @@ export function App() {
         <a href="#main" className="skip-link">
           Skip to content
         </a>
-        <header className="site-header">
-          <div className="site-header__inner">
-            <Link to="/" className="brand">
-              <span className="ai-image">
-                <img src={`${import.meta.env.BASE_URL}logo-96.png`} alt="" width={40} height={40} />
-                <span className="ai-mark" aria-label="AI generated image">
-                  AI generated
-                </span>
-              </span>
-              Terra Cosmos
-            </Link>
-            <nav className="nav" aria-label="Main">
-              {NAV.map((item) => (
-                <NavLink key={item.to} to={item.to} end={item.end}>
-                  {item.label}
-                </NavLink>
-              ))}
-            </nav>
-          </div>
-        </header>
+        <SiteHeader />
         <main id="main" className="page" tabIndex={-1}>
           <RouteFade>
             <Routes>
@@ -63,6 +44,54 @@ export function App() {
         </footer>
       </PlanProvider>
     </HashRouter>
+  );
+}
+
+/** Sticky brand bar. On phones the links collapse behind a menu button. */
+function SiteHeader() {
+  const { pathname } = useLocation();
+  const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    setOpen(false); // close the menu after navigating
+  }, [pathname]);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 4);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  return (
+    <header className={`site-header${scrolled ? " site-header--scrolled" : ""}`}>
+      <div className="site-header__inner">
+        <Link to="/" className="brand">
+          <img src={`${import.meta.env.BASE_URL}logo-mark.png`} alt="" width={70} height={48} />
+          <span className="brand__text">
+            <span className="brand__name">Terra Cosmos</span>
+            <span className="brand__tagline">Earth insights from space</span>
+          </span>
+        </Link>
+        <button
+          type="button"
+          className="nav-toggle"
+          aria-expanded={open}
+          aria-controls="main-nav"
+          onClick={() => setOpen((v) => !v)}
+        >
+          <span className="nav-toggle__icon" aria-hidden="true" />
+          {open ? "Close" : "Menu"}
+        </button>
+        <nav id="main-nav" className={`nav${open ? " nav--open" : ""}`} aria-label="Main">
+          {NAV.map((item) => (
+            <NavLink key={item.to} to={item.to} end={item.end}>
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
+      </div>
+    </header>
   );
 }
 
