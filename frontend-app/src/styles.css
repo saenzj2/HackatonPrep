@@ -1418,3 +1418,59 @@ details[open] > :not(summary) {
   color: var(--space-navy);
   border-color: var(--space-navy);
 }
+
+/* Home: one-click demo, secondary to "Start with my field" but easy to spot on the hero. */
+.btn--demo {
+  background: var(--growth-lime);
+  border-color: var(--growth-lime);
+  color: var(--space-navy);
+}
+
+/* ---- Side-by-side comparison (components/CompareTable.tsx) ---- */
+.compare {
+  border-top: 5px solid var(--space-navy);
+}
+
+.compare h2 {
+  margin-top: 4px;
+}
+
+.compare__table {
+  min-width: 560px;
+}
+
+.compare__table th[scope="row"] {
+  color: var(--text);
+  font-weight: 600;
+  width: 26%;
+}
+
+.compare__table thead th {
+  vertical-align: bottom;
+}
+
+.compare__hint {
+  display: block;
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.compare__tag {
+  display: block;
+  width: fit-content;
+  margin-top: 4px;
+}
+
+/* The recommended option's column is lightly tinted. */
+.compare__col--best {
+  background: #eef6ec;
+}
+
+.compare__best {
+  font-weight: 700;
+}
+
+.compare__check {
+  color: var(--agri-green);
+}

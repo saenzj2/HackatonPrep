@@ -7,7 +7,7 @@ One Railway service runs the API and the frontend. It's built from the root `Doc
 | URL | What |
 |---|---|
 | `https://terracosmos.space/` | Redirects to the app |
-| `/app/` | Frontend: `frontend/` by default, or the React build from `frontend-app/` (see `FRONTEND_DIR`) |
+| `/app/` | Frontend: the **Terra Cosmos** React app from `frontend-app/` (Railway sets `FRONTEND_DIR`) |
 | `/docs` | Swagger UI for the API |
 | `/health` | Health check (Railway uses it before switching traffic) |
 | `https://harvest-production-3c6bc064.up.railway.app` | Same service on Railway's own domain (fallback) |
@@ -146,7 +146,7 @@ baked into the image:
 |---|---|---|
 | `PORT` | `8000` (set in Railway) | Must match the domains' target port. |
 | `DATA_MODE` | `cached` (image default) | Keep `cached` for the demo. `live` needs Earth Engine credentials. |
-| `FRONTEND_DIR` | `/srv/frontend` (image default) | `/srv/frontend-app` serves the React app. Unset it to serve the API only. |
+| `FRONTEND_DIR` | **`/srv/frontend-app` (set in Railway since 2026-11-15)**; image default `/srv/frontend` | Serves the React app. Removing the Railway variable falls back to the old static page (`/srv/frontend`). |
 | `CORS_ORIGINS` | localhost dev ports | Only needed if a frontend is hosted on another domain. |
 
 Never put secrets in the `Dockerfile`, the workflows or the repo. `.dockerignore` keeps `.env`

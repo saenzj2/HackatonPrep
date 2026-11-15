@@ -38,3 +38,13 @@ export const DEMO_FIELDS: DemoField[] = [
   { id: "buenos-aires", name: "Buenos Aires", lat: 9.2, lon: -83.3, description: "South Pacific" },
   { id: "ciudad-neily", name: "Ciudad Neily", lat: 8.6, lon: -82.9, description: "South Pacific" },
 ];
+
+/**
+ * One-click demo from Home: a demo field plus a common smallholder starting point (the same crop
+ * every season) so the results show a comparison with "what you grow now". Crop ids must be in
+ * GET /crops (mvp.yaml).
+ */
+export const DEMO_SCENARIO = {
+  fieldId: "alajuela",
+  currentCrop: "maize",
+} as const;
