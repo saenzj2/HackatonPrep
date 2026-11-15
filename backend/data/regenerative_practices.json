@@ -1,0 +1,437 @@
+{
+  "meta": {
+    "dataset_id": "D14",
+    "table_name": "regenerative_practice",
+    "version": "1.0",
+    "languages": ["en", "es"],
+    "region_scope": "Generic tropical",
+    "is_generated": true,
+    "author": "Carlo",
+    "disclaimer": {
+      "en": "These cards explain general practices. They support, and do not replace, the judgment of the farmer and local agricultural experts.",
+      "es": "Estas tarjetas explican prácticas generales. Apoyan, y no reemplazan, el criterio del agricultor ni de los expertos agrícolas locales."
+    },
+    "rules_note": "Each card is shown when ANY rule in applies_when.rules is true. Rules use table.attribute names from the data model. Thresholds are starting values chosen by the team and need agronomic review. Attributes under 'rotation.' are computed by the rotation engine from rotation_step and crop."
+  },
+  "practices": [
+    {
+      "practice_id": "P01",
+      "slug": "mycorrhizal-fungi",
+      "category": "soil biology",
+      "name": {
+        "en": "Mycorrhizal fungi (soil mycelium)",
+        "es": "Hongos micorrízicos (micelio del suelo)"
+      },
+      "summary": {
+        "en": "Soil fungi that live on crop roots and help plants reach phosphorus, zinc and water.",
+        "es": "Hongos del suelo que viven en las raíces y ayudan a la planta a alcanzar fósforo, zinc y agua."
+      },
+      "description": {
+        "en": "Mycorrhizal fungi join with the roots of most crops and spread fine threads (mycelium) far into the soil. The plant feeds the fungus sugars, and the fungus brings back nutrients the roots cannot reach on their own, mainly phosphorus and zinc. The threads also help bind soil into crumbs. Most soils already contain these fungi, so the first step is to protect the ones you have before buying a product.",
+        "es": "Los hongos micorrízicos se unen a las raíces de la mayoría de los cultivos y extienden hilos finos (micelio) por el suelo. La planta le da azúcares al hongo, y el hongo le trae nutrientes que la raíz no alcanza sola, sobre todo fósforo y zinc. Esos hilos también ayudan a formar grumos en el suelo. La mayoría de los suelos ya tiene estos hongos, así que el primer paso es cuidar los que existen antes de comprar un producto."
+      },
+      "how_to_start": {
+        "en": [
+          "Keep living roots in the field as many months as possible; avoid long bare periods.",
+          "Disturb the soil less, because tillage breaks the fungal threads.",
+          "Follow crops that do not host these fungi (cabbage family, beet, spinach, amaranth) with a host crop such as maize, beans or a grass cover crop.",
+          "Avoid applying more phosphorus fertilizer than a soil test recommends."
+        ],
+        "es": [
+          "Mantenga raíces vivas en el campo la mayor cantidad de meses posible; evite periodos largos de suelo desnudo.",
+          "Remueva menos el suelo, porque la labranza rompe los hilos del hongo.",
+          "Después de cultivos que no hospedan estos hongos (familia del repollo, remolacha, espinaca, amaranto), siembre un cultivo hospedero como maíz, frijol o una gramínea de cobertura.",
+          "No aplique más fertilizante de fósforo del que recomienda un análisis de suelo."
+        ]
+      },
+      "benefits": {
+        "en": [
+          "Better uptake of phosphorus and zinc",
+          "Helps crops cope with dry spells",
+          "More stable soil structure"
+        ],
+        "es": [
+          "Mejor absorción de fósforo y zinc",
+          "Ayuda al cultivo a resistir periodos secos",
+          "Estructura del suelo más estable"
+        ]
+      },
+      "cautions_local_review": {
+        "en": [
+          "Results from commercial inoculants vary; field trials do not always show a yield benefit. Test on a small plot first.",
+          "If you buy an inoculant, ask a local agronomist which species suit your crop and soil, and check the product's expiry date.",
+          "Cabbage-family and beet-family crops do not form this partnership, so an inoculant is wasted on them."
+        ],
+        "es": [
+          "Los resultados de los inoculantes comerciales varían; los ensayos de campo no siempre muestran aumento de rendimiento. Pruebe primero en una parcela pequeña.",
+          "Si compra un inoculante, consulte con un agrónomo local qué especies sirven para su cultivo y su suelo, y revise la fecha de vencimiento.",
+          "Los cultivos de la familia del repollo y de la remolacha no forman esta asociación; en ellos el inoculante se desperdicia."
+        ]
+      },
+      "evidence_note": {
+        "en": "Strong evidence that the fungi help nutrient uptake; mixed evidence that adding purchased inoculant improves yield in the field.",
+        "es": "Hay evidencia sólida de que estos hongos ayudan a absorber nutrientes; la evidencia es mixta sobre si agregar inoculante comprado mejora el rendimiento en campo."
+      },
+      "applies_when": {
+        "text": {
+          "en": "Shown when the rotation includes crops that depend on these fungi, when the field has bare months, or after a crop that does not host them.",
+          "es": "Se muestra cuando la rotación incluye cultivos que dependen de estos hongos, cuando el campo tiene meses sin cobertura, o después de un cultivo que no los hospeda."
+        },
+        "match": "any",
+        "rules": [
+          {"attribute": "crop.mycorrhizal_affinity", "operator": "==", "value": "high", "scope": "any crop in the strategy"},
+          {"attribute": "field_indicator_monthly.bare_field", "operator": "==", "value": true, "scope": "any month"},
+          {"attribute": "rotation.previous_crop_mycorrhizal_affinity", "operator": "==", "value": "none", "scope": "any step"},
+          {"attribute": "soil_test.phosphorus_ppm", "operator": "<", "value": 10, "scope": "latest test"}
+        ]
+      },
+      "related_crop_ids": ["zea_mays", "phaseolus_vulgaris", "vigna_unguiculata", "sorghum_bicolor", "manihot_esculenta"],
+      "non_host_crop_ids": ["brassica_oleracea", "beta_vulgaris", "spinacia_oleracea"],
+      "related_practice_ids": ["P02", "P03"],
+      "sources": [
+        {"title": "Arbuscular Mycorrhizas fact sheet, Soil Quality (Australia)", "url": "https://www.soilquality.org.au/factsheets/arbuscular-mycorrhizas-s-a"},
+        {"title": "Boosting mycorrhizal fungi in vegetable crops, AUSVEG", "url": "https://ausveg.com.au/?p=45538"},
+        {"title": "Building Soils for Better Crops: Cover Crops, SARE", "url": "https://www.sare.org/publications/building-soils-for-better-crops/cover-crops"}
+      ]
+    },
+    {
+      "practice_id": "P02",
+      "slug": "cover-crops",
+      "category": "cover crop",
+      "name": {
+        "en": "Cover crops",
+        "es": "Cultivos de cobertura"
+      },
+      "summary": {
+        "en": "Plants grown between main crops to protect and feed the soil instead of leaving it bare.",
+        "es": "Plantas que se siembran entre cultivos principales para proteger y alimentar el suelo en lugar de dejarlo desnudo."
+      },
+      "description": {
+        "en": "A cover crop is sown for the soil, not for harvest. Its leaves shield the ground from heavy rain and sun, and its roots hold the soil and add organic matter. Legume cover crops also take nitrogen from the air and leave part of it for the next crop. In the tropics, common choices include velvet bean, jack bean, sunn hemp, cowpea and pigeon pea.",
+        "es": "Un cultivo de cobertura se siembra para el suelo, no para cosechar. Sus hojas protegen la tierra de la lluvia fuerte y del sol, y sus raíces sujetan el suelo y aportan materia orgánica. Las leguminosas de cobertura además toman nitrógeno del aire y dejan una parte para el cultivo siguiente. En el trópico se usan mucho el frijol terciopelo (mucuna), la canavalia, la crotalaria, el caupí y el gandul."
+      },
+      "how_to_start": {
+        "en": [
+          "Choose the months when the field is normally bare and sow the cover crop then.",
+          "Pick the species by your goal: a legume to add nitrogen, a grass to build organic matter and cover the soil quickly, or a mix of both.",
+          "Cut or roll the cover crop before it sets seed and leave the residue on the surface as mulch.",
+          "Start with a small area for one season to learn the timing."
+        ],
+        "es": [
+          "Identifique los meses en que el campo normalmente queda desnudo y siembre la cobertura en ese periodo.",
+          "Elija la especie según su objetivo: una leguminosa para aportar nitrógeno, una gramínea para aumentar la materia orgánica y cubrir rápido el suelo, o una mezcla de ambas.",
+          "Corte o acame la cobertura antes de que produzca semilla y deje el rastrojo sobre el suelo como mantillo.",
+          "Empiece con un área pequeña durante una temporada para aprender los tiempos."
+        ]
+      },
+      "benefits": {
+        "en": [
+          "Less erosion from heavy rain",
+          "More organic matter and soil life",
+          "Nitrogen for the next crop when legumes are used",
+          "Fewer weeds and better moisture under the mulch"
+        ],
+        "es": [
+          "Menos erosión por lluvias fuertes",
+          "Más materia orgánica y vida en el suelo",
+          "Nitrógeno para el cultivo siguiente cuando se usan leguminosas",
+          "Menos malezas y más humedad bajo el mantillo"
+        ]
+      },
+      "cautions_local_review": {
+        "en": [
+          "In dry periods a growing cover crop uses water the next crop may need; time its termination with local advice.",
+          "Some cover crops host the same pests or diseases as the main crop; check the plant family before choosing.",
+          "Vigorous climbers such as velvet bean can smother a main crop if sown too early alongside it.",
+          "Seed availability and cost differ by region."
+        ],
+        "es": [
+          "En épocas secas, una cobertura en crecimiento consume agua que puede necesitar el cultivo siguiente; defina el momento de cortarla con asesoría local.",
+          "Algunas coberturas hospedan las mismas plagas o enfermedades que el cultivo principal; revise la familia de la planta antes de elegir.",
+          "Las enredaderas vigorosas como la mucuna pueden ahogar al cultivo principal si se siembran demasiado pronto junto a él.",
+          "La disponibilidad y el costo de la semilla cambian según la región."
+        ]
+      },
+      "evidence_note": {
+        "en": "Well established for erosion control and nitrogen from legumes; gains in organic matter build slowly over several seasons.",
+        "es": "Bien comprobado para controlar la erosión y aportar nitrógeno con leguminosas; el aumento de materia orgánica se acumula lentamente en varias temporadas."
+      },
+      "applies_when": {
+        "text": {
+          "en": "Shown when the field has bare months, heavy-rain days, erosion risk, low organic matter or low nitrogen.",
+          "es": "Se muestra cuando el campo tiene meses sin cobertura, días de lluvia extrema, riesgo de erosión, poca materia orgánica o poco nitrógeno."
+        },
+        "match": "any",
+        "rules": [
+          {"attribute": "field_indicator_monthly.bare_field", "operator": "==", "value": true, "scope": "any month"},
+          {"attribute": "field_indicator_monthly.extreme_rain_days", "operator": ">=", "value": 1, "scope": "any month"},
+          {"attribute": "field_elevation.erosion_risk", "operator": "in", "value": ["medium", "high"], "scope": "field"},
+          {"attribute": "soil_test.organic_matter_pct", "operator": "<", "value": 3, "scope": "latest test"},
+          {"attribute": "soil_test.nitrogen_ppm", "operator": "<", "value": 15, "scope": "latest test"}
+        ]
+      },
+      "related_crop_ids": ["mucuna_pruriens", "canavalia_ensiformis", "crotalaria_juncea", "vigna_unguiculata", "cajanus_cajan", "sorghum_bicolor"],
+      "non_host_crop_ids": [],
+      "related_practice_ids": ["P01", "P03", "P04"],
+      "sources": [
+        {"title": "Managing Cover Crops Profitably: Benefits of Cover Crops, SARE", "url": "https://sare.org/publications/managing-cover-crops-profitably/benefits-of-cover-crops"},
+        {"title": "Building Soils for Better Crops: Cover Crops, SARE", "url": "https://www.sare.org/publications/building-soils-for-better-crops/cover-crops"},
+        {"title": "Conservation Agriculture principles, FAO", "url": "https://www.fao.org/conservation-agriculture/overview/conservation-agriculture-principles/en"}
+      ]
+    },
+    {
+      "practice_id": "P03",
+      "slug": "reduced-tillage",
+      "category": "tillage",
+      "name": {
+        "en": "Reduced tillage",
+        "es": "Labranza reducida"
+      },
+      "summary": {
+        "en": "Disturbing the soil as little as possible and keeping crop residue on the surface.",
+        "es": "Remover el suelo lo menos posible y dejar el rastrojo sobre la superficie."
+      },
+      "description": {
+        "en": "Ploughing loosens soil for a season but leaves it exposed to rain and sun, speeds up the loss of organic matter and breaks the channels made by roots, worms and fungi. Reduced tillage means working only the planting row or hole, or sowing directly into the residue of the previous crop. Combined with soil cover and crop diversity, it is one of the three principles of conservation agriculture.",
+        "es": "Arar afloja el suelo por una temporada, pero lo deja expuesto a la lluvia y al sol, acelera la pérdida de materia orgánica y rompe los canales que forman las raíces, las lombrices y los hongos. La labranza reducida consiste en trabajar solo el surco o el hoyo de siembra, o sembrar directamente sobre el rastrojo del cultivo anterior. Junto con la cobertura del suelo y la diversidad de cultivos, es uno de los tres principios de la agricultura de conservación."
+      },
+      "how_to_start": {
+        "en": [
+          "Leave the residue of the last crop on the field instead of burning or removing it.",
+          "Open only a narrow strip or planting hole for the seed.",
+          "On slopes, plant along the contour, never up and down the hill.",
+          "Reduce the number of passes one step at a time and compare with a tilled strip."
+        ],
+        "es": [
+          "Deje el rastrojo del último cultivo en el campo en lugar de quemarlo o retirarlo.",
+          "Abra solo una franja angosta o un hoyo de siembra para la semilla.",
+          "En laderas, siembre en curvas a nivel, nunca a favor de la pendiente.",
+          "Reduzca el número de pasadas poco a poco y compare con una franja labrada."
+        ]
+      },
+      "benefits": {
+        "en": [
+          "Less erosion and runoff, especially on slopes",
+          "More rainwater soaks in and stays in the soil",
+          "Protects soil fungi, worms and organic matter",
+          "Saves fuel, time and labour"
+        ],
+        "es": [
+          "Menos erosión y escorrentía, sobre todo en laderas",
+          "Más agua de lluvia se infiltra y se conserva en el suelo",
+          "Protege los hongos, las lombrices y la materia orgánica del suelo",
+          "Ahorra combustible, tiempo y mano de obra"
+        ]
+      },
+      "cautions_local_review": {
+        "en": [
+          "Weeds are harder to control in the first seasons; plan mulch, cover crops or other control with local advice.",
+          "Already compacted soil may need one corrective loosening before starting.",
+          "Yields can dip during the first years of transition.",
+          "Residue left on the surface can carry over some diseases and pests; rotate crops to limit this.",
+          "Root and tuber crops disturb the soil at harvest, so full no-till is not always possible."
+        ],
+        "es": [
+          "Las malezas son más difíciles de controlar en las primeras temporadas; planifique mantillo, coberturas u otro control con asesoría local.",
+          "Un suelo ya compactado puede necesitar un aflojado correctivo antes de empezar.",
+          "El rendimiento puede bajar durante los primeros años de transición.",
+          "El rastrojo en la superficie puede conservar algunas enfermedades y plagas; rote cultivos para limitarlo.",
+          "Las raíces y tubérculos remueven el suelo en la cosecha, por lo que no siempre es posible la labranza cero completa."
+        ]
+      },
+      "evidence_note": {
+        "en": "Well established for reducing erosion and saving water; the effect on yield depends on soil, climate and weed management.",
+        "es": "Bien comprobado para reducir la erosión y conservar agua; el efecto en el rendimiento depende del suelo, el clima y el manejo de malezas."
+      },
+      "applies_when": {
+        "text": {
+          "en": "Shown when the field has slope or erosion risk, heavy-rain days, long dry spells or low organic matter.",
+          "es": "Se muestra cuando el campo tiene pendiente o riesgo de erosión, días de lluvia extrema, periodos secos largos o poca materia orgánica."
+        },
+        "match": "any",
+        "rules": [
+          {"attribute": "field_elevation.slope_pct", "operator": ">=", "value": 5, "scope": "field"},
+          {"attribute": "field_indicator_monthly.extreme_rain_days", "operator": ">=", "value": 1, "scope": "any month"},
+          {"attribute": "field_indicator_monthly.dry_spell_days", "operator": ">=", "value": 15, "scope": "any month"},
+          {"attribute": "soil_test.organic_matter_pct", "operator": "<", "value": 3, "scope": "latest test"}
+        ]
+      },
+      "related_crop_ids": ["zea_mays", "phaseolus_vulgaris", "sorghum_bicolor"],
+      "non_host_crop_ids": [],
+      "related_practice_ids": ["P01", "P02", "P04"],
+      "sources": [
+        {"title": "Conservation Agriculture principles, FAO", "url": "https://www.fao.org/conservation-agriculture/overview/conservation-agriculture-principles/en"},
+        {"title": "Conservation Agriculture overview, FAO", "url": "https://www.fao.org/ag/ca/"},
+        {"title": "Arbuscular Mycorrhizas fact sheet, Soil Quality (Australia)", "url": "https://www.soilquality.org.au/factsheets/arbuscular-mycorrhizas-s-a"}
+      ]
+    },
+    {
+      "practice_id": "P04",
+      "slug": "crop-diversity-legumes",
+      "category": "crop diversity",
+      "name": {
+        "en": "Crop diversity and legumes",
+        "es": "Diversidad de cultivos y leguminosas"
+      },
+      "summary": {
+        "en": "Rotating different plant families, with a legume in the sequence, to feed the soil and break pest cycles.",
+        "es": "Rotar distintas familias de plantas, con una leguminosa en la secuencia, para alimentar el suelo y cortar ciclos de plagas."
+      },
+      "description": {
+        "en": "Growing the same crop, or crops of the same family, season after season lets its pests and diseases build up and draws the same nutrients from the same depth. Changing plant family from one season to the next interrupts those cycles. Legumes such as beans, cowpea, peanut and pigeon pea work with root bacteria to take nitrogen from the air, so the crop that follows needs less fertilizer. Mixing shallow and deep roots also uses water and nutrients from different soil layers.",
+        "es": "Sembrar el mismo cultivo, o cultivos de la misma familia, temporada tras temporada permite que sus plagas y enfermedades se acumulen y extrae los mismos nutrientes de la misma profundidad. Cambiar de familia de planta de una temporada a otra interrumpe esos ciclos. Las leguminosas como el frijol, el caupí, el maní y el gandul trabajan con bacterias en sus raíces para tomar nitrógeno del aire, de modo que el cultivo siguiente necesita menos fertilizante. Combinar raíces superficiales y profundas también aprovecha agua y nutrientes de distintas capas del suelo."
+      },
+      "how_to_start": {
+        "en": [
+          "List the plant family of each crop you grow and avoid repeating a family in back-to-back seasons.",
+          "Place a legume before or after your most demanding crop, such as maize.",
+          "Aim for at least three different crops across the rotation.",
+          "Consider intercropping, for example maize with beans, where it fits your labour and market."
+        ],
+        "es": [
+          "Anote la familia de cada cultivo que siembra y evite repetir una familia en temporadas seguidas.",
+          "Ubique una leguminosa antes o después de su cultivo más exigente, como el maíz.",
+          "Procure tener al menos tres cultivos distintos a lo largo de la rotación.",
+          "Considere los cultivos asociados, por ejemplo maíz con frijol, cuando se ajuste a su mano de obra y su mercado."
+        ]
+      },
+      "benefits": {
+        "en": [
+          "Nitrogen added by legumes",
+          "Fewer soil-borne pests, diseases and weeds",
+          "Better use of water and nutrients at different depths",
+          "Income spread across more than one crop"
+        ],
+        "es": [
+          "Nitrógeno aportado por las leguminosas",
+          "Menos plagas, enfermedades y malezas del suelo",
+          "Mejor uso del agua y los nutrientes a distintas profundidades",
+          "Ingresos repartidos entre más de un cultivo"
+        ]
+      },
+      "cautions_local_review": {
+        "en": [
+          "A new crop needs a buyer; confirm the local market before planting.",
+          "Legumes fix nitrogen only if the right root bacteria are present; a seed inoculant may be needed where the legume is new to the field.",
+          "Much of the nitrogen leaves with the harvested grain; the benefit is larger when residues stay on the field.",
+          "Some pests and diseases attack several families; ask a local expert which sequences to avoid."
+        ],
+        "es": [
+          "Un cultivo nuevo necesita comprador; confirme el mercado local antes de sembrar.",
+          "Las leguminosas fijan nitrógeno solo si están presentes las bacterias adecuadas; puede hacer falta un inoculante de semilla cuando la leguminosa es nueva en el campo.",
+          "Buena parte del nitrógeno sale con el grano cosechado; el beneficio es mayor cuando el rastrojo queda en el campo.",
+          "Algunas plagas y enfermedades atacan a varias familias; pregunte a un experto local qué secuencias evitar."
+        ]
+      },
+      "evidence_note": {
+        "en": "Well established: rotation with legumes is one of the oldest and best-documented ways to maintain yields.",
+        "es": "Bien comprobado: la rotación con leguminosas es una de las formas más antiguas y mejor documentadas de mantener el rendimiento."
+      },
+      "applies_when": {
+        "text": {
+          "en": "Shown when the current rotation has fewer than three crops, no legume, the same family in consecutive seasons, or the soil is low in nitrogen.",
+          "es": "Se muestra cuando la rotación actual tiene menos de tres cultivos, ninguna leguminosa, la misma familia en temporadas seguidas, o el suelo tiene poco nitrógeno."
+        },
+        "match": "any",
+        "rules": [
+          {"attribute": "rotation.distinct_crops", "operator": "<", "value": 3, "scope": "existing rotation"},
+          {"attribute": "rotation.has_nitrogen_fixing_crop", "operator": "==", "value": false, "scope": "existing rotation"},
+          {"attribute": "rotation.same_family_consecutive", "operator": "==", "value": true, "scope": "existing rotation"},
+          {"attribute": "soil_test.nitrogen_ppm", "operator": "<", "value": 15, "scope": "latest test"}
+        ]
+      },
+      "related_crop_ids": ["phaseolus_vulgaris", "vigna_unguiculata", "arachis_hypogaea", "cajanus_cajan", "zea_mays", "ipomoea_batatas"],
+      "non_host_crop_ids": [],
+      "related_practice_ids": ["P02", "P03"],
+      "sources": [
+        {"title": "Conservation Agriculture principles, FAO", "url": "https://www.fao.org/conservation-agriculture/overview/conservation-agriculture-principles/en"},
+        {"title": "Diversifying Cropping Systems: Protect Natural Resources, SARE", "url": "https://sare.org/publications/diversifying-cropping-systems/protect-natural-resources"},
+        {"title": "Crop rotation, CCARDESA", "url": "https://www.ccardesa.org/crop-rotation"}
+      ]
+    },
+    {
+      "practice_id": "P05",
+      "slug": "compost-organic-matter",
+      "category": "compost",
+      "name": {
+        "en": "Compost and organic matter",
+        "es": "Compost y materia orgánica"
+      },
+      "summary": {
+        "en": "Returning decomposed plant and animal residues to the soil so it holds more water and nutrients.",
+        "es": "Devolver al suelo residuos vegetales y animales descompuestos para que retenga más agua y nutrientes."
+      },
+      "description": {
+        "en": "Organic matter works like a sponge: it holds water and nutrients and releases them slowly, and it feeds the organisms that keep soil crumbly. Compost is organic material such as crop residues, manure and kitchen waste that has been broken down by microbes, with air, into a dark, stable, earthy-smelling product. It builds soil gradually; it is a soil improver first and a fertilizer second.",
+        "es": "La materia orgánica funciona como una esponja: retiene agua y nutrientes y los libera poco a poco, y alimenta a los organismos que mantienen el suelo suelto. El compost es material orgánico, como rastrojos, estiércol y residuos de cocina, descompuesto por microbios en presencia de aire hasta volverse un producto oscuro, estable y con olor a tierra. Mejora el suelo de forma gradual; es primero un mejorador de suelo y después un fertilizante."
+      },
+      "how_to_start": {
+        "en": [
+          "Collect residues from the farm: crop leftovers, manure, coffee pulp, kitchen scraps.",
+          "Build the pile in layers of dry (brown) and fresh (green) material, keep it moist and turn it so air gets in.",
+          "Use it only when it is mature: dark, crumbly, no bad smell and no longer hot.",
+          "Apply it near the planting row and repeat every season; the effect adds up over years."
+        ],
+        "es": [
+          "Reúna residuos de la finca: rastrojos, estiércol, pulpa de café, restos de cocina.",
+          "Arme la pila en capas de material seco (café) y fresco (verde), manténgala húmeda y voltéela para que entre aire.",
+          "Úselo solo cuando esté maduro: oscuro, suelto, sin mal olor y ya sin calor.",
+          "Aplíquelo cerca del surco de siembra y repita cada temporada; el efecto se acumula con los años."
+        ]
+      },
+      "benefits": {
+        "en": [
+          "Soil holds more water through dry spells",
+          "Slow, steady release of nutrients",
+          "Better soil structure and easier root growth",
+          "More beneficial soil life"
+        ],
+        "es": [
+          "El suelo retiene más agua durante los periodos secos",
+          "Liberación lenta y constante de nutrientes",
+          "Mejor estructura del suelo y raíces que crecen con más facilidad",
+          "Más vida benéfica en el suelo"
+        ]
+      },
+      "cautions_local_review": {
+        "en": [
+          "Immature compost can take nitrogen away from the crop and harm seedlings.",
+          "Raw or poorly composted manure can carry germs; this matters most for vegetables eaten fresh. Follow local food-safety guidance.",
+          "More is not always better: too much compost can overload the soil with phosphorus or salts. Base the amount on a soil test and local advice.",
+          "Compost alone may not supply enough nitrogen for demanding crops."
+        ],
+        "es": [
+          "El compost inmaduro puede quitarle nitrógeno al cultivo y dañar las plántulas.",
+          "El estiércol crudo o mal compostado puede traer microbios dañinos; esto importa más en hortalizas que se comen frescas. Siga las recomendaciones locales de inocuidad.",
+          "Más no siempre es mejor: demasiado compost puede cargar el suelo de fósforo o sales. Defina la cantidad con un análisis de suelo y asesoría local.",
+          "El compost solo puede no aportar suficiente nitrógeno para cultivos exigentes."
+        ]
+      },
+      "evidence_note": {
+        "en": "Well established for improving water holding and soil structure; nutrient supply depends on what the compost is made from.",
+        "es": "Bien comprobado para mejorar la retención de agua y la estructura del suelo; el aporte de nutrientes depende de los materiales con que se hizo el compost."
+      },
+      "applies_when": {
+        "text": {
+          "en": "Shown when organic matter is low, the soil is sandy, dry spells are long or root-zone moisture is low.",
+          "es": "Se muestra cuando la materia orgánica es baja, el suelo es arenoso, los periodos secos son largos o la humedad en la zona de raíces es baja."
+        },
+        "match": "any",
+        "rules": [
+          {"attribute": "soil_test.organic_matter_pct", "operator": "<", "value": 3, "scope": "latest test"},
+          {"attribute": "soil_test.texture_class", "operator": "in", "value": ["sand", "loamy sand", "sandy loam"], "scope": "latest test"},
+          {"attribute": "field_indicator_monthly.dry_spell_days", "operator": ">=", "value": 15, "scope": "any month"},
+          {"attribute": "field_indicator_monthly.soil_wetness_root", "operator": "<", "value": 0.4, "scope": "any month"}
+        ]
+      },
+      "related_crop_ids": ["zea_mays", "phaseolus_vulgaris", "manihot_esculenta", "ipomoea_batatas"],
+      "non_host_crop_ids": [],
+      "related_practice_ids": ["P01", "P02"],
+      "sources": [
+        {"title": "Compost Considerations, Washington State University Extension", "url": "https://treefruit.wsu.edu/orchard-management/soils-nutrition/compost-considerations/"},
+        {"title": "Compost Use Guidelines for Gardens, Landscapes and Small Farms (North Carolina)", "url": "https://digital.ncdcr.gov/documents/detail/3689414"},
+        {"title": "Compost increases water capacity of droughty soils, Michigan State University Extension", "url": "https://vegetablegrowersnews.com/news/compost-increases-water-capacity-of-droughty-soils/"}
+      ]
+    }
+  ]
+}

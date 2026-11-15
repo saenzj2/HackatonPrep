@@ -7,7 +7,7 @@ One Railway service runs the API and the frontend. It's built from the root `Doc
 | URL | What |
 |---|---|
 | `https://terracosmos.space/` | Redirects to the app |
-| `/app/` | Frontend (static files from `frontend/`) |
+| `/app/` | Frontend: `frontend/` by default, or the React build from `frontend-app/` (see `FRONTEND_DIR`) |
 | `/docs` | Swagger UI for the API |
 | `/health` | Health check (Railway uses it before switching traffic) |
 | `https://harvest-production-3c6bc064.up.railway.app` | Same service on Railway's own domain (fallback) |
@@ -36,15 +36,22 @@ use **Redeploy** on a previous deployment in the Railway dashboard (the Railway 
 
 ## Run the production image locally
 
-Use this when you change `Dockerfile`, `frontend/` or startup code. You need Docker Desktop.
+Use this when you change `Dockerfile`, `frontend/`, `frontend-app/` or startup code. You need Docker Desktop.
+CI's `image` job runs the same build and a smoke test on every PR.
+
+**Demo without internet:** the API and the React app work offline on cached data, but the map
+(OpenStreetMap tiles) stays blank and the background videos (YouTube) don't play. Use the demo
+field buttons instead of the map. Edits to `backend/data/*.json` reach the app only after a rebuild.
 
 ```bash
 docker build -t harvest .
 docker run --rm -p 8000:8000 harvest     # http://localhost:8000
+docker run --rm -p 8000:8000 -e FRONTEND_DIR=/srv/frontend-app harvest   # with the React app
 ```
 
 Without Docker, `make dev` serves the same thing: the app at http://localhost:8000/app/ and the API
-docs at `/docs`.
+docs at `/docs`. For the React app, run `make web-install` once, then `make dev` and `make web-dev`
+in two terminals and open http://localhost:5173/app/ (Vite sends API calls to :8000).
 
 ## What is set up, and where
 
@@ -139,7 +146,7 @@ baked into the image:
 |---|---|---|
 | `PORT` | `8000` (set in Railway) | Must match the domains' target port. |
 | `DATA_MODE` | `cached` (image default) | Keep `cached` for the demo. `live` needs Earth Engine credentials. |
-| `FRONTEND_DIR` | `/srv/frontend` (image default) | Unset it to serve the API only. |
+| `FRONTEND_DIR` | `/srv/frontend` (image default) | `/srv/frontend-app` serves the React app. Unset it to serve the API only. |
 | `CORS_ORIGINS` | localhost dev ports | Only needed if a frontend is hosted on another domain. |
 
 Never put secrets in the `Dockerfile`, the workflows or the repo. `.dockerignore` keeps `.env`

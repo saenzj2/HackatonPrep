@@ -1,0 +1,609 @@
+{
+  "meta": {
+    "table_name": "glossary",
+    "version": "1.0",
+    "languages": [
+      "en",
+      "es"
+    ],
+    "is_generated": true,
+    "author": "Carlo",
+    "note": "tooltip = one sentence for the hover. why_it_matters = one sentence for the Learn page. Entries with uses_app_setting quote a threshold; update the text if the backend changes that setting. Terms with status 'planned' describe features not built yet; the app hides them. The front end bundles this file at build time, so an edit needs a rebuild.",
+    "categories": {
+      "climate": {
+        "en": "Weather and climate",
+        "es": "Tiempo y clima"
+      },
+      "water": {
+        "en": "Water and soil moisture",
+        "es": "Agua y humedad del suelo"
+      },
+      "vegetation": {
+        "en": "Vegetation",
+        "es": "Vegetación"
+      },
+      "soil": {
+        "en": "Soil test",
+        "es": "Análisis de suelo"
+      },
+      "farming": {
+        "en": "Farming practices",
+        "es": "Prácticas agrícolas"
+      },
+      "scores": {
+        "en": "Scores",
+        "es": "Puntajes"
+      },
+      "data": {
+        "en": "Data sources",
+        "es": "Fuentes de datos"
+      }
+    }
+  },
+  "terms": [
+    {
+      "term_id": "evapotranspiration",
+      "category": "climate",
+      "term": {
+        "en": "Evapotranspiration",
+        "es": "Evapotranspiración"
+      },
+      "tooltip": {
+        "en": "Water that leaves the field as vapour, both from the soil surface and through plant leaves.",
+        "es": "Agua que sale del campo como vapor, tanto desde la superficie del suelo como a través de las hojas de las plantas."
+      },
+      "why_it_matters": {
+        "en": "When it is higher than rainfall for weeks, the soil dries out and crops need stored water or irrigation.",
+        "es": "Cuando supera a la lluvia durante semanas, el suelo se seca y el cultivo necesita agua almacenada o riego."
+      },
+      "data_model_attribute": null,
+      "uses_app_setting": null
+    },
+    {
+      "term_id": "heat_stress_days",
+      "category": "climate",
+      "term": {
+        "en": "Heat-stress days",
+        "es": "Días de estrés por calor"
+      },
+      "tooltip": {
+        "en": "Days at flowering when the maximum temperature passes what the crop tolerates: 32 °C for beans, 35 °C for maize, rice and cowpea, 36 °C for sorghum.",
+        "es": "Días en la floración en que la temperatura máxima supera lo que aguanta el cultivo: 32 °C para frijol, 35 °C para maíz, arroz y caupí, 36 °C para sorgo."
+      },
+      "why_it_matters": {
+        "en": "Heat during flowering can cut yields, so months with many of these days suit heat-tolerant crops.",
+        "es": "El calor durante la floración puede reducir la cosecha; los meses con muchos de estos días convienen a cultivos tolerantes al calor."
+      },
+      "data_model_attribute": "field_indicator_monthly.heat_stress_days",
+      "uses_app_setting": "plan_risk.FLOWERING_HEAT_LIMIT_C: 32-36 °C per crop; suitability.HEAT_MARGIN_C: 6 °C above the crop's EcoCrop absolute max scores 0"
+    },
+    {
+      "term_id": "frost_risk",
+      "category": "climate",
+      "term": {
+        "en": "Frost risk",
+        "es": "Riesgo de helada"
+      },
+      "tooltip": {
+        "en": "How close the coldest nights of a season get to freezing: the risk starts below 5 °C and is highest at 0 °C or less.",
+        "es": "Qué tan cerca del congelamiento llegan las noches más frías de la temporada: el riesgo empieza por debajo de 5 °C y es máximo a 0 °C o menos."
+      },
+      "why_it_matters": {
+        "en": "Frost can kill tender crops overnight, so planting dates and crop choice should avoid risky months.",
+        "es": "Una helada puede matar cultivos sensibles en una noche; las fechas de siembra y la elección del cultivo deben evitar los meses de riesgo."
+      },
+      "data_model_attribute": "field_indicator_monthly.frost_risk_days",
+      "uses_app_setting": "suitability.FROST_SAFE_C: 5 °C; suitability.FROST_C: 0 °C"
+    },
+    {
+      "term_id": "dry_spell",
+      "category": "climate",
+      "term": {
+        "en": "Dry spell",
+        "es": "Periodo seco"
+      },
+      "tooltip": {
+        "en": "The longest run of days in a row with almost no rain (less than 1 mm a day).",
+        "es": "La racha más larga de días seguidos casi sin lluvia (menos de 1 mm por día)."
+      },
+      "why_it_matters": {
+        "en": "Long dry spells stress shallow-rooted crops; deep-rooted or drought-tolerant crops and mulch help.",
+        "es": "Los periodos secos largos afectan a cultivos de raíz superficial; ayudan los cultivos de raíz profunda o tolerantes a la sequía y el mantillo."
+      },
+      "data_model_attribute": "field_indicator_monthly.dry_spell_days",
+      "uses_app_setting": "dry day threshold: 1 mm"
+    },
+    {
+      "term_id": "extreme_rain",
+      "category": "climate",
+      "term": {
+        "en": "Extreme-rain days",
+        "es": "Días de lluvia extrema"
+      },
+      "tooltip": {
+        "en": "Days with 30 mm of rain or more, enough to cause runoff and wash soil away.",
+        "es": "Días con 30 mm de lluvia o más, suficiente para que el agua corra y arrastre el suelo."
+      },
+      "why_it_matters": {
+        "en": "Bare or sloping soil is easily eroded on these days; keeping the ground covered protects it.",
+        "es": "El suelo desnudo o en pendiente se erosiona con facilidad en estos días; mantenerlo cubierto lo protege."
+      },
+      "data_model_attribute": "field_indicator_monthly.extreme_rain_days",
+      "uses_app_setting": "erosion.HEAVY_RAIN_MM: 30 mm"
+    },
+    {
+      "term_id": "rainfall_variability",
+      "category": "climate",
+      "term": {
+        "en": "Rainfall variability",
+        "es": "Variabilidad de la lluvia"
+      },
+      "tooltip": {
+        "en": "How much the rain in a given month changes from one year to the next.",
+        "es": "Cuánto cambia la lluvia de un mismo mes de un año a otro."
+      },
+      "why_it_matters": {
+        "en": "High variability means the average is less reliable, so it pays to choose crops that tolerate both wetter and drier years.",
+        "es": "Una variabilidad alta significa que el promedio es menos confiable; conviene elegir cultivos que toleren años más húmedos y más secos."
+      },
+      "data_model_attribute": "field_indicator_monthly.precip_variability",
+      "uses_app_setting": null
+    },
+    {
+      "term_id": "climate_trend",
+      "category": "climate",
+      "term": {
+        "en": "Climate trend",
+        "es": "Tendencia climática"
+      },
+      "tooltip": {
+        "en": "The direction and speed of change over the last 20 to 30 years, such as warming per decade.",
+        "es": "La dirección y la velocidad del cambio en los últimos 20 a 30 años, por ejemplo el calentamiento por década."
+      },
+      "why_it_matters": {
+        "en": "It shows where local conditions are heading, but it extends the past and is not a forecast.",
+        "es": "Muestra hacia dónde van las condiciones locales, pero prolonga el pasado y no es un pronóstico."
+      },
+      "data_model_attribute": "climate_trend.change_per_decade",
+      "uses_app_setting": null,
+      "status": "planned"
+    },
+    {
+      "term_id": "scenario",
+      "category": "climate",
+      "term": {
+        "en": "Scenario",
+        "es": "Escenario"
+      },
+      "tooltip": {
+        "en": "A 'what if' test that re-scores the rotations as if the climate were warmer, drier or both.",
+        "es": "Una prueba de '¿qué pasaría si…?' que vuelve a calificar las rotaciones como si el clima fuera más cálido, más seco o ambos."
+      },
+      "why_it_matters": {
+        "en": "A rotation that still scores well under a harsher scenario is a safer long-term choice.",
+        "es": "Una rotación que mantiene buena calificación en un escenario más duro es una opción más segura a largo plazo."
+      },
+      "data_model_attribute": "rotation_strategy.scenario",
+      "uses_app_setting": null,
+      "status": "planned"
+    },
+    {
+      "term_id": "soil_moisture",
+      "category": "water",
+      "term": {
+        "en": "Soil moisture",
+        "es": "Humedad del suelo"
+      },
+      "tooltip": {
+        "en": "The amount of water held in the soil that plants can draw on.",
+        "es": "La cantidad de agua retenida en el suelo que las plantas pueden aprovechar."
+      },
+      "why_it_matters": {
+        "en": "It decides whether a crop can keep growing between rains.",
+        "es": "Determina si un cultivo puede seguir creciendo entre una lluvia y otra."
+      },
+      "data_model_attribute": null,
+      "uses_app_setting": null
+    },
+    {
+      "term_id": "soil_moisture_anomaly",
+      "category": "water",
+      "term": {
+        "en": "Soil-moisture anomaly",
+        "es": "Anomalía de humedad del suelo"
+      },
+      "tooltip": {
+        "en": "How much wetter or drier the soil is than normal for that time of year.",
+        "es": "Cuánto más húmedo o más seco está el suelo respecto a lo normal para esa época del año."
+      },
+      "why_it_matters": {
+        "en": "A strong dry anomaly is an early sign of drought stress, even before the crop shows it.",
+        "es": "Una anomalía seca marcada es una señal temprana de estrés por sequía, incluso antes de que el cultivo lo muestre."
+      },
+      "data_model_attribute": null,
+      "uses_app_setting": null
+    },
+    {
+      "term_id": "root_zone_wetness",
+      "category": "water",
+      "term": {
+        "en": "Root-zone wetness",
+        "es": "Humedad en la zona de raíces"
+      },
+      "tooltip": {
+        "en": "How full of water the soil is at root depth, from 0 (completely dry) to 1 (saturated).",
+        "es": "Qué tan lleno de agua está el suelo a la profundidad de las raíces, de 0 (totalmente seco) a 1 (saturado)."
+      },
+      "why_it_matters": {
+        "en": "Low values in the growing months mean crops depend on irrigation or on very regular rain.",
+        "es": "Valores bajos en los meses de cultivo indican que la cosecha depende del riego o de lluvias muy regulares."
+      },
+      "data_model_attribute": "field_indicator_monthly.soil_wetness_root",
+      "uses_app_setting": null
+    },
+    {
+      "term_id": "erosion_risk",
+      "category": "water",
+      "term": {
+        "en": "Erosion risk",
+        "es": "Riesgo de erosión"
+      },
+      "tooltip": {
+        "en": "How likely rain is to carry soil off the field, based mainly on how steep it is.",
+        "es": "Qué tan probable es que la lluvia arrastre el suelo del campo, según sobre todo su pendiente."
+      },
+      "why_it_matters": {
+        "en": "Lost topsoil takes the nutrients and organic matter with it; cover crops and less tillage reduce the loss.",
+        "es": "El suelo que se pierde se lleva los nutrientes y la materia orgánica; los cultivos de cobertura y menos labranza reducen la pérdida."
+      },
+      "data_model_attribute": "field_elevation.erosion_risk",
+      "uses_app_setting": "slope bands: under 5%, 5-15%, over 15%"
+    },
+    {
+      "term_id": "ndvi",
+      "category": "vegetation",
+      "term": {
+        "en": "NDVI (vegetation index)",
+        "es": "NDVI (índice de vegetación)"
+      },
+      "tooltip": {
+        "en": "A satellite measure of how green and dense the plants are, from about 0 (bare soil) to 1 (thick, healthy vegetation).",
+        "es": "Una medida satelital de qué tan verde y densa está la vegetación, de cerca de 0 (suelo desnudo) a 1 (vegetación densa y sana)."
+      },
+      "why_it_matters": {
+        "en": "A drop in NDVI during the season can signal crop stress; low values show when the field is bare.",
+        "es": "Una caída del NDVI durante la temporada puede indicar estrés del cultivo; los valores bajos muestran cuándo el campo está desnudo."
+      },
+      "data_model_attribute": "modis_ndvi.ndvi",
+      "uses_app_setting": null,
+      "status": "planned"
+    },
+    {
+      "term_id": "bare_field",
+      "category": "vegetation",
+      "term": {
+        "en": "Bare-field period",
+        "es": "Periodo de suelo desnudo"
+      },
+      "tooltip": {
+        "en": "Months when the satellite sees little or no plant cover on the field (NDVI under 0.3).",
+        "es": "Meses en que el satélite ve poca o ninguna cobertura vegetal en el campo (NDVI menor de 0.3)."
+      },
+      "why_it_matters": {
+        "en": "Bare soil erodes and loses moisture; these months are the opening for a cover crop.",
+        "es": "El suelo desnudo se erosiona y pierde humedad; esos meses son la oportunidad para un cultivo de cobertura."
+      },
+      "data_model_attribute": "field_indicator_monthly.bare_field",
+      "uses_app_setting": "bare field threshold: NDVI 0.3",
+      "status": "planned"
+    },
+    {
+      "term_id": "soil_ph",
+      "category": "soil",
+      "term": {
+        "en": "Soil pH",
+        "es": "pH del suelo"
+      },
+      "tooltip": {
+        "en": "How acidic or alkaline the soil is, on a scale where 7 is neutral and lower numbers are more acidic.",
+        "es": "Qué tan ácido o alcalino es el suelo, en una escala donde 7 es neutro y los números menores son más ácidos."
+      },
+      "why_it_matters": {
+        "en": "Each crop has a preferred range, and outside it nutrients become harder for roots to take up.",
+        "es": "Cada cultivo tiene un rango preferido; fuera de él, a las raíces les cuesta más absorber los nutrientes."
+      },
+      "data_model_attribute": "soil_test.ph",
+      "uses_app_setting": null
+    },
+    {
+      "term_id": "organic_matter",
+      "category": "soil",
+      "term": {
+        "en": "Organic matter",
+        "es": "Materia orgánica"
+      },
+      "tooltip": {
+        "en": "The share of the soil made of decomposed plant and animal material.",
+        "es": "La parte del suelo formada por restos descompuestos de plantas y animales."
+      },
+      "why_it_matters": {
+        "en": "It works like a sponge for water and nutrients; low levels call for compost, residues and cover crops.",
+        "es": "Funciona como una esponja para el agua y los nutrientes; si es baja, conviene usar compost, rastrojos y cultivos de cobertura."
+      },
+      "data_model_attribute": "soil_test.organic_matter_pct",
+      "uses_app_setting": null
+    },
+    {
+      "term_id": "npk",
+      "category": "soil",
+      "term": {
+        "en": "Nitrogen, phosphorus, potassium (N-P-K)",
+        "es": "Nitrógeno, fósforo, potasio (N-P-K)"
+      },
+      "tooltip": {
+        "en": "The three nutrients crops need in the largest amounts: nitrogen for leaves, phosphorus for roots and flowers, potassium for overall strength.",
+        "es": "Los tres nutrientes que los cultivos necesitan en mayor cantidad: nitrógeno para las hojas, fósforo para raíces y flores, potasio para la resistencia general."
+      },
+      "why_it_matters": {
+        "en": "A soil test shows which one is short, so fertilizer or the next crop can be chosen to match.",
+        "es": "El análisis de suelo muestra cuál falta, para elegir el fertilizante o el cultivo siguiente según esa necesidad."
+      },
+      "data_model_attribute": "soil_test.nitrogen_ppm, soil_test.phosphorus_ppm, soil_test.potassium_ppm",
+      "uses_app_setting": null
+    },
+    {
+      "term_id": "cec",
+      "category": "soil",
+      "term": {
+        "en": "Cation exchange capacity (CEC)",
+        "es": "Capacidad de intercambio catiónico (CIC)"
+      },
+      "tooltip": {
+        "en": "The soil's ability to hold on to nutrients so rain does not wash them away.",
+        "es": "La capacidad del suelo para retener nutrientes y evitar que la lluvia los lave."
+      },
+      "why_it_matters": {
+        "en": "Soils with low CEC lose fertilizer quickly and benefit from smaller, more frequent applications and more organic matter.",
+        "es": "Los suelos con CIC baja pierden el fertilizante rápido; les convienen aplicaciones pequeñas y frecuentes y más materia orgánica."
+      },
+      "data_model_attribute": "soil_test.cec_cmol_kg",
+      "uses_app_setting": null
+    },
+    {
+      "term_id": "soil_texture",
+      "category": "soil",
+      "term": {
+        "en": "Soil texture",
+        "es": "Textura del suelo"
+      },
+      "tooltip": {
+        "en": "The mix of sand, silt and clay in the soil.",
+        "es": "La mezcla de arena, limo y arcilla del suelo."
+      },
+      "why_it_matters": {
+        "en": "Sandy soils drain fast and dry out; clay soils hold water but can become waterlogged and compacted.",
+        "es": "Los suelos arenosos drenan rápido y se secan; los arcillosos retienen agua pero pueden encharcarse y compactarse."
+      },
+      "data_model_attribute": "soil_test.texture_class",
+      "uses_app_setting": null
+    },
+    {
+      "term_id": "crop_rotation",
+      "category": "farming",
+      "term": {
+        "en": "Crop rotation",
+        "es": "Rotación de cultivos"
+      },
+      "tooltip": {
+        "en": "Growing different crops one after another on the same field in a planned order.",
+        "es": "Sembrar distintos cultivos uno después de otro en el mismo campo, en un orden planificado."
+      },
+      "why_it_matters": {
+        "en": "A good order restores nutrients, breaks pest and disease cycles and spreads risk across crops.",
+        "es": "Un buen orden repone nutrientes, corta ciclos de plagas y enfermedades y reparte el riesgo entre cultivos."
+      },
+      "data_model_attribute": "rotation_strategy",
+      "uses_app_setting": null
+    },
+    {
+      "term_id": "cover_crop",
+      "category": "farming",
+      "term": {
+        "en": "Cover crop",
+        "es": "Cultivo de cobertura"
+      },
+      "tooltip": {
+        "en": "A crop grown to protect and improve the soil between main crops, not to be harvested.",
+        "es": "Un cultivo que se siembra para proteger y mejorar el suelo entre cultivos principales, no para cosecharlo."
+      },
+      "why_it_matters": {
+        "en": "It prevents erosion, adds organic matter and, if it is a legume, adds nitrogen.",
+        "es": "Evita la erosión, aporta materia orgánica y, si es leguminosa, aporta nitrógeno."
+      },
+      "data_model_attribute": "crop.is_cover_crop",
+      "uses_app_setting": null
+    },
+    {
+      "term_id": "nitrogen_fixing",
+      "category": "farming",
+      "term": {
+        "en": "Nitrogen-fixing crop",
+        "es": "Cultivo fijador de nitrógeno"
+      },
+      "tooltip": {
+        "en": "A legume, such as beans or cowpea, that takes nitrogen from the air with the help of bacteria on its roots.",
+        "es": "Una leguminosa, como el frijol o el caupí, que toma nitrógeno del aire con ayuda de bacterias en sus raíces."
+      },
+      "why_it_matters": {
+        "en": "It leaves nitrogen for the next crop, which lowers the need for fertilizer.",
+        "es": "Deja nitrógeno para el cultivo siguiente, lo que reduce la necesidad de fertilizante."
+      },
+      "data_model_attribute": "crop.nitrogen_fixing",
+      "uses_app_setting": null
+    },
+    {
+      "term_id": "nutrient_demand",
+      "category": "farming",
+      "term": {
+        "en": "Heavy feeder",
+        "es": "Cultivo exigente en nutrientes"
+      },
+      "tooltip": {
+        "en": "A crop that takes a lot of nutrients from the soil, such as maize.",
+        "es": "Un cultivo que extrae muchos nutrientes del suelo, como el maíz."
+      },
+      "why_it_matters": {
+        "en": "Following a heavy feeder with a legume or cover crop gives the soil time to recover.",
+        "es": "Sembrar una leguminosa o un cultivo de cobertura después de uno exigente le da tiempo al suelo para recuperarse."
+      },
+      "data_model_attribute": "crop.nutrient_demand",
+      "uses_app_setting": null
+    },
+    {
+      "term_id": "mycorrhizal_fungi",
+      "category": "farming",
+      "term": {
+        "en": "Mycorrhizal fungi",
+        "es": "Hongos micorrízicos"
+      },
+      "tooltip": {
+        "en": "Soil fungi that live on crop roots and extend their reach for nutrients and water.",
+        "es": "Hongos del suelo que viven en las raíces de los cultivos y amplían su alcance para obtener nutrientes y agua."
+      },
+      "why_it_matters": {
+        "en": "Less tillage and living roots all year keep them active; cabbage-family crops do not host them.",
+        "es": "Menos labranza y raíces vivas todo el año los mantienen activos; los cultivos de la familia del repollo no los hospedan."
+      },
+      "data_model_attribute": "crop.mycorrhizal_affinity",
+      "uses_app_setting": null
+    },
+    {
+      "term_id": "resilience_score",
+      "category": "scores",
+      "term": {
+        "en": "Resilience score",
+        "es": "Puntaje de resiliencia"
+      },
+      "tooltip": {
+        "en": "A 0 to 100 score for how well a rotation copes with heat, frost, dry spells and extreme rain on this field.",
+        "es": "Un puntaje de 0 a 100 que indica qué tan bien resiste una rotación el calor, las heladas, los periodos secos y la lluvia extrema en este campo."
+      },
+      "why_it_matters": {
+        "en": "A higher score means fewer seasons lost to bad weather; it is a guide for comparing options, not a guarantee.",
+        "es": "Un puntaje más alto significa menos temporadas perdidas por mal tiempo; es una guía para comparar opciones, no una garantía."
+      },
+      "data_model_attribute": "rotation_strategy.score_resilience",
+      "uses_app_setting": null,
+      "status": "planned"
+    },
+    {
+      "term_id": "information_gap",
+      "category": "scores",
+      "term": {
+        "en": "Information gap",
+        "es": "Vacío de información"
+      },
+      "tooltip": {
+        "en": "Something the data cannot tell us about your field, such as local pests or the exact soil in each plot.",
+        "es": "Algo que los datos no pueden decirnos sobre su campo, como las plagas locales o el suelo exacto de cada lote."
+      },
+      "why_it_matters": {
+        "en": "These are the points to check with your own experience or a local agronomist before deciding.",
+        "es": "Son los puntos que conviene revisar con su propia experiencia o con un agrónomo local antes de decidir."
+      },
+      "data_model_attribute": "rotation_strategy.information_gaps",
+      "uses_app_setting": null
+    },
+    {
+      "term_id": "satellite_vs_ground",
+      "category": "data",
+      "term": {
+        "en": "Satellite and ground data",
+        "es": "Datos satelitales y de campo"
+      },
+      "tooltip": {
+        "en": "Satellites measure large areas from space; ground data, like a soil test, measures one exact spot.",
+        "es": "Los satélites miden áreas grandes desde el espacio; los datos de campo, como un análisis de suelo, miden un punto exacto."
+      },
+      "why_it_matters": {
+        "en": "Satellite data shows the regional pattern, and your own measurements make it accurate for your field.",
+        "es": "Los datos satelitales muestran el patrón regional, y sus propias mediciones lo ajustan a su campo."
+      },
+      "data_model_attribute": null,
+      "uses_app_setting": null
+    },
+    {
+      "term_id": "grid_cell",
+      "category": "data",
+      "term": {
+        "en": "Grid cell (resolution)",
+        "es": "Celda de cuadrícula (resolución)"
+      },
+      "tooltip": {
+        "en": "The size of the square of land that one data value covers; for the weather data here it is about 55 km wide.",
+        "es": "El tamaño del cuadro de terreno que cubre un solo dato; en los datos de clima de esta aplicación mide unos 55 km de lado."
+      },
+      "why_it_matters": {
+        "en": "Your field shares its value with the whole square, so hills, valleys and local winds can make your conditions differ.",
+        "es": "Su campo comparte el valor con todo el cuadro; las lomas, los valles y los vientos locales pueden hacer que sus condiciones sean distintas."
+      },
+      "data_model_attribute": "provenance.spatial_resolution",
+      "uses_app_setting": null
+    },
+    {
+      "term_id": "nasa_power",
+      "category": "data",
+      "term": {
+        "en": "NASA POWER",
+        "es": "NASA POWER"
+      },
+      "tooltip": {
+        "en": "A NASA service that provides daily weather and sunlight data for any place on Earth since the 1980s.",
+        "es": "Un servicio de la NASA que ofrece datos diarios de clima y radiación solar para cualquier lugar del planeta desde los años ochenta."
+      },
+      "why_it_matters": {
+        "en": "It is the source of the temperature, rain and soil-wetness values in this app.",
+        "es": "Es la fuente de los valores de temperatura, lluvia y humedad del suelo de esta aplicación."
+      },
+      "data_model_attribute": "power_daily",
+      "uses_app_setting": null
+    },
+    {
+      "term_id": "modis",
+      "category": "data",
+      "term": {
+        "en": "MODIS",
+        "es": "MODIS"
+      },
+      "tooltip": {
+        "en": "A NASA satellite instrument that photographs the whole Earth every one to two days.",
+        "es": "Un instrumento satelital de la NASA que fotografía toda la Tierra cada uno o dos días."
+      },
+      "why_it_matters": {
+        "en": "Its images are used to calculate NDVI, the greenness of your field through the year.",
+        "es": "Sus imágenes se usan para calcular el NDVI, es decir, qué tan verde está su campo a lo largo del año."
+      },
+      "data_model_attribute": "modis_ndvi",
+      "uses_app_setting": null,
+      "status": "planned"
+    },
+    {
+      "term_id": "smap",
+      "category": "data",
+      "term": {
+        "en": "SMAP",
+        "es": "SMAP"
+      },
+      "tooltip": {
+        "en": "A NASA satellite that measures moisture in the top few centimetres of soil from space.",
+        "es": "Un satélite de la NASA que mide desde el espacio la humedad en los primeros centímetros del suelo."
+      },
+      "why_it_matters": {
+        "en": "It gives a direct reading of how wet the soil surface is across the region.",
+        "es": "Da una lectura directa de qué tan húmeda está la superficie del suelo en la región."
+      },
+      "data_model_attribute": "smap_soil_moisture",
+      "uses_app_setting": null
+    }
+  ]
+}

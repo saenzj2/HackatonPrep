@@ -15,6 +15,27 @@ Template:
 
 ---
 
+## 2026-11-15 — Frontend: React + Vite + TypeScript in `frontend-app/`
+- **Decision:** the real UI is a React app in `frontend-app/` (Vite, TypeScript, hash routes). The
+  root `Dockerfile` builds it in a Node stage and ships `dist/` at `/srv/frontend-app` next to the
+  static skeleton at `/srv/frontend`. `FRONTEND_DIR` stays on the skeleton until the React app covers
+  the demo flow; then the switch is one Railway variable, with no rebuild and an instant rollback.
+  CI gains a `frontend` job (typecheck + build) and an `image` job (build the image, smoke-test `/app/`).
+- **Why:** team choice after comparing it with extending the static skeleton and with Streamlit.
+  React scales best to the planned screens (map, profile, priorities, comparison, calendar,
+  glossary). `base: '/app/'` matches where FastAPI mounts the files; hash routes avoid 404s on reload
+  because `StaticFiles` has no SPA fallback. The `image` job catches a broken build before Railway does.
+- **Alternatives considered:** extend `frontend/` without a build (least deploy risk, harder to
+  maintain); Streamlit (the team reads Python, but it is a second server and gives little design
+  control); replace `frontend/` in place (production could serve the unbuilt source `index.html`
+  and current tests would not notice).
+- **Runtime dependencies (added later the same day):** the map loads OpenStreetMap tiles and the
+  background videos load from YouTube (youtube-nocookie.com). Both need internet in the browser;
+  offline, the map is blank and the videos don't play, while the rest of the app works on cached
+  data. `backend/data/glossary.json` and `regenerative_practices.json` are bundled into the app at
+  build time, so editing them needs a rebuild (unlike `mvp.yaml`).
+- **Revisit if:** nobody on the team can review or debug the React code before the demo.
+
 ## 2026-11-15 — NOAA ENSO files: reuse a copy under one day old in live mode
 - **Decision:** `NoaaEnso.index()` first asks `JsonCache.peek_fresh(…, MAX_AGE=1 day)` and only
   calls `get_or_fetch` (a download) when the copy is older. The cache key stays `{"index": …}`
