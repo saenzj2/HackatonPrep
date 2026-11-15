@@ -1,5 +1,6 @@
 import type { MonthlyClimate, SeasonSummary } from "../api/client";
 import { capitalize, monthName } from "../format";
+import { useI18n } from "../i18n";
 
 // Small hand-drawn SVG charts (no chart library). Month labels on x; the growing seasons are
 // shaded so the farmer sees which months matter. Each chart has a text summary for screen readers.
@@ -37,11 +38,12 @@ function SeasonBands({ seasons }: { seasons: SeasonSummary[] }) {
 }
 
 function MonthAxis() {
+  const { lang } = useI18n();
   return (
     <>
       {Array.from({ length: 12 }, (_, i) => (
         <text key={i} x={x(i + 1) + slot / 2} y={H - 8} textAnchor="middle" className="chart__tick">
-          {monthName(i + 1).charAt(0)}
+          {monthName(i + 1, lang).charAt(0).toUpperCase()}
         </text>
       ))}
     </>
@@ -69,13 +71,17 @@ function YAxis({ max, unit, steps = 2 }: { max: number; unit: string; steps?: nu
 }
 
 export function RainChart({ monthly, seasons }: { monthly: MonthlyClimate[]; seasons: SeasonSummary[] }) {
+  const { tr, lang } = useI18n();
   const max = niceMax(Math.max(...monthly.map((m) => m.rainfall_mm)), 100);
   const wettest = monthly.reduce((a, b) => (b.rainfall_mm > a.rainfall_mm ? b : a));
   const driest = monthly.reduce((a, b) => (b.rainfall_mm < a.rainfall_mm ? b : a));
-  const summary = `Rain per month: wettest ${monthName(wettest.month)} (${Math.round(wettest.rainfall_mm)} mm), driest ${monthName(driest.month)} (${Math.round(driest.rainfall_mm)} mm).`;
+  const summary = tr(
+    `Rain per month: wettest ${monthName(wettest.month, lang)} (${Math.round(wettest.rainfall_mm)} mm), driest ${monthName(driest.month, lang)} (${Math.round(driest.rainfall_mm)} mm).`,
+    `Lluvia por mes: el más lluvioso es ${monthName(wettest.month, lang)} (${Math.round(wettest.rainfall_mm)} mm) y el más seco ${monthName(driest.month, lang)} (${Math.round(driest.rainfall_mm)} mm).`,
+  );
   return (
     <figure className="chart">
-      <figcaption className="chart__title">Rain per month (mm)</figcaption>
+      <figcaption className="chart__title">{tr("Rain per month (mm)", "Lluvia por mes (mm)")}</figcaption>
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={summary}>
         <SeasonBands seasons={seasons} />
         <YAxis max={max} unit="mm" />
@@ -91,7 +97,7 @@ export function RainChart({ monthly, seasons }: { monthly: MonthlyClimate[]; sea
               rx={2}
               className="chart__bar"
             >
-              <title>{`${monthName(m.month)}: ${Math.round(m.rainfall_mm)} mm`}</title>
+              <title>{`${monthName(m.month, lang)}: ${Math.round(m.rainfall_mm)} mm`}</title>
             </rect>
           );
         })}
@@ -102,6 +108,7 @@ export function RainChart({ monthly, seasons }: { monthly: MonthlyClimate[]; sea
 }
 
 export function TemperatureChart({ monthly, seasons }: { monthly: MonthlyClimate[]; seasons: SeasonSummary[] }) {
+  const { tr, lang, num } = useI18n();
   const hi = Math.max(...monthly.map((m) => m.temperature_max_c));
   const lo = Math.min(...monthly.map((m) => m.temperature_min_c));
   const min = Math.floor(lo / 5) * 5;
@@ -113,11 +120,19 @@ export function TemperatureChart({ monthly, seasons }: { monthly: MonthlyClimate
     " " +
     [...monthly].reverse().map((m) => `${cx(m.month)},${y(m.temperature_min_c)}`).join(" ");
   const line = monthly.map((m) => `${cx(m.month)},${y(m.temperature_c)}`).join(" ");
-  const summary = `Temperature: average ${Math.round(Math.min(...monthly.map((m) => m.temperature_c)))} to ${Math.round(Math.max(...monthly.map((m) => m.temperature_c)))} °C through the year; hottest hours up to ${hi.toFixed(1)} °C, coolest nights down to ${lo.toFixed(1)} °C.`;
+  const avgLo = Math.round(Math.min(...monthly.map((m) => m.temperature_c)));
+  const avgHi = Math.round(Math.max(...monthly.map((m) => m.temperature_c)));
+  const summary = tr(
+    `Temperature: average ${avgLo} to ${avgHi} °C through the year; hottest hours up to ${num(hi, 1)} °C, coolest nights down to ${num(lo, 1)} °C.`,
+    `Temperatura: promedio de ${avgLo} a ${avgHi} °C durante el año; las horas más calientes llegan a ${num(hi, 1)} °C y las noches más frescas bajan a ${num(lo, 1)} °C.`,
+  );
   return (
     <figure className="chart">
       <figcaption className="chart__title">
-        Temperature (°C) <span className="chart__legend">line: average · band: coolest night to hottest hour</span>
+        {tr("Temperature (°C)", "Temperatura (°C)")}{" "}
+        <span className="chart__legend">
+          {tr("line: average · band: coolest night to hottest hour", "línea: promedio · franja: de la noche más fresca a la hora más caliente")}
+        </span>
       </figcaption>
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={summary}>
         <SeasonBands seasons={seasons} />
@@ -133,7 +148,12 @@ export function TemperatureChart({ monthly, seasons }: { monthly: MonthlyClimate
         <polyline points={line} className="chart__line" />
         {monthly.map((m) => (
           <circle key={m.month} cx={cx(m.month)} cy={y(m.temperature_c)} r={2.5} className="chart__dot">
-            <title>{`${monthName(m.month)}: average ${m.temperature_c.toFixed(1)} °C (${m.temperature_min_c.toFixed(1)} to ${m.temperature_max_c.toFixed(1)})`}</title>
+            <title>
+              {tr(
+                `${monthName(m.month, lang)}: average ${num(m.temperature_c, 1)} °C (${num(m.temperature_min_c, 1)} to ${num(m.temperature_max_c, 1)})`,
+                `${monthName(m.month, lang)}: promedio ${num(m.temperature_c, 1)} °C (${num(m.temperature_min_c, 1)} a ${num(m.temperature_max_c, 1)})`,
+              )}
+            </title>
           </circle>
         ))}
         <MonthAxis />
