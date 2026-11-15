@@ -35,6 +35,13 @@ def _check_startup(ctx: AppContext) -> None:
             f"config/mvp.yaml lists crops not in the crop catalog: {unknown}",
             details={"unknown": unknown, "available": sorted(catalog)},
         )
+    perennials = ctx.sources.perennials.all()
+    unknown = sorted(set(ctx.config.permanent_crops) - set(perennials))
+    if unknown:
+        raise ConfigError(
+            f"config/mvp.yaml lists permanent crops not in the permanent crop catalog: {unknown}",
+            details={"unknown": unknown, "available": sorted(perennials)},
+        )
 
 
 def _mount_frontend(app: FastAPI, env: EnvSettings) -> None:

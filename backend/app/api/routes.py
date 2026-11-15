@@ -64,6 +64,32 @@ def get_planting_windows(
 
 
 @router.get(
+    "/permanent-crops",
+    response_model=s.PermanentCropsResponse,
+    responses=DATA_ERRORS,
+    tags=["crops"],
+)
+def get_permanent_crops(
+    ctx: Ctx,
+    lat: Annotated[float, Query(ge=-90, le=90, examples=[10.2])],
+    lon: Annotated[float, Query(ge=-180, le=180, examples=[-83.8])],
+    crops: Annotated[
+        list[str] | None,
+        Query(
+            description=(
+                "Permanent crop ids (cacao, coffee, pineapple, banana), repeatable. "
+                "Omit for the MVP permanent crops."
+            )
+        ),
+    ] = None,
+) -> s.PermanentCropsResponse:
+    """How well permanent crops (cacao, coffee…) suit a point, scored over the whole year.
+
+    They stay in the field for years, so they are not part of rotations or plan-risk."""
+    return services.permanent_crops(ctx, lat, lon, crops)
+
+
+@router.get(
     "/weather/daily",
     response_model=s.DailyWeatherResponse,
     responses=DATA_ERRORS,

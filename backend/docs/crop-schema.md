@@ -67,11 +67,13 @@ Any violation stops startup with a `ConfigError` that names the file and line.
 - Trait columns: a number from 0 to 1.
 - `sources`: at least one citation, separated by `;`. Quote the cell if a citation contains a comma.
 
-## Current data (5 crops)
+## Current data (9 crops)
 See `data/ecocrop_subset.csv`. Every row is `verified=true`: the **temperature, rainfall and pH
 ranges come from FAO EcoCrop** (`scripts/import_ecocrop.py`, see `docs/sources/ecocrop.md`). Also:
 - **Root depth** comes from FAO-56 (Allen et al. 1998), Table 22, upper value of the range:
-  rice 1.0, beans 0.9, maize 1.7, sorghum 2.0, cowpea 1.0 m.
+  rice 1.0, beans 0.9, maize 1.7, sorghum 2.0, cowpea 1.0, potato 0.6, onion 0.6, squash (pumpkin /
+  winter squash) 1.5 m. Potato, onion and squash (added 2026-11-15) also have team-estimate cycle days.
+  Jack bean (green manure, added 2026-11-15) has no FAO-56 entry: 1.0 m is a team estimate.
 - **Cover crop, forage, nutrition, mycorrhizal and nitrogen demand** are a **team estimate**, and each
   row's `sources` says so. #24 replaces them with cited values. Main judgements to check: rice is
   0.33 (low) mycorrhizal (flooded paddies suppress the fungi), legumes are 0.33 (low) nitrogen demand,

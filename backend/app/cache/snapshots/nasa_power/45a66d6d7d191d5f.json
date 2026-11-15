@@ -1,0 +1,124 @@
+{
+ "params": {
+  "parameters": "T2M,T2M_MAX,T2M_MIN,PRECTOTCORR",
+  "community": "AG",
+  "latitude": 9.2,
+  "longitude": -83.3,
+  "format": "JSON"
+ },
+ "fetched_at": "2026-11-15T20:36:43.253877+00:00",
+ "data": {
+  "type": "Feature",
+  "geometry": {
+   "type": "Point",
+   "coordinates": [
+    -83.3,
+    9.2,
+    899.23
+   ]
+  },
+  "properties": {
+   "parameter": {
+    "PRECTOTCORR": {
+     "JAN": 2.78,
+     "FEB": 1.75,
+     "MAR": 2.03,
+     "APR": 3.59,
+     "MAY": 8.05,
+     "JUN": 7.29,
+     "JUL": 8.12,
+     "AUG": 7.37,
+     "SEP": 6.97,
+     "OCT": 8.47,
+     "NOV": 8.86,
+     "DEC": 4.25,
+     "ANN": 5.82
+    },
+    "T2M": {
+     "JAN": 21.4,
+     "FEB": 21.97,
+     "MAR": 22.92,
+     "APR": 23.19,
+     "MAY": 22.57,
+     "JUN": 22.13,
+     "JUL": 21.86,
+     "AUG": 21.88,
+     "SEP": 21.74,
+     "OCT": 21.42,
+     "NOV": 21.3,
+     "DEC": 21.35,
+     "ANN": 21.98
+    },
+    "T2M_MAX": {
+     "JAN": 28.64,
+     "FEB": 30.86,
+     "MAR": 31.97,
+     "APR": 31.88,
+     "MAY": 31.48,
+     "JUN": 28.55,
+     "JUL": 28.07,
+     "AUG": 28.75,
+     "SEP": 28.18,
+     "OCT": 27.71,
+     "NOV": 27.46,
+     "DEC": 27.86,
+     "ANN": 31.97
+    },
+    "T2M_MIN": {
+     "JAN": 14.56,
+     "FEB": 15.78,
+     "MAR": 16.0,
+     "APR": 15.83,
+     "MAY": 15.24,
+     "JUN": 17.2,
+     "JUL": 16.41,
+     "AUG": 16.69,
+     "SEP": 16.66,
+     "OCT": 16.83,
+     "NOV": 16.02,
+     "DEC": 15.7,
+     "ANN": 14.56
+    }
+   }
+  },
+  "header": {
+   "title": "NASA/POWER Source Native Resolution Climatology Climatologies",
+   "api": {
+    "version": "v2.10.1",
+    "name": "POWER Climatology API"
+   },
+   "sources": [
+    "MERRA2",
+    "POWER"
+   ],
+   "fill_value": -999.0,
+   "time_standard": "LST",
+   "range": "25-year Meteorological and Solar Monthly & Annual Climatologies (January 2001 - December 2025)"
+  },
+  "messages": [
+   "The requested parameters are retrieved from a pre-computed climatological period (January 2001 - December 2025)"
+  ],
+  "parameters": {
+   "PRECTOTCORR": {
+    "units": "mm/day",
+    "longname": "Precipitation Corrected"
+   },
+   "T2M": {
+    "units": "C",
+    "longname": "Temperature at 2 Meters"
+   },
+   "T2M_MAX": {
+    "units": "C",
+    "longname": "Temperature at 2 Meters Maximum"
+   },
+   "T2M_MIN": {
+    "units": "C",
+    "longname": "Temperature at 2 Meters Minimum"
+   }
+  },
+  "times": {
+   "data": 0.171,
+   "process": 0.03
+  }
+ }
+}

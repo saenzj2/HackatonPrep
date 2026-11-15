@@ -314,6 +314,42 @@ class PlantingWindowsResponse(Schema):
     data_sources: DataSources
 
 
+class YearClimateSummary(Schema):
+    annual_rainfall_mm: float = Field(description="Sum of the 12 monthly normals")
+    temperature_c: float = Field(description="Mean of the 12 monthly means")
+    hottest_month_max_c: float = Field(description="Highest monthly mean of the daily maximum")
+    coldest_month_min_c: float = Field(description="Lowest monthly mean of the daily minimum")
+    dry_months: list[int] = Field(description="Months (1..12) with less than 60 mm of rain")
+
+
+class PermanentCropFit(Schema):
+    crop_id: str
+    crop_name: LocalizedText
+    scientific_name: str
+    score: float = Field(ge=0, le=1, description="0 when any variable is outside the crop's range")
+    suitability: Literal["good", "fair", "poor", "unsuitable"] = Field(
+        description="good ≥ 0.8, fair ≥ 0.5, poor > 0, unsuitable = 0"
+    )
+    variable_scores: dict[str, float] = Field(
+        description="0..1 per variable: temperature, rainfall, heat, frost, soil_ph"
+    )
+    breakdown: CategoryBreakdown
+    max_altitude_m: float | None = Field(
+        description="Highest altitude where EcoCrop says the crop is grown; not checked here"
+    )
+    summary: LocalizedText
+    risks: list[LocalizedText] = Field(description="Variables that limit the crop here")
+    benefits: list[LocalizedText]
+
+
+class PermanentCropsResponse(Schema):
+    location: Location
+    year_climate: YearClimateSummary
+    crops: list[PermanentCropFit] = Field(description="Best score first")
+    data_sources: DataSources = Field(description="`crops` names the permanent crop catalog")
+    data_gaps: list[LocalizedText]
+
+
 # ---------------------------------------------------------------- daily weather, erosion, soil
 
 POWER_DAILY_FIRST_DAY = dt.date(1981, 1, 1)  # NASA POWER daily data starts here

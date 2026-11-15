@@ -19,6 +19,9 @@ General backend rules: [`backend/AGENTS.md`](../../AGENTS.md).
   each sowing year, failures split by phase with a note that never claims significance.
 - `plan_advice.py`: what to do about a risky plan: bilingual actions per cause (sources in comments)
   and alternatives (shifted sowing dates, other MVP crops) that failed in fewer years.
+- `perennials.py`: permanent crops (cacao, coffee, pineapple, banana) scored once on the whole year
+  (annual rain, mean, hottest and coldest month, soil pH); the score is the most limiting variable.
+  Not part of rotations or plan-risk.
 - `text.py`: `Text(en, es)` for every farmer-facing sentence, plus month, family and number helpers.
 - `rotation_rules.py`: one crop after another → verdict (favoured / allowed / discouraged), reasons, score
   adjustment. Add a rule: one function + one entry in `RULES`.

@@ -70,5 +70,5 @@ and in plan_risk.py the stage windows (`ESTABLISHMENT_DAYS`, `HARVEST_WINDOW_DAY
 `DEFAULT_HARVEST_RAIN_MM`, `HARVEST_SOIL_WETNESS`, `FLOWERING_HEAT_LIMIT_C`,
 `FLOWERING_HEAT_STRESS_DAYS`, `FLOWERING_HEAT_FAIL_DAYS`, `WARM_NIGHT_C`, `WARM_NIGHT_CROPS`,
 `WARM_NIGHT_NOTE_NIGHTS`, and in plan_advice.py
-`SOWING_SHIFTS_DAYS`, `MAX_ALTERNATIVES`, and in enso.py `ENSO_THRESHOLD_C`, `MIN_YEARS_TO_COMPARE`
-are placeholders. Change them only with a `docs/decisions.md` entry, ideally after an `agro-logic` review.
+`SOWING_SHIFTS_DAYS`, `MAX_ALTERNATIVES`, and in enso.py `ENSO_THRESHOLD_C`, `MIN_YEARS_TO_COMPARE`,
+and in perennials.py `DRY_MONTH_MM`, `LONG_DRY_SEASON_MONTHS`, `GOOD_SCORE` are placeholders. Change them only with a `docs/decisions.md` entry, ideally after an `agro-logic` review.

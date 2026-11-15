@@ -1,0 +1,44 @@
+{
+ "params": {
+  "assets": [
+   "OpenLandMap/SOL/SOL_BULKDENS-FINEEARTH_USDA-4A1H_M/v02",
+   "OpenLandMap/SOL/SOL_CLAY-WFRACTION_USDA-3A1A1A_M/v02",
+   "OpenLandMap/SOL/SOL_ORGANIC-CARBON_USDA-6A1C_M/v02",
+   "OpenLandMap/SOL/SOL_PH-H2O_USDA-4C1A2A_M/v02",
+   "OpenLandMap/SOL/SOL_SAND-WFRACTION_USDA-3A1A1A_M/v02",
+   "OpenLandMap/SOL/SOL_TEXTURE-CLASS_USDA-TT_M/v02",
+   "OpenLandMap/SOL/SOL_WATERCONTENT-33KPA_USDA-4B1C_M/v01"
+  ],
+  "depths_cm": [
+   0,
+   10,
+   30
+  ],
+  "latitude": 9.400208,
+  "longitude": -83.698958
+ },
+ "fetched_at": "2026-11-15T20:35:57.083345+00:00",
+ "data": {
+  "bulk_density_b0": 98,
+  "bulk_density_b10": 99,
+  "bulk_density_b30": 104,
+  "clay_b0": 31,
+  "clay_b10": 31,
+  "clay_b30": 35,
+  "field_capacity_b0": 47,
+  "field_capacity_b10": 46,
+  "field_capacity_b30": 46,
+  "organic_carbon_b0": 7,
+  "organic_carbon_b10": 6,
+  "organic_carbon_b30": 5,
+  "ph_b0": 52,
+  "ph_b10": 53,
+  "ph_b30": 53,
+  "sand_b0": 38,
+  "sand_b10": 38,
+  "sand_b30": 37,
+  "texture_class_b0": 4,
+  "texture_class_b10": 4,
+  "texture_class_b30": 4
+ }
+}

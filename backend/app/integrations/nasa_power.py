@@ -7,6 +7,7 @@ Pattern to copy:
   3. The public method goes through JsonCache so `cached` mode works offline.
 
 API docs: https://power.larc.nasa.gov/docs/services/api/temporal/climatology/
+          https://power.larc.nasa.gov/docs/services/api/temporal/monthly/
           https://power.larc.nasa.gov/docs/services/api/temporal/daily/
 Dataset notes: docs/sources/nasa_power.md
 """
@@ -14,7 +15,9 @@ Dataset notes: docs/sources/nasa_power.md
 from __future__ import annotations
 
 from collections.abc import Mapping
+from dataclasses import replace
 from datetime import date
+from statistics import mean
 from typing import Any
 
 import httpx
@@ -30,6 +33,21 @@ PARAMETERS = ("T2M", "T2M_MAX", "T2M_MIN", "PRECTOTCORR")
 MONTH_KEYS = ("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC")
 # Mean days per month (Feb averaged over leap years) to turn mm/day into mm/month.
 DAYS_IN_MONTH = (31, 28.25, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+
+# The climatology's T2M_MAX / T2M_MIN keep the month's hourly EXTREME (POWER data processing docs),
+# and its T2M_MAX_AVG is the mean of each year's monthly peak, not of the daily maxima. The mean
+# daily max / min per month comes from the MONTHLY API (T2M_MAX_AVG / T2M_MIN_AVG per month and
+# year), averaged here over the climatology's years. Checked 2026-11-15, Liberia April: climatology
+# T2M_MAX 39.2 °C, climatology T2M_MAX_AVG 37.7 °C, monthly T2M_MAX_AVG 2001-2025 35.8 °C (= the
+# mean of the daily T2M_MAX from the daily API). decisions.md 2026-11-15.
+MONTHLY_SOURCE = "nasa_power_monthly"  # own cache namespace, like the daily ones
+MONTHLY_URL = "https://power.larc.nasa.gov/api/temporal/monthly/point"
+MONTHLY_PARAMETERS = ("T2M_MAX_AVG", "T2M_MIN_AVG")
+MONTHLY_UNITS = {"T2M_MAX_AVG": "C", "T2M_MIN_AVG": "C"}
+# Same 25 years as the climatology (its header.range: January 2001 - December 2025).
+CLIMATOLOGY_FIRST_YEAR = 2001
+CLIMATOLOGY_LAST_YEAR = 2025
+ANNUAL_KEY_MONTH = 13  # the monthly API adds YYYY13 = the annual value
 
 DAILY_SOURCE = "nasa_power_daily"  # own cache namespace: daily requests never mix with climatology
 DAILY_URL = "https://power.larc.nasa.gov/api/temporal/daily/point"
@@ -80,7 +98,9 @@ HISTORY_TIME_STANDARD = "UTC"
 def parse_climatology(raw: dict[str, Any]) -> MonthlyClimate:
     """POWER climatology JSON → MonthlyClimate (°C, mm/month).
 
-    T2M_MAX / T2M_MIN in the climatology are monthly means of the daily max / min.
+    T2M_MAX / T2M_MIN in the climatology are the month's hourly EXTREMES, not daily means:
+    `NasaPowerClimate.monthly_climate` replaces them with `parse_daily_extremes` (monthly API).
+    They are still parsed and checked so the cached climatology entries stay valid.
     """
     try:
         params = raw["properties"]["parameter"]
@@ -180,6 +200,48 @@ def parse_daily(raw: dict[str, Any]) -> pd.DataFrame:
     return df.sort_index().rename_axis("date").reset_index()
 
 
+def parse_daily_extremes(raw: dict[str, Any]) -> tuple[tuple[float, ...], tuple[float, ...]]:
+    """POWER monthly JSON → (mean daily max, mean daily min) per calendar month, January first, °C.
+
+    Each is T2M_MAX_AVG / T2M_MIN_AVG (native °C: the month's mean of the daily max / min) averaged
+    over the years in the payload. Keys are YYYYMM; YYYY13 (annual) and fill values are skipped.
+    A calendar month with no value in any year is rejected.
+    """
+    _check_daily_units(raw, MONTHLY_UNITS, MONTHLY_SOURCE)
+    try:
+        params = raw["properties"]["parameter"]
+        fill = float(raw.get("header", {}).get("fill_value", -999.0))
+        by_month: dict[str, list[list[float]]] = {}
+        for name in MONTHLY_PARAMETERS:
+            months: list[list[float]] = [[] for _ in range(12)]
+            for key, value in params[name].items():
+                month = int(str(key)[4:])
+                if month == ANNUAL_KEY_MONTH or value is None or float(value) == fill:
+                    continue
+                months[month - 1].append(float(value))
+            by_month[name] = months
+    except (KeyError, TypeError, ValueError, IndexError) as e:
+        raise SourceDataError(
+            f"Unexpected NASA POWER monthly payload ({type(e).__name__}: {e})",
+            details={"source": MONTHLY_SOURCE},
+        ) from e
+    empty = [
+        f"{name} {MONTH_KEYS[i]}"
+        for name, months in by_month.items()
+        for i, values in enumerate(months)
+        if not values
+    ]
+    if empty:
+        raise SourceDataError(
+            f"NASA POWER monthly data has no values for: {', '.join(empty)}",
+            details={"source": MONTHLY_SOURCE, "empty": empty},
+        )
+    tmax, tmin = (
+        tuple(round(mean(values), 2) for values in by_month[name]) for name in MONTHLY_PARAMETERS
+    )
+    return tmax, tmin
+
+
 def parse_daily_history(raw: dict[str, Any]) -> pd.DataFrame:
     """POWER daily history JSON → DataFrame, one row per (UTC) day, columns:
     date, rainfall_mm, rainfall_merra2_mm, temperature_max_c, temperature_min_c, root_wetness.
@@ -252,6 +314,19 @@ class NasaPowerClimate:
         }
 
     @staticmethod
+    def monthly_request_params(lat: float, lon: float) -> dict[str, Any]:
+        """Query string (and cache key) for the mean daily max / min per month and year."""
+        return {
+            "parameters": ",".join(MONTHLY_PARAMETERS),
+            "community": "AG",
+            "latitude": round(lat, 2),
+            "longitude": round(lon, 2),
+            "start": CLIMATOLOGY_FIRST_YEAR,
+            "end": CLIMATOLOGY_LAST_YEAR,
+            "format": "JSON",
+        }
+
+    @staticmethod
     def history_request_params(lat: float, lon: float, start: date, end: date) -> dict[str, Any]:
         """Query string (and cache key) for the daily history. Same rounding as the others."""
         return {
@@ -298,10 +373,22 @@ class NasaPowerClimate:
         parse_climatology(raw)
         return raw
 
+    def _fetch_valid_monthly(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Same rule as _fetch_valid: validate before the cache stores it."""
+        raw = self.fetch_raw(params, url=MONTHLY_URL)
+        parse_daily_extremes(raw)
+        return raw
+
     def monthly_climate(self, lat: float, lon: float) -> MonthlyClimate:
+        """Climatology (mean temperature, rain) + mean daily max / min from the monthly API."""
         params = self.request_params(lat, lon)
         raw = self.cache.get_or_fetch(SOURCE, params, lambda: self._fetch_valid(params))
-        return parse_climatology(raw)
+        monthly = self.monthly_request_params(lat, lon)
+        monthly_raw = self.cache.get_or_fetch(
+            MONTHLY_SOURCE, monthly, lambda: self._fetch_valid_monthly(monthly)
+        )
+        tmax, tmin = parse_daily_extremes(monthly_raw)
+        return replace(parse_climatology(raw), temperature_max_c=tmax, temperature_min_c=tmin)
 
     def _fetch_valid_daily(self, params: dict[str, Any]) -> dict[str, Any]:
         """Call the daily endpoint and check the answer is usable before it gets cached."""

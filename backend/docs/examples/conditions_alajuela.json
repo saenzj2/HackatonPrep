@@ -8,85 +8,85 @@
       "month": 1,
       "temperature_c": 22.66,
       "rainfall_mm": 37.8,
-      "temperature_max_c": 31.3,
-      "temperature_min_c": 16.11
+      "temperature_max_c": 27.47,
+      "temperature_min_c": 19.06
     },
     {
       "month": 2,
       "temperature_c": 23.51,
       "rainfall_mm": 22.3,
-      "temperature_max_c": 33.42,
-      "temperature_min_c": 15.79
+      "temperature_max_c": 28.94,
+      "temperature_min_c": 19.38
     },
     {
       "month": 3,
       "temperature_c": 24.81,
       "rainfall_mm": 29.1,
-      "temperature_max_c": 34.22,
-      "temperature_min_c": 16.95
+      "temperature_max_c": 30.81,
+      "temperature_min_c": 20.22
     },
     {
       "month": 4,
       "temperature_c": 25.24,
       "rainfall_mm": 76.5,
-      "temperature_max_c": 34.65,
-      "temperature_min_c": 17.48
+      "temperature_max_c": 30.92,
+      "temperature_min_c": 21.0
     },
     {
       "month": 5,
       "temperature_c": 24.31,
       "rainfall_mm": 220.4,
-      "temperature_max_c": 33.88,
-      "temperature_min_c": 16.27
+      "temperature_max_c": 28.75,
+      "temperature_min_c": 21.38
     },
     {
       "month": 6,
       "temperature_c": 23.52,
       "rainfall_mm": 209.4,
-      "temperature_max_c": 31.48,
-      "temperature_min_c": 18.65
+      "temperature_max_c": 26.87,
+      "temperature_min_c": 21.14
     },
     {
       "month": 7,
       "temperature_c": 23.36,
       "rainfall_mm": 184.5,
-      "temperature_max_c": 30.63,
-      "temperature_min_c": 17.23
+      "temperature_max_c": 27.02,
+      "temperature_min_c": 20.79
     },
     {
       "month": 8,
       "temperature_c": 23.35,
       "rainfall_mm": 198.4,
-      "temperature_max_c": 31.09,
-      "temperature_min_c": 17.79
+      "temperature_max_c": 27.01,
+      "temperature_min_c": 20.79
     },
     {
       "month": 9,
       "temperature_c": 23.03,
       "rainfall_mm": 255.9,
-      "temperature_max_c": 30.42,
-      "temperature_min_c": 17.46
+      "temperature_max_c": 26.51,
+      "temperature_min_c": 20.72
     },
     {
       "month": 10,
       "temperature_c": 22.64,
       "rainfall_mm": 301.0,
-      "temperature_max_c": 29.71,
-      "temperature_min_c": 18.19
+      "temperature_max_c": 25.76,
+      "temperature_min_c": 20.66
     },
     {
       "month": 11,
       "temperature_c": 22.5,
       "rainfall_mm": 187.5,
-      "temperature_max_c": 29.64,
-      "temperature_min_c": 16.15
+      "temperature_max_c": 26.09,
+      "temperature_min_c": 20.04
     },
     {
       "month": 12,
       "temperature_c": 22.48,
       "rainfall_mm": 70.4,
-      "temperature_max_c": 30.59,
-      "temperature_min_c": 16.02
+      "temperature_max_c": 26.8,
+      "temperature_min_c": 19.38
     }
   ],
   "seasons": [
@@ -100,8 +100,8 @@
       ],
       "temperature_c": 23.63,
       "rainfall_mm_per_month": 203.2,
-      "temperature_max_c": 31.77,
-      "temperature_min_c": 16.27
+      "temperature_max_c": 27.41,
+      "temperature_min_c": 20.79
     },
     {
       "name": "postrera",
@@ -112,8 +112,8 @@
       ],
       "temperature_c": 22.72,
       "rainfall_mm_per_month": 248.1,
-      "temperature_max_c": 29.92,
-      "temperature_min_c": 16.15
+      "temperature_max_c": 26.12,
+      "temperature_min_c": 20.04
     }
   ],
   "soil": {

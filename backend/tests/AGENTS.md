@@ -21,6 +21,7 @@ General backend rules: [`backend/AGENTS.md`](../AGENTS.md).
 | `test_integrations.py` | adapters: parse real fixtures, `respx` for HTTP, cache modes |
 | `test_plan_risk.py` | plan stress test: each check just below / above its threshold, gaps, year crossing, aggregation (toy weather) |
 | `test_noaa_enso.py` | NOAA RONI / ONI: parse the real files, cache modes, phase labels, the El Niño split, plan-risk without NOAA |
+| `test_perennials.py` | permanent crops: year climate, minimum score, suitability words, notes, ranking |
 | `test_plan_advice.py` | plan-risk actions per cause and alternatives (date shifts, other crops, ranking) |
 | `test_daily_history.py` | NASA POWER daily history for `/plan-risk` (IMERG rain, UTC days): parse, units, fills, cache modes |
 | `test_services.py` | service functions with in-memory fake sources (e.g. `erosion_risk`, `get_soil_data`) |

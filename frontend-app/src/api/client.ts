@@ -224,6 +224,41 @@ export interface PlanRiskResponse {
   data_gaps: Text[];
 }
 
+/** GET /permanent-crops: cacao, coffee, pineapple, banana scored on the whole year at a point. */
+export type Suitability = "good" | "fair" | "poor" | "unsuitable";
+
+export interface PermanentCropFit {
+  crop_id: string;
+  crop_name: Text;
+  scientific_name: string;
+  /** 0..1, the most limiting variable (farmer priorities don't change it). */
+  score: number;
+  suitability: Suitability;
+  variable_scores: Record<string, number>;
+  breakdown: { climate: number | null; water: number | null; soil: number | null };
+  /** Highest altitude EcoCrop says the crop is grown at; not checked against the point. */
+  max_altitude_m: number | null;
+  summary: Text;
+  risks: Text[];
+  benefits: Text[];
+}
+
+export interface PermanentCropsResponse {
+  location: { lat: number; lon: number };
+  year_climate: {
+    annual_rainfall_mm: number;
+    temperature_c: number;
+    hottest_month_max_c: number;
+    coldest_month_min_c: number;
+    /** Months (1..12) with less than 60 mm of rain. */
+    dry_months: number[];
+  };
+  /** Best score first. */
+  crops: PermanentCropFit[];
+  data_sources: { climate: string; soil: string; crops: string };
+  data_gaps: Text[];
+}
+
 /** Envelope of every API error (backend/docs/errors.md). */
 interface ErrorBody {
   code: string;
@@ -285,6 +320,10 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+  permanentCrops: (lat: number, lon: number) =>
+    request<PermanentCropsResponse>(
+      `/permanent-crops?${new URLSearchParams({ lat: String(lat), lon: String(lon) })}`,
+    ),
   planRisk: (body: PlanRiskRequest) =>
     request<PlanRiskResponse>("/plan-risk", {
       method: "POST",

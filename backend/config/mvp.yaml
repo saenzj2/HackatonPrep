@@ -8,7 +8,13 @@ region:
   bbox: [-86.0, 8.0, -82.5, 11.3]
 
 # Crop ids from data/ecocrop_subset.csv (2 to 8 crops). TBD: team to pick 3 to 5.
-crops: [rice, beans, maize]
+# potato and onion use EcoCrop's wide ranges: they score well in hot lowlands too (potato 0.98 at
+# Los Chiles vs 0.83 at Cartago) until tighter tropical ranges are cited (decisions.md 2026-11-15).
+crops: [rice, beans, maize, squash, potato, onion, cowpea, jack_bean]
+
+# Permanent crops for GET /permanent-crops, ids from data/perennial_crops.csv (0 to 8).
+# They stay in the field for years: scored on the whole year, never in rotations or plan-risk.
+permanent_crops: [cacao, coffee, pineapple, banana]
 
 # Variables used in scoring. Options: temperature, rainfall, soil_ph, soil_moisture, heat, frost
 #   heat : mean daily max vs the crop's absolute max temperature (heat stress)

@@ -66,6 +66,7 @@ FAMILIES = {
     "Solanaceae": Text("tomato family", "familia de las solanáceas"),
     "Brassicaceae": Text("cabbage family", "familia de las crucíferas"),
     "Amaranthaceae": Text("amaranth family", "familia de las amarantáceas"),
+    "Amaryllidaceae": Text("onion family", "familia de las aliáceas"),
 }
 
 

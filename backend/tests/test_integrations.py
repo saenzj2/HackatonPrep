@@ -27,14 +27,17 @@ from app.integrations.base import (
     SoilSource,
     TerrainSource,
 )
-from app.integrations.ecocrop import EcoCropCatalog
+from app.integrations.ecocrop import EcoCropCatalog, PerennialCropCatalog
 from app.integrations.mock import MockClimate, MockSoil, MockTerrain
 from app.integrations.nasa_power import (
     BASE_URL,
     DAILY_URL,
+    MONTHLY_SOURCE,
+    MONTHLY_URL,
     NasaPowerClimate,
     parse_climatology,
     parse_daily,
+    parse_daily_extremes,
 )
 from app.integrations.openlandmap import EarthEngineSoil
 from app.integrations.opentopography import BASE_URL as OT_URL
@@ -48,6 +51,16 @@ from app.settings import BACKEND_DIR, DataMode, EnvSettings
 from tests.conftest import load_fixture
 
 POWER_FIXTURE = "nasa_power/climatology_alajuela.json"  # real response, lat 10.0 lon -84.2
+# real monthly-API response, lat 10.0 lon -84.2, 2001-2025, fetched 2026-11-15
+MONTHLY_FIXTURE = "nasa_power/monthly_extremes_alajuela.json"
+
+
+def _mock_monthly() -> respx.Route:
+    return respx.get(MONTHLY_URL).mock(
+        return_value=httpx.Response(200, json=load_fixture(MONTHLY_FIXTURE))
+    )
+
+
 # real response, lat 9.93 lon -84.08, Jan 2026
 DAILY_FIXTURE = "nasa_power/daily_san_jose_202601.json"
 
@@ -60,10 +73,76 @@ def test_parse_real_power_response():
     assert climate.rainfall_mm[9] > climate.rainfall_mm[1]  # Oct (wet) > Feb (dry)
 
 
-def test_parse_reads_daily_max_and_min():
+def test_parse_climatology_keeps_the_monthly_extremes():
+    """The climatology's T2M_MAX / T2M_MIN are hourly extremes; monthly_climate replaces them."""
     climate = parse_climatology(load_fixture(POWER_FIXTURE))
-    assert climate.temperature_max_c[0] == 31.3  # JAN T2M_MAX, mean daily max °C
-    assert climate.temperature_min_c[0] == 16.11  # JAN T2M_MIN, mean daily min °C
+    assert climate.temperature_max_c[0] == 31.3  # JAN T2M_MAX: the month's hourly peak, °C
+    assert climate.temperature_min_c[0] == 16.11  # JAN T2M_MIN: the month's hourly low, °C
+
+
+def test_parse_daily_extremes_averages_each_calendar_month_over_the_years():
+    raw = load_fixture(MONTHLY_FIXTURE)
+    tmax, tmin = parse_daily_extremes(raw)
+    jan = [v for k, v in raw["properties"]["parameter"]["T2M_MAX_AVG"].items() if k[4:] == "01"]
+    assert len(jan) == 25  # 2001-2025
+    assert tmax[0] == pytest.approx(sum(jan) / len(jan), abs=0.01)
+    assert len(tmax) == len(tmin) == 12
+    assert all(lo < hi for lo, hi in zip(tmin, tmax, strict=True))
+
+
+def test_mean_daily_max_is_below_the_climatology_extreme():
+    """The bug this fixes (decisions.md 2026-11-15): the extreme is several °C above the mean."""
+    tmax, _ = parse_daily_extremes(load_fixture(MONTHLY_FIXTURE))
+    extremes = parse_climatology(load_fixture(POWER_FIXTURE)).temperature_max_c
+    assert all(mean < peak for mean, peak in zip(tmax, extremes, strict=True))
+
+
+def test_parse_daily_extremes_skips_annual_and_fill_values():
+    raw = load_fixture(MONTHLY_FIXTURE)
+    values = raw["properties"]["parameter"]["T2M_MAX_AVG"]
+    expected = parse_daily_extremes(raw)[0][0]
+    values["200113"] = 99.0  # annual key
+    values["200101"] = -999.0  # one January missing
+    jan = [v for k, v in values.items() if k[4:] == "01" and v != -999.0]
+    tmax, _ = parse_daily_extremes(raw)
+    assert tmax[0] == pytest.approx(sum(jan) / len(jan), abs=0.01)
+    assert tmax[0] != expected
+
+
+def test_parse_daily_extremes_rejects_a_month_with_no_data():
+    raw = load_fixture(MONTHLY_FIXTURE)
+    values = raw["properties"]["parameter"]["T2M_MIN_AVG"]
+    for key in [k for k in values if k[4:] == "03"]:
+        values[key] = -999.0
+    with pytest.raises(SourceDataError, match="T2M_MIN_AVG MAR") as exc:
+        parse_daily_extremes(raw)
+    assert exc.value.details["source"] == MONTHLY_SOURCE
+
+
+def test_parse_daily_extremes_rejects_other_units():
+    raw = load_fixture(MONTHLY_FIXTURE)
+    raw["parameters"]["T2M_MAX_AVG"]["units"] = "K"
+    with pytest.raises(SourceDataError, match="expected 'C'"):
+        parse_daily_extremes(raw)
+
+
+def test_monthly_climate_uses_the_mean_daily_max_and_min(tmp_path):
+    cache = JsonCache(tmp_path, DataMode.LIVE)
+    cache.get_or_fetch(
+        "nasa_power",
+        NasaPowerClimate.request_params(10.0, -84.2),
+        lambda: load_fixture(POWER_FIXTURE),
+    )
+    cache.get_or_fetch(
+        MONTHLY_SOURCE,
+        NasaPowerClimate.monthly_request_params(10.0, -84.2),
+        lambda: load_fixture(MONTHLY_FIXTURE),
+    )
+    climate = NasaPowerClimate(JsonCache(tmp_path, DataMode.CACHED)).monthly_climate(10.0, -84.2)
+    tmax, tmin = parse_daily_extremes(load_fixture(MONTHLY_FIXTURE))
+    assert climate.temperature_max_c == tmax
+    assert climate.temperature_min_c == tmin
+    assert climate.temperature_c[0] == 22.66  # still the climatology's mean
 
 
 @pytest.mark.parametrize("param", ["T2M", "T2M_MAX", "T2M_MIN", "PRECTOTCORR"])
@@ -85,6 +164,7 @@ def test_live_mode_fetches_and_caches(tmp_path):
     route = respx.get(BASE_URL).mock(
         return_value=httpx.Response(200, json=load_fixture(POWER_FIXTURE))
     )
+    monthly = _mock_monthly()
     live = NasaPowerClimate(JsonCache(tmp_path, DataMode.LIVE))
     assert live.monthly_climate(10.0, -84.2).temperature_c[0] == 22.66
     assert route.called
@@ -94,10 +174,12 @@ def test_live_mode_fetches_and_caches(tmp_path):
     offline = NasaPowerClimate(JsonCache(tmp_path, DataMode.CACHED))
     assert offline.monthly_climate(10.0, -84.2).temperature_c[0] == 22.66
     assert route.call_count == 1
+    assert monthly.call_count == 1
 
 
 @respx.mock
 def test_live_mode_falls_back_to_cache_when_api_fails(tmp_path):
+    _mock_monthly()
     respx.get(BASE_URL).mock(
         side_effect=[httpx.Response(200, json=load_fixture(POWER_FIXTURE)), httpx.Response(500)]
     )
@@ -134,6 +216,7 @@ def test_bad_data_never_overwrites_a_good_cache(tmp_path):
     good = load_fixture(POWER_FIXTURE)
     bad = load_fixture(POWER_FIXTURE)
     bad["properties"]["parameter"]["T2M"]["JAN"] = -999.0
+    _mock_monthly()
     respx.get(BASE_URL).mock(
         side_effect=[httpx.Response(200, json=good), httpx.Response(200, json=bad)]
     )
@@ -159,10 +242,11 @@ def test_corrupt_cache_file_is_a_miss(tmp_path):
 @respx.mock
 def test_cache_write_leaves_no_temp_files(tmp_path):
     respx.get(BASE_URL).mock(return_value=httpx.Response(200, json=load_fixture(POWER_FIXTURE)))
+    _mock_monthly()
     NasaPowerClimate(JsonCache(tmp_path, DataMode.LIVE)).monthly_climate(10.0, -84.2)
     files = [p.name for p in tmp_path.rglob("*") if p.is_file()]
-    assert len(files) == 1
-    assert files[0].endswith(".json")
+    assert len(files) == 2  # climatology + monthly
+    assert all(f.endswith(".json") for f in files)
 
 
 def test_cached_mode_miss(tmp_path):
@@ -528,6 +612,22 @@ def test_ecocrop_catalog_loads():
     assert not crops["maize"].is_legume
 
 
+def test_perennial_catalog_loads_with_annual_rainfall_and_altitude():
+    crops = PerennialCropCatalog(BACKEND_DIR / "data" / "perennial_crops.csv").all()
+    assert set(crops) == {"cacao", "coffee", "pineapple", "banana"}
+    assert crops["cacao"].max_altitude_m == 900
+    assert crops["pineapple"].the_es == "la piña"
+    assert all(c.verified for c in crops.values())
+
+
+def test_perennial_catalog_bad_row(tmp_path):
+    bad = tmp_path / "bad.csv"
+    bad.write_text("id,name\ncacao,Cacao\n")
+    with pytest.raises(ConfigError, match="line 2") as exc:
+        PerennialCropCatalog(bad).all()
+    assert exc.value.details["source"] == "ecocrop_perennials"
+
+
 def test_ecocrop_bad_row(tmp_path):
     bad = tmp_path / "bad.csv"
     bad.write_text("id,name\nrice,Rice\n")
@@ -665,6 +765,11 @@ def test_cached_mode_falls_back_to_the_snapshot(tmp_path):
     JsonCache(snapshot, DataMode.LIVE).get_or_fetch(
         "nasa_power", params, lambda: load_fixture("nasa_power/climatology_alajuela.json")
     )
+    JsonCache(snapshot, DataMode.LIVE).get_or_fetch(
+        MONTHLY_SOURCE,
+        NasaPowerClimate.monthly_request_params(10.0, -84.2),
+        lambda: load_fixture(MONTHLY_FIXTURE),
+    )
     src = NasaPowerClimate(JsonCache(tmp_path / "runtime", DataMode.CACHED, snapshot=snapshot))
     assert src.monthly_climate(10.0, -84.2).temperature_c[0] == 22.66
     assert not (tmp_path / "runtime").exists()  # read only: nothing copied or written
@@ -679,7 +784,22 @@ def test_committed_snapshot_never_holds_secrets():
 
 
 # The demo points the committed snapshot must serve in `cached` mode (the default).
-DEMO_POINTS = {"Los Chiles": (11.0, -84.6), "Alajuela": (10.0, -84.2)}
+# Same points as frontend-app/src/demoFields.ts (decisions.md 2026-11-15).
+DEMO_POINTS = {
+    "Los Chiles": (11.0, -84.6),
+    "Alajuela": (10.0, -84.2),
+    "Upala": (10.9, -85.0),
+    "Sarapiquí": (10.4, -84.0),
+    "Liberia": (10.6, -85.4),
+    "Nicoya": (10.1, -85.4),
+    "Parrita": (9.6, -84.3),
+    "Cartago": (9.9, -83.9),
+    "Matina": (10.1, -83.3),
+    "Bribri": (9.6, -82.7),
+    "Pérez Zeledón": (9.4, -83.7),
+    "Buenos Aires": (9.2, -83.3),
+    "Ciudad Neily": (8.6, -82.9),
+}
 
 
 @pytest.mark.parametrize("point", sorted(DEMO_POINTS))
@@ -689,5 +809,6 @@ def test_snapshot_has_every_data_set_for_each_demo_point(point, tmp_path):
     lat, lon = DEMO_POINTS[point]
     cache = JsonCache(tmp_path, DataMode.CACHED, snapshot=SNAPSHOT_DIR)
     assert cache.peek("nasa_power", NasaPowerClimate.request_params(lat, lon)) is not None
+    assert cache.peek(MONTHLY_SOURCE, NasaPowerClimate.monthly_request_params(lat, lon)) is not None
     assert cache.peek("openlandmap", EarthEngineSoil.point_params(lat, lon)) is not None
     assert cache.peek("nasa_smap", SmapSoilMoisture.point_params(lat, lon)) is not None
