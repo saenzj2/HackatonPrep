@@ -40,7 +40,16 @@ export function App() {
           </RouteFade>
         </main>
         <footer className="site-footer">
-          Data: NASA POWER, NASA SMAP, OpenLandMap, FAO EcoCrop · <a href="/docs">API docs</a>
+          <p className="site-footer__line">
+            Data: NASA POWER, NASA SMAP, NASA GPM IMERG, MERRA-2, OpenLandMap, FAO EcoCrop ·{" "}
+            <a href="/docs">API docs</a>
+          </p>
+          <p className="site-footer__line">
+            <span className="ai-mark">AI generated</span> Logo, brand artwork and background videos ·{" "}
+            <Link to="/learn" state={{ section: "ai-use" }}>
+              How we used AI
+            </Link>
+          </p>
         </footer>
       </PlanProvider>
     </HashRouter>

@@ -83,7 +83,8 @@ export function SoilHealth({ lat, lon, seasons, recommended, current }: Props) {
       )}
 
       <p className="muted small">
-        {PRACTICES_DISCLAIMER} Organic carbon is a soil-map estimate (OpenLandMap, 250 m), not a soil test.
+        {PRACTICES_DISCLAIMER} Card texts drafted with AI (Claude) and reviewed by the team. Organic carbon
+        is a soil-map estimate (OpenLandMap, 250 m), not a soil test.
       </p>
     </section>
   );

@@ -1378,4 +1378,21 @@ details[open] > :not(summary) {
 
 .compare__check {
   color: var(--agri-green);
+
+/* Footer: data sources and the AI disclosure, one line each. */
+.site-footer__line {
+  margin: 0;
+}
+
+.site-footer__line + .site-footer__line {
+  margin-top: 4px;
+}
+
+.site-footer .ai-mark {
+  vertical-align: 1px;
+  margin-right: 4px;
+}
+
+#ai-use th[scope="row"] {
+  font-weight: 600;
 }
