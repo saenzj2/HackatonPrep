@@ -7,7 +7,7 @@
 ## How the list was made (2026-11-15)
 All 2568 crops in the EcoCrop Parquet (`docs/sources/ecocrop.md`) were run through our own
 planting-window code (`app/domain/planting_windows.py`) with the cached NASA POWER climate for
-San Carlos (lat 11.0, lon −84.6):
+Los Chiles (lat 11.0, lon −84.6):
 - annual crops used as cereals, pulses, vegetables, roots/tubers or cover crops;
 - shortest cycle (`gmin`) between 30 and 120 days, so it fits one season;
 - only the month-varying variables (temperature, heat, frost, rainfall). Soil is still mock.
@@ -18,7 +18,7 @@ or markets. The shortlist below is hand-picked from those 51 for what it adds to
 comparison. Reasons marked *(check)* are judgement, not verified.
 
 ## Shortlist
-| Crop | EcoCrop code | Family | Cycle (d, shortest) | San Carlos window (sow) | What it adds |
+| Crop | EcoCrop code | Family | Cycle (d, shortest) | Los Chiles window (sow) | What it adds |
 |---|---|---|---|---|---|
 | **Sunn hemp** (*Crotalaria juncea*) | 801 | Fabaceae | 60 | Aug–Oct | Fast cover crop and green manure; a legume that isn't a grain crop |
 | **Squash / ayote** (*Cucurbita moschata*) | 820 | Cucurbitaceae | 80 | Jul–Sep | New family; part of the maize–bean–squash milpa |

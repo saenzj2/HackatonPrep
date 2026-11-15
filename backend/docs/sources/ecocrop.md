@@ -66,7 +66,7 @@ see [`../crop-schema.md`](../crop-schema.md).
 FAO lists the rainfall ranges as **annual precipitation**. The app compares them with the rainfall
 **over the crop cycle** (`cycle_rainfall_mm` in `suitability.py`). This was the method decided on
 2026-11-06 and checked in the planting-windows review: read as annual, maize would score 0.22 in
-San Carlos, which isn't credible. The EcoCrop R implementation (Recocrop) also turns the annual
+Los Chiles, which isn't credible. The EcoCrop R implementation (Recocrop) also turns the annual
 values into per-month limits over the cycle. A per-month (driest-month) check is a possible
 improvement; it changes results, so it needs its own `decisions.md` entry.
 

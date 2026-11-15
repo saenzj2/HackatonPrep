@@ -29,6 +29,18 @@ Folder rules load automatically when you work in a folder: each `CLAUDE.md` ther
   conversation does not bypass a permission prompt or denial.
 - Personal overrides go in `.claude/settings.local.json` (gitignored).
 
+## Token budget
+- **Subagents:** `nasa-data`, `fact-checker` and `farmer-language` run on Sonnet (`model: sonnet` in
+  their frontmatter). `agro-logic` and `reviewer` keep the session model: their judgment decides
+  scoring constants and what ships. Don't override `model` unless the user asks.
+- **Suggest `/clear` when the task changes** (new ticket, new feature, a doc after code work).
+  Say so in one line and let the user decide; if details must survive, write them to a short md
+  first (`docs/follow-ups/` or `Documents/`).
+- **Suggest closing idle sessions** when the user starts a new one on the same branch, or when a
+  background server/agent is no longer needed. Stop background processes you started
+  (`make dev`, agents) as soon as the task is done.
+- Spawn an agent only when the user asks or a skill requires it; otherwise work inline.
+
 ## Working style
 - Before writing any `raise`, `except` or error response, follow `backend/docs/errors.md`.
 - Run `make check` before saying a task is done. Report failures honestly.

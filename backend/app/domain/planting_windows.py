@@ -45,7 +45,7 @@ from app.domain.suitability import (
 # A sowing month is good when its window score reaches this AND no month-varying variable is
 # marginal (< MARGINAL_SCORE). The score averages categories, so one factor near its limit (e.g.
 # rainfall 0.08) can still give 0.85; the second condition stops that. Placeholder (0.7 and 0.8
-# gave the same San Carlos windows; agro-logic review 2026-11-15).
+# gave the same Los Chiles windows; agro-logic review 2026-11-15).
 GOOD_SOWING_SCORE = 0.8
 # Variables with the same value in every month at a location: they don't decide windows.
 FIXED_VARIABLES = frozenset({"soil_ph"})

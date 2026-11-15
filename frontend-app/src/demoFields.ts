@@ -10,11 +10,12 @@ export interface DemoField {
 
 export const DEMO_FIELDS: DemoField[] = [
   {
-    id: "san-carlos",
-    name: "San Carlos",
+    // Relabeled from "San Carlos" (decisions.md 2026-11-15): the point is ~12 km from Los Chiles.
+    id: "los-chiles",
+    name: "Los Chiles",
     lat: 11.0,
     lon: -84.6,
-    description: "Northern lowlands",
+    description: "Northern zone",
   },
   {
     id: "alajuela",

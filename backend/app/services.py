@@ -5,16 +5,27 @@ The only module that knows about all three layers (api schemas, integrations, do
 
 from __future__ import annotations
 
+import logging
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from functools import lru_cache
-from typing import Any, TypedDict, overload
+from typing import Any, Literal, TypedDict, overload
 
 import pandas as pd
 
 from app.api import schemas as s
+from app.domain.enso import (
+    ENSO_UNAVAILABLE,
+    EnsoIndex,
+    disagreement_note,
+    enso_split,
+    label_disagreements,
+    latest_estimate_note,
+    phase_of,
+    year_phase,
+)
 from app.domain.erosion import (
     DEFAULT_RAINFALL_THRESHOLDS,
     ErosionRisk,
@@ -32,6 +43,21 @@ from app.domain.models import (
     SoilLayer,
     Weights,
 )
+from app.domain.plan_advice import (
+    actions_for,
+    day_month,
+    find_alternatives,
+    harvest_day,
+    plan_summary,
+    warm_nights_note,
+)
+from app.domain.plan_advice import explanation as plan_explanation
+from app.domain.plan_risk import (
+    FLOWERING_DRY_ALWAYS_FAIL_DAYS,
+    DailyHistory,
+    PlanRiskResult,
+    stress_test,
+)
 from app.domain.planting_windows import SowingMonth, fixed_limits, sowing_calendar
 from app.domain.planting_windows import planting_windows as find_planting_windows
 from app.domain.ranking import explain, rank_rotations
@@ -44,12 +70,15 @@ from app.errors import (
     InvalidRotationError,
     OutOfRegionError,
     SourceDataError,
+    SourceError,
     UnknownCropError,
 )
 from app.integrations import Sources, build_sources
 from app.integrations.base import DailyWeatherSource, SoilProfileSource, TerrainSource
 from app.integrations.measured_soil import SOURCE as MEASURED_SOIL_SOURCE
 from app.settings import MvpConfig, get_config, get_env
+
+log = logging.getLogger(__name__)
 
 METHOD_VERSION = "suitability-v1"
 SOURCE_LABELS = {
@@ -824,6 +853,292 @@ def get_soil_data(
         "units": dict(SOIL_UNITS),
         "soil": {f"{layer.depth_cm}cm": _soil_layer_result(layer) for layer in profile.layers},
     }
+
+
+# ------------------------------------------------------------------ POST /plan-risk
+# Fixed history range (decisions.md 2026-11-15): a moving end date would change the cache key
+# every month and the committed demo snapshot would stop matching. Move it on purpose, with a new
+# snapshot. IMERG starts 2000-06-01.
+PLAN_RISK_HISTORY_START = date(2000, 6, 1)
+PLAN_RISK_HISTORY_END = date(2025, 12, 31)
+ENSO_SOURCE = "NOAA CPC RONI (El Niño, ERSST v6)"
+# Labels per history source name (like SOURCE_LABELS / SOIL_SOURCE_LABELS). Adding a source =
+# adding a key here, not a branch in plan_risk().
+PLAN_RISK_SOURCE_LABELS: dict[str, list[str]] = {
+    "nasa_power": ["NASA GPM IMERG (rain)", "NASA POWER / MERRA-2 (temperature, soil wetness)"],
+    "mock": ["mock"],
+}
+# Columns plan_risk() reads from the history DataFrame: the four the engine replays plus the
+# MERRA-2 rain that _rain_source_gap compares. Any adapter column names come from
+# nasa_power.HISTORY_COLUMNS; this is the subset the service depends on.
+PLAN_RISK_HISTORY_COLUMNS = (
+    "rainfall_mm",
+    "rainfall_merra2_mm",
+    "temperature_max_c",
+    "temperature_min_c",
+    "root_wetness",
+)
+
+
+def _daily_history(df: pd.DataFrame, start: date, end: date, source: str) -> DailyHistory:
+    """Adapter DataFrame → the domain's consecutive-day tuples (missing days become NaN)."""
+    days = pd.date_range(start, end, freq="D")
+    full = df.set_index("date").reindex(days)
+    for column in PLAN_RISK_HISTORY_COLUMNS:
+        if column not in full.columns:
+            raise SourceDataError(
+                f"Daily history has no {column} column", details={"source": source}
+            )
+    return DailyHistory(
+        start=start,
+        rain_mm=tuple(float(v) for v in full["rainfall_mm"]),
+        tmax_c=tuple(float(v) for v in full["temperature_max_c"]),
+        tmin_c=tuple(float(v) for v in full["temperature_min_c"]),
+        root_wetness=tuple(float(v) for v in full["root_wetness"]),
+    )
+
+
+def _mm_dd(month: int, day: int) -> str:
+    return f"{month:02d}-{day:02d}"
+
+
+def _plan_risk_planting(
+    *,
+    history: DailyHistory,
+    crop: CropProfile,
+    sowing: s.PlantingInput,
+    mvp_crops: list[CropProfile],
+    roni: EnsoIndex | None,
+) -> tuple[s.PlanRiskPlanting, PlanRiskResult]:
+    plan = stress_test(
+        history=history, crop=crop, sowing_month=sowing.sowing_month, sowing_day=sowing.sowing_day
+    )
+    alternatives = (
+        ()
+        if plan.not_enough_history
+        else find_alternatives(history=history, crop=crop, plan=plan, other_crops=mvp_crops)
+    )
+    harvest = harvest_day(sowing.sowing_month, sowing.sowing_day, crop.cycle_days)
+    schema = s.PlanRiskPlanting(
+        crop_id=crop.id,
+        crop_name=_lt(crop.label),
+        sowing_date=_mm_dd(sowing.sowing_month, sowing.sowing_day),
+        harvest_date=_mm_dd(*harvest),
+        failed_years=plan.failed_years,
+        failure_rate=round(plan.failure_rate, 3),
+        summary=_lt(plan_summary(plan, crop)),
+        causes=[
+            s.PlanRiskCause(
+                cause=c.cause,
+                severity=c.severity,
+                years=list(c.years),
+                count=len(c.years),
+                explanation=_lt(plan_explanation(c)),
+                actions=[_lt(a) for a in actions_for(c, crop)],
+            )
+            for c in plan.cause_summaries()
+        ],
+        years=[
+            s.PlanRiskYear(
+                year=y.year,
+                outcome=y.outcome,
+                causes=list(y.causes),
+                enso=None if roni is None else year_phase(roni, y.year, sowing.sowing_month),
+            )
+            for y in plan.seasons
+        ],
+        enso_split=None if roni is None else _enso_split_schema(plan, roni),
+        alternatives=[
+            s.PlanAlternative(
+                kind=a.kind,
+                crop_id=a.crop.id,
+                sowing_date=_mm_dd(a.result.sowing_month, a.result.sowing_day),
+                failed_years=a.result.failed_years,
+                failure_rate=round(a.result.failure_rate, 3),
+                label=_lt(a.label),
+            )
+            for a in alternatives
+        ],
+    )
+    return schema, plan
+
+
+def _enso_split_schema(plan: PlanRiskResult, roni: EnsoIndex) -> s.EnsoSplit:
+    split = enso_split(plan, roni)
+    group = {p: s.EnsoGroup(years=c.years, failed=c.failed) for p, c in split.counts.items()}
+    return s.EnsoSplit(
+        el_nino=group["el_nino"],
+        la_nina=group["la_nina"],
+        neutral=group["neutral"],
+        note=_lt(split.note),
+    )
+
+
+def _enso_index(ctx: AppContext, name: Literal["RONI", "ONI"]) -> EnsoIndex | None:
+    """El Niño context is optional in the contract: if NOAA fails and nothing is cached, the
+    response goes on without it (and says so in data_gaps) instead of failing the whole plan."""
+    try:
+        return ctx.sources.enso.index(name)
+    except SourceError as e:
+        log.warning("NOAA %s unavailable, plan-risk continues without it: %s", name, e)
+        return None
+
+
+def _enso_now(roni: EnsoIndex) -> s.EnsoNow:
+    latest = roni.latest
+    return s.EnsoNow(
+        oni=latest.anomaly_c,
+        phase=phase_of(latest.anomaly_c),
+        season=f"{latest.season} {latest.year}",
+        source=ENSO_SOURCE,
+    )
+
+
+def _enso_gaps(
+    roni: EnsoIndex | None, oni: EnsoIndex | None, plans: list[PlanRiskResult]
+) -> list[Text]:
+    if roni is None:
+        return [ENSO_UNAVAILABLE]
+    gaps = [latest_estimate_note(roni)]
+    if oni is not None:
+        items = []
+        for sowing_month in dict.fromkeys(p.sowing_month for p in plans):
+            years = [y.year for p in plans if p.sowing_month == sowing_month for y in p.seasons]
+            years = list(dict.fromkeys(years))
+            differing = label_disagreements(roni, oni, years=years, month=sowing_month)
+            items.append((differing, len(years), sowing_month))
+        if items:
+            gaps.append(disagreement_note(items))  # one line, not one per sowing month
+    return gaps
+
+
+def _rain_source_gap(df: pd.DataFrame) -> Text | None:
+    """How far MERRA-2 rain differs from IMERG over the same days (plan-risk.md, phase 2)."""
+    both = df[["rainfall_mm", "rainfall_merra2_mm"]].dropna()
+    imerg = float(both["rainfall_mm"].sum())
+    if both.empty or imerg <= 0:
+        return None
+    ratio = float(both["rainfall_merra2_mm"].sum()) / imerg
+    if ratio >= 2:
+        # "208% more rain" reads like a typo; above double, say so in words.
+        amount = Text("more than twice as much", "más del doble de")
+    else:
+        p = pct(abs(ratio - 1))
+        en_dir, es_dir = ("less", "menos") if ratio < 1 else ("more", "más")
+        amount = Text(f"{p.en} {en_dir}", f"{p.es} {es_dir}")
+    # Never "some years would come out differently": the years are not re-run with MERRA-2.
+    return Text(
+        f"A second NASA rain estimate (MERRA-2 computer model, about 50 km) shows {amount.en} "
+        "rain here compared with the satellite, so take the rain numbers as approximate",
+        f"Otra estimación de lluvia de la NASA (modelo MERRA-2, unos 50 km) da {amount.es} "
+        "lluvia aquí que el satélite; tome las cifras de lluvia como aproximadas",
+    )
+
+
+def _plan_risk_data_gaps(
+    df: pd.DataFrame,
+    years: s.YearsEvaluated,
+    plans: list[tuple[CropProfile, PlanRiskResult]],
+    enso_gaps: list[Text],
+) -> list[Text]:
+    gaps = [
+        Text(
+            "Rain comes from NASA satellites (GPM IMERG): an average over a square about 10 km "
+            "wide, not measured on your farm",
+            "La lluvia viene de satélites de la NASA (GPM IMERG): es un promedio de un cuadro de "
+            "unos 10 km de lado, no se midió en su finca",
+        ),
+        Text(
+            "Temperature and soil wetness come from a NASA model (MERRA-2) over ~50 km",
+            "La temperatura y la humedad del suelo vienen de un modelo de la NASA (MERRA-2) para "
+            "~50 km",
+        ),
+        Text(
+            f"Based on every year sown from {years.first} to {years.last} with complete data",
+            f"Basado en cada año sembrado de {years.first} a {years.last} con datos completos",
+        ),
+        Text(
+            "Weather patterns only: no yields, pests, diseases or prices, and it assumes no "
+            "irrigation",
+            "Solo patrones de clima: no incluye rendimientos, plagas, enfermedades ni precios, y "
+            "supone que no hay riego",
+        ),
+        Text(
+            "A 'failed' year means weather known to badly damage this crop (for example, "
+            f"{FLOWERING_DRY_ALWAYS_FAIL_DAYS} days or more without rain at flowering). It is "
+            "not a harvest measurement",
+            "Un año 'fallado' es un año con un clima que daña mucho a este cultivo (por ejemplo, "
+            f"{FLOWERING_DRY_ALWAYS_FAIL_DAYS} días o más sin lluvia en la floración). No es una "
+            "medición de la cosecha",
+        ),
+        *enso_gaps,
+    ]
+    gap = _rain_source_gap(df)
+    if gap is not None:
+        gaps.append(gap)
+    for crop, plan in plans:
+        note = warm_nights_note(plan, crop)
+        if note is not None and note not in gaps:
+            gaps.append(note)
+        if plan.not_enough_history:
+            when = day_month(plan.sowing_month, plan.sowing_day)
+            # Starts with the crop name: the frontend places it on that card.
+            note = Text(
+                f"{crop.label.en}, sown {when.en}: only {plan.evaluated} years with "
+                "complete data, too few to judge",
+                f"{crop.label.es}, siembra del {when.es}: solo {plan.evaluated} años con "
+                "datos completos, muy pocos para juzgar",
+            )
+            if note not in gaps:  # the same planting may be listed twice
+                gaps.append(note)
+    return gaps
+
+
+def plan_risk(ctx: AppContext, req: s.PlanRiskRequest) -> s.PlanRiskResponse:
+    """Replay each planting against every past season of daily weather at the point."""
+    ctx.check_location(req.lat, req.lon)
+    ctx.resolve_crops([p.crop for p in req.plantings])  # unknown ids → 422 before any fetch
+    catalog = ctx.sources.crops.all()
+    mvp_crops = ctx.resolve_crops(None)
+    start, end = PLAN_RISK_HISTORY_START, PLAN_RISK_HISTORY_END
+    df = ctx.sources.history.daily_history(lat=req.lat, lon=req.lon, start=start, end=end)
+    history = _daily_history(df, start, end, ctx.sources.history.name)
+    roni, oni = _enso_index(ctx, "RONI"), _enso_index(ctx, "ONI")
+    results = [
+        _plan_risk_planting(
+            history=history, crop=catalog[p.crop], sowing=p, mvp_crops=mvp_crops, roni=roni
+        )
+        for p in req.plantings
+    ]
+    seasons = [y.year for planting, _ in results for y in planting.years]
+    years = s.YearsEvaluated(
+        first=min(seasons, default=0),
+        last=max(seasons, default=0),
+        count=max((plan.evaluated for _, plan in results), default=0),
+    )
+    history_name = ctx.sources.history.name
+    sources = PLAN_RISK_SOURCE_LABELS.get(history_name, [history_name])
+    if roni is not None and history_name != "mock":
+        sources = [*sources, ENSO_SOURCE]
+    return s.PlanRiskResponse(
+        location=s.Location(lat=req.lat, lon=req.lon),
+        years_evaluated=years,
+        data_sources=sources,
+        enso_now=None if roni is None else _enso_now(roni),
+        plantings=[planting for planting, _ in results],
+        data_gaps=[
+            _lt(t)
+            for t in _plan_risk_data_gaps(
+                df,
+                years,
+                [
+                    (catalog[p.crop], plan)
+                    for p, (_, plan) in zip(req.plantings, results, strict=True)
+                ],
+                _enso_gaps(roni, oni, [plan for _, plan in results]),
+            )
+        ],
+    )
 
 
 # ---------------------------------------------------------------- HTTP: weather, erosion, soil

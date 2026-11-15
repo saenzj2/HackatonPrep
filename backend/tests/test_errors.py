@@ -293,6 +293,38 @@ def test_source_bad_data(make_client):
     )
 
 
+PLAN = {"lat": 11.0, "lon": -84.6, "plantings": [{"crop": "beans", "sowing_month": 9}]}
+
+
+def test_plan_risk_cache_miss(make_client):
+    err = assert_error(
+        make_client(data_mode=DataMode.CACHED).post("/plan-risk", json=PLAN),
+        503,
+        ErrorCode.CACHE_MISS,
+    )
+    assert err["details"] == {"source": "nasa_power_daily_history"}
+
+
+@respx.mock
+def test_plan_risk_source_unavailable(make_client):
+    respx.get(DAILY_URL).mock(return_value=httpx.Response(503))
+    assert_error(
+        make_client(data_mode=DataMode.LIVE).post("/plan-risk", json=PLAN),
+        502,
+        ErrorCode.SOURCE_UNAVAILABLE,
+    )
+
+
+@respx.mock
+def test_plan_risk_source_bad_data(make_client):
+    respx.get(DAILY_URL).mock(return_value=httpx.Response(200, json={"unexpected": True}))
+    assert_error(
+        make_client(data_mode=DataMode.LIVE).post("/plan-risk", json=PLAN),
+        502,
+        ErrorCode.SOURCE_BAD_DATA,
+    )
+
+
 # ---------------------------------------------------------------- 5xx bugs: never leak internals
 def test_unexpected_exception_is_generic_500(lenient_client, monkeypatch):
     def boom(*_a, **_k):
@@ -365,3 +397,28 @@ def test_server_errors_log_error_with_traceback(lenient_client, monkeypatch, cap
     (rec,) = [r for r in caplog.records if r.name == "app.errors"]
     assert rec.levelno == logging.ERROR
     assert rec.exc_info is not None
+
+
+def test_plan_risk_out_of_region(client):
+    body = {"lat": 40.0, "lon": -3.7, "plantings": [{"crop": "maize", "sowing_month": 5}]}
+    assert_error(client.post("/plan-risk", json=body), 422, ErrorCode.OUT_OF_REGION)
+
+
+def test_plan_risk_unknown_crop(client):
+    body = {"lat": 11.0, "lon": -84.6, "plantings": [{"crop": "kale", "sowing_month": 5}]}
+    err = assert_error(client.post("/plan-risk", json=body), 422, ErrorCode.UNKNOWN_CROP)
+    assert err["details"]["unknown"] == ["kale"]
+
+
+@pytest.mark.parametrize(
+    "plantings",
+    [
+        [],  # at least one
+        [{"crop": "maize", "sowing_month": 5}] * 5,  # at most four
+        [{"crop": "maize", "sowing_month": 13}],
+        [{"crop": "maize", "sowing_month": 2, "sowing_day": 30}],  # day not in the month
+    ],
+)
+def test_plan_risk_invalid_plantings(client, plantings):
+    body = {"lat": 11.0, "lon": -84.6, "plantings": plantings}
+    assert_error(client.post("/plan-risk", json=body), 422, ErrorCode.VALIDATION_FAILED)

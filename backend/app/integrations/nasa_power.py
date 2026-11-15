@@ -13,6 +13,7 @@ Dataset notes: docs/sources/nasa_power.md
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import date
 from typing import Any
 
@@ -47,6 +48,34 @@ DAILY_COLUMNS = {
 DAILY_UNITS = {"T2M": "C", "T2M_MAX": "C", "T2M_MIN": "C", "PRECTOTCORR": "mm/day"}
 POWER_DATE_FORMAT = "%Y%m%d"  # POWER keys and start/end are YYYYMMDD
 
+# Daily history for POST /plan-risk (replaying a planting against every past year).
+# Separate parameters, params builder and cache namespace so it never touches daily_weather's keys.
+HISTORY_SOURCE = "nasa_power_daily_history"
+# IMERG_PRECTOT: NASA GPM IMERG satellite rain (~0.1°), the rain the engine uses.
+# PRECTOTCORR: MERRA-2 rain (~0.5°), kept only to report how far it differs from IMERG.
+# GWETROOT: root-zone soil wetness from the MERRA-2 land model (~0.5°), 0 dry .. 1 saturated.
+HISTORY_PARAMETERS = ("IMERG_PRECTOT", "PRECTOTCORR", "T2M_MAX", "T2M_MIN", "GWETROOT")
+HISTORY_COLUMNS = {
+    "IMERG_PRECTOT": "rainfall_mm",
+    "PRECTOTCORR": "rainfall_merra2_mm",
+    "T2M_MAX": "temperature_max_c",
+    "T2M_MIN": "temperature_min_c",
+    "GWETROOT": "root_wetness",
+}
+# Units declared by POWER with community=AG (checked live 2026-11-15, docs/sources/nasa_power.md).
+# GWETROOT is declared as "1": a dimensionless 0..1 fraction. No conversion is done.
+HISTORY_UNITS = {
+    "IMERG_PRECTOT": "mm/day",
+    "PRECTOTCORR": "mm/day",
+    "T2M_MAX": "C",
+    "T2M_MIN": "C",
+    "GWETROOT": "1",
+}
+# IMERG_PRECTOT is only served with time-standard=UTC: in the default local solar time (LST) every
+# value is the -999 fill (checked live 2026-11-15). Days are therefore UTC days (Costa Rica is
+# UTC-6, so a "day" runs 18:00 to 18:00 local); fine for multi-day windows, noted in the docs.
+HISTORY_TIME_STANDARD = "UTC"
+
 
 def parse_climatology(raw: dict[str, Any]) -> MonthlyClimate:
     """POWER climatology JSON → MonthlyClimate (°C, mm/month).
@@ -76,22 +105,22 @@ def parse_climatology(raw: dict[str, Any]) -> MonthlyClimate:
     )
 
 
-def _check_daily_units(raw: dict[str, Any]) -> None:
-    """Reject a response whose declared units differ from DAILY_UNITS (no conversion is done).
+def _check_daily_units(raw: dict[str, Any], units: Mapping[str, str], source: str) -> None:
+    """Reject a response whose declared units differ from `units` (no conversion is done).
 
     POWER lists units under the top-level `parameters` key. A payload without that metadata is
-    accepted as is: the request always asks for community=AG, whose units are DAILY_UNITS.
+    accepted as is: the request always asks for community=AG, whose units are the expected ones.
     """
     declared = raw.get("parameters")
     if not isinstance(declared, dict):
         return
-    for param, expected in DAILY_UNITS.items():
+    for param, expected in units.items():
         meta = declared.get(param)
         unit = meta.get("units") if isinstance(meta, dict) else None
         if unit is not None and unit != expected:
             raise SourceDataError(
                 f"NASA POWER daily {param} is in {unit!r}, expected {expected!r}",
-                details={"source": DAILY_SOURCE, "parameter": param},
+                details={"source": source, "parameter": param},
             )
 
 
@@ -116,7 +145,7 @@ def parse_daily(raw: dict[str, Any]) -> pd.DataFrame:
               date  temperature_c  temperature_max_c  temperature_min_c  rainfall_mm
         2026-01-01          22.43              27.06              19.48         1.38
     """
-    _check_daily_units(raw)
+    _check_daily_units(raw, DAILY_UNITS, DAILY_SOURCE)
     try:
         # The values live under properties.parameter, one {YYYYMMDD: value} dict per variable.
         params = raw["properties"]["parameter"]
@@ -151,6 +180,43 @@ def parse_daily(raw: dict[str, Any]) -> pd.DataFrame:
     return df.sort_index().rename_axis("date").reset_index()
 
 
+def parse_daily_history(raw: dict[str, Any]) -> pd.DataFrame:
+    """POWER daily history JSON → DataFrame, one row per (UTC) day, columns:
+    date, rainfall_mm, rainfall_merra2_mm, temperature_max_c, temperature_min_c, root_wetness.
+
+    rainfall_mm: GPM IMERG daily rain (IMERG_PRECTOT, native mm/day, no conversion).
+    rainfall_merra2_mm: MERRA-2 daily rain (PRECTOTCORR, native mm/day), for comparison only.
+    temperature_max_c / temperature_min_c: daily max / min air temperature at 2 m (native °C).
+    root_wetness: root-zone soil wetness (GWETROOT, native 0..1 fraction).
+    Fill values (-999, e.g. IMERG's last ~2 months) become NaN per variable. Only a variable with
+    no data at all is rejected: the engine needs every column.
+    """
+    _check_daily_units(raw, HISTORY_UNITS, HISTORY_SOURCE)
+    try:
+        params = raw["properties"]["parameter"]
+        fill = float(raw.get("header", {}).get("fill_value", -999.0))
+        # Built from the {date: value} dicts so rows align by date across variables.
+        df = pd.DataFrame(
+            {column: params[param] for param, column in HISTORY_COLUMNS.items()}, dtype=float
+        )
+        df.index = pd.to_datetime(df.index, format=POWER_DATE_FORMAT)
+    except (KeyError, TypeError, ValueError) as e:
+        raise SourceDataError(
+            f"Unexpected NASA POWER daily history payload ({type(e).__name__}: {e})",
+            details={"source": HISTORY_SOURCE},
+        ) from e
+    df = df.mask(df == fill)
+    empty = [str(c) for c in df.columns if bool(df[c].isna().all())]
+    if df.empty or empty:
+        raise SourceDataError(
+            "NASA POWER daily history has no data for: "
+            + (", ".join(empty) or "any variable")
+            + " (IMERG rain needs time-standard=UTC)",
+            details={"source": HISTORY_SOURCE, "empty_columns": empty},
+        )
+    return df.sort_index().rename_axis("date").reset_index()
+
+
 class NasaPowerClimate:
     name = SOURCE
 
@@ -182,6 +248,20 @@ class NasaPowerClimate:
             "longitude": round(lon, 2),
             "start": start.strftime(POWER_DATE_FORMAT),
             "end": end.strftime(POWER_DATE_FORMAT),
+            "format": "JSON",
+        }
+
+    @staticmethod
+    def history_request_params(lat: float, lon: float, start: date, end: date) -> dict[str, Any]:
+        """Query string (and cache key) for the daily history. Same rounding as the others."""
+        return {
+            "parameters": ",".join(HISTORY_PARAMETERS),
+            "community": "AG",
+            "latitude": round(lat, 2),
+            "longitude": round(lon, 2),
+            "start": start.strftime(POWER_DATE_FORMAT),
+            "end": end.strftime(POWER_DATE_FORMAT),
+            "time-standard": HISTORY_TIME_STANDARD,
             "format": "JSON",
         }
 
@@ -248,3 +328,24 @@ class NasaPowerClimate:
         raw = self.cache.get_or_fetch(DAILY_SOURCE, params, lambda: self._fetch_valid_daily(params))
         # Cached or fresh, the result always goes through the same parser.
         return parse_daily(raw)
+
+    def _fetch_valid_history(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Fetch the history and validate it before it is cached (bad data never replaces good)."""
+        raw = self.fetch_raw(params, url=DAILY_URL)
+        parse_daily_history(raw)
+        return raw
+
+    def daily_history(self, *, lat: float, lon: float, start: date, end: date) -> pd.DataFrame:
+        """Daily IMERG rain, MERRA-2 rain (mm/day), max/min temperature (°C) and root-zone
+        wetness (0..1), start to end inclusive, for replaying a planting against past years.
+
+        One request covers the whole range (26 years ≈ 0.8 MB, ~2 s). Columns: see
+        parse_daily_history. Missing values are NaN per variable.
+
+        Raises SourceUnavailableError, SourceDataError or CacheMissError like daily_weather.
+        """
+        params = self.history_request_params(lat, lon, start, end)
+        raw = self.cache.get_or_fetch(
+            HISTORY_SOURCE, params, lambda: self._fetch_valid_history(params)
+        )
+        return parse_daily_history(raw)
