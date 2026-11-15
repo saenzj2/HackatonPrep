@@ -1,41 +1,46 @@
-import { useEffect, useState } from "react";
-import { api, ApiError, type HealthResponse } from "../api/client";
+import { Link } from "react-router";
 
-type State =
-  | { kind: "loading" }
-  | { kind: "ready"; health: HealthResponse }
-  | { kind: "error"; code: string };
-
-// Placeholder start page: proves the build, the /app/ base and the API connection work.
 export function Home() {
-  const [state, setState] = useState<State>({ kind: "loading" });
-
-  useEffect(() => {
-    let active = true;
-    api
-      .health()
-      .then((health) => active && setState({ kind: "ready", health }))
-      .catch((error: unknown) => {
-        const code = error instanceof ApiError ? error.code : "unknown";
-        if (active) setState({ kind: "error", code });
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
   return (
-    <section>
-      <h1>Compare crop rotation options</h1>
-      <p className="muted">
-        NASA Earth observation, soil and crop data to choose more resilient rotations.
+    <div className="stack">
+      <section className="hero">
+        <h1>Compare crop rotations for your field</h1>
+        <p className="lead">
+          See how each rotation fits your field's climate, water and soil, using NASA Earth
+          observation data, crop requirements and the priorities you choose.
+        </p>
+        <div className="btn-row">
+          <Link to="/field" className="btn">
+            Start with my field
+          </Link>
+          <Link to="/learn" className="btn btn--secondary">
+            How it works
+          </Link>
+        </div>
+      </section>
+
+      <section aria-labelledby="how">
+        <h2 id="how">How it works</h2>
+        <ol className="grid grid--3 list" style={{ listStyle: "none", padding: 0 }}>
+          <li className="panel">
+            <h3>1. Choose your field</h3>
+            <p>We look up long-term climate from NASA POWER, soil moisture from NASA SMAP and soil pH.</p>
+          </li>
+          <li className="panel">
+            <h3>2. Tell us what matters</h3>
+            <p>Pick the crops you can grow, what you grow now, and how much water, soil and climate matter to you.</p>
+          </li>
+          <li className="panel">
+            <h3>3. Compare rotations</h3>
+            <p>See ranked rotations with the reasons, the risks and what the data cannot tell.</p>
+          </li>
+        </ol>
+      </section>
+
+      <p className="notice notice--info small">
+        Results are rule-based estimates to support your decision. They do not replace the advice of a
+        local agronomist or extension officer.
       </p>
-      <p role="status" className="status">
-        {state.kind === "loading" && "Connecting to the API…"}
-        {state.kind === "ready" &&
-          `API connected · region ${state.health.region.name} · data ${state.health.data_mode}`}
-        {state.kind === "error" && "We could not reach the server. Please try again in a moment."}
-      </p>
-    </section>
+    </div>
   );
 }

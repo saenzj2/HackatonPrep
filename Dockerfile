@@ -8,6 +8,8 @@ WORKDIR /web
 COPY frontend-app/package.json frontend-app/package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY frontend-app/ ./
+# The Learn page bundles the glossary from backend/data (same relative path as in the repo).
+COPY backend/data/glossary.json /backend/data/glossary.json
 RUN npm run build
 
 # Stage 2: the API, which serves the frontend at /app (FRONTEND_DIR).
