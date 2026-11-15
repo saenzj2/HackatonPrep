@@ -5,7 +5,7 @@
 | **Used for** | Temperature and rainfall (`ClimateSource`) |
 | **Adapter** | `app/integrations/nasa_power.py` |
 | **Fixtures** | `tests/fixtures/nasa_power/climatology_alajuela.json` (lat 10.0, lon −84.2, fetched 2026-11-06)<br>`tests/fixtures/nasa_power/daily_san_jose_202601.json` (lat 9.93, lon −84.08, 2026-01-01 to 2026-01-31, `T2M,T2M_MAX,T2M_MIN,PRECTOTCORR`, refetched 2026-11-14) |
-| **Status** | ✅ Integrated (`live` / `cached` modes) |
+| **Status** | ✅ Integrated (`live` / `cached` modes). Daily series served by `GET /weather/daily` |
 
 ## Access
 - Endpoint: `GET https://power.larc.nasa.gov/api/temporal/climatology/point`

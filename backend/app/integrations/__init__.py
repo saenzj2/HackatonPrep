@@ -31,9 +31,9 @@ class Sources:
     climate: ClimateSource
     soil: SoilSource
     crops: CropSource
-    daily: DailyWeatherSource  # erosion risk (services.erosion_risk); no endpoint yet
+    daily: DailyWeatherSource  # GET /weather/daily, GET /erosion (rain)
     terrain: TerrainSource
-    soil_profile: SoilProfileSource  # services.get_soil_data; no endpoint yet
+    soil_profile: SoilProfileSource  # GET /soil (services.get_soil_data)
 
     def names(self) -> dict[str, str]:
         # Only the sources the current API reports (DataSources in the contract).

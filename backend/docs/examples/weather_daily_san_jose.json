@@ -1,0 +1,228 @@
+{
+  "location": {
+    "lat": 9.93,
+    "lon": -84.08
+  },
+  "start": "2026-01-01",
+  "end": "2026-01-31",
+  "source": "nasa_power",
+  "days": [
+    {
+      "date": "2026-01-01",
+      "temperature_c": 22.43,
+      "temperature_max_c": 27.06,
+      "temperature_min_c": 19.48,
+      "rainfall_mm": 1.38
+    },
+    {
+      "date": "2026-01-02",
+      "temperature_c": 22.21,
+      "temperature_max_c": 27.24,
+      "temperature_min_c": 18.03,
+      "rainfall_mm": 2.27
+    },
+    {
+      "date": "2026-01-03",
+      "temperature_c": 22.03,
+      "temperature_max_c": 26.52,
+      "temperature_min_c": 18.5,
+      "rainfall_mm": 1.82
+    },
+    {
+      "date": "2026-01-04",
+      "temperature_c": 22.96,
+      "temperature_max_c": 27.36,
+      "temperature_min_c": 19.32,
+      "rainfall_mm": 3.45
+    },
+    {
+      "date": "2026-01-05",
+      "temperature_c": 22.19,
+      "temperature_max_c": 26.91,
+      "temperature_min_c": 18.48,
+      "rainfall_mm": 5.16
+    },
+    {
+      "date": "2026-01-06",
+      "temperature_c": 22.12,
+      "temperature_max_c": 26.69,
+      "temperature_min_c": 18.95,
+      "rainfall_mm": 1.46
+    },
+    {
+      "date": "2026-01-07",
+      "temperature_c": 21.98,
+      "temperature_max_c": 26.85,
+      "temperature_min_c": 18.4,
+      "rainfall_mm": 0.6
+    },
+    {
+      "date": "2026-01-08",
+      "temperature_c": 22.04,
+      "temperature_max_c": 27.72,
+      "temperature_min_c": 17.4,
+      "rainfall_mm": 0.31
+    },
+    {
+      "date": "2026-01-09",
+      "temperature_c": 22.3,
+      "temperature_max_c": 27.14,
+      "temperature_min_c": 18.56,
+      "rainfall_mm": 0.92
+    },
+    {
+      "date": "2026-01-10",
+      "temperature_c": 22.43,
+      "temperature_max_c": 27.1,
+      "temperature_min_c": 18.54,
+      "rainfall_mm": 0.97
+    },
+    {
+      "date": "2026-01-11",
+      "temperature_c": 21.73,
+      "temperature_max_c": 26.52,
+      "temperature_min_c": 18.62,
+      "rainfall_mm": 0.07
+    },
+    {
+      "date": "2026-01-12",
+      "temperature_c": 21.92,
+      "temperature_max_c": 26.75,
+      "temperature_min_c": 17.74,
+      "rainfall_mm": 0.21
+    },
+    {
+      "date": "2026-01-13",
+      "temperature_c": 21.91,
+      "temperature_max_c": 26.65,
+      "temperature_min_c": 18.57,
+      "rainfall_mm": 0.01
+    },
+    {
+      "date": "2026-01-14",
+      "temperature_c": 22.18,
+      "temperature_max_c": 26.8,
+      "temperature_min_c": 18.1,
+      "rainfall_mm": 0.02
+    },
+    {
+      "date": "2026-01-15",
+      "temperature_c": 22.25,
+      "temperature_max_c": 27.41,
+      "temperature_min_c": 18.23,
+      "rainfall_mm": 0.28
+    },
+    {
+      "date": "2026-01-16",
+      "temperature_c": 22.22,
+      "temperature_max_c": 25.9,
+      "temperature_min_c": 19.24,
+      "rainfall_mm": 1.24
+    },
+    {
+      "date": "2026-01-17",
+      "temperature_c": 23.49,
+      "temperature_max_c": 27.67,
+      "temperature_min_c": 19.96,
+      "rainfall_mm": 1.28
+    },
+    {
+      "date": "2026-01-18",
+      "temperature_c": 23.17,
+      "temperature_max_c": 27.29,
+      "temperature_min_c": 20.46,
+      "rainfall_mm": 1.9
+    },
+    {
+      "date": "2026-01-19",
+      "temperature_c": 22.6,
+      "temperature_max_c": 26.68,
+      "temperature_min_c": 19.53,
+      "rainfall_mm": 0.84
+    },
+    {
+      "date": "2026-01-20",
+      "temperature_c": 22.82,
+      "temperature_max_c": 27.47,
+      "temperature_min_c": 19.68,
+      "rainfall_mm": 0.74
+    },
+    {
+      "date": "2026-01-21",
+      "temperature_c": 22.51,
+      "temperature_max_c": 27.24,
+      "temperature_min_c": 18.97,
+      "rainfall_mm": 0.26
+    },
+    {
+      "date": "2026-01-22",
+      "temperature_c": 22.07,
+      "temperature_max_c": 27.22,
+      "temperature_min_c": 17.33,
+      "rainfall_mm": 0.04
+    },
+    {
+      "date": "2026-01-23",
+      "temperature_c": 22.87,
+      "temperature_max_c": 27.19,
+      "temperature_min_c": 19.07,
+      "rainfall_mm": 0.11
+    },
+    {
+      "date": "2026-01-24",
+      "temperature_c": 23.13,
+      "temperature_max_c": 27.16,
+      "temperature_min_c": 19.31,
+      "rainfall_mm": 0.11
+    },
+    {
+      "date": "2026-01-25",
+      "temperature_c": 23.54,
+      "temperature_max_c": 27.6,
+      "temperature_min_c": 19.9,
+      "rainfall_mm": 0.03
+    },
+    {
+      "date": "2026-01-26",
+      "temperature_c": 22.74,
+      "temperature_max_c": 28.03,
+      "temperature_min_c": 18.05,
+      "rainfall_mm": 0.01
+    },
+    {
+      "date": "2026-01-27",
+      "temperature_c": 22.71,
+      "temperature_max_c": 27.66,
+      "temperature_min_c": 19.38,
+      "rainfall_mm": 0.01
+    },
+    {
+      "date": "2026-01-28",
+      "temperature_c": 21.96,
+      "temperature_max_c": 27.05,
+      "temperature_min_c": 17.8,
+      "rainfall_mm": 0.01
+    },
+    {
+      "date": "2026-01-29",
+      "temperature_c": 22.5,
+      "temperature_max_c": 27.24,
+      "temperature_min_c": 19.13,
+      "rainfall_mm": 0.01
+    },
+    {
+      "date": "2026-01-30",
+      "temperature_c": 22.42,
+      "temperature_max_c": 27.34,
+      "temperature_min_c": 18.25,
+      "rainfall_mm": 1.05
+    },
+    {
+      "date": "2026-01-31",
+      "temperature_c": 22.12,
+      "temperature_max_c": 26.83,
+      "temperature_min_c": 19.28,
+      "rainfall_mm": 8.67
+    }
+  ]
+}

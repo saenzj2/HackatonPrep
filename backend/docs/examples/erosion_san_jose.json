@@ -1,0 +1,22 @@
+{
+  "location": {
+    "lat": 9.93,
+    "lon": -84.08
+  },
+  "start": "2026-01-01",
+  "end": "2026-01-31",
+  "elevation_m": 1164,
+  "slope_pct": 2.3,
+  "terrain_erosion_risk": 0,
+  "terrain_erosion_level": "low",
+  "total_rainfall_mm": 35.2,
+  "avg_daily_rainfall_mm": 1.14,
+  "heavy_rain_days": 0,
+  "max_daily_rainfall_mm": 8.7,
+  "combined_erosion_risk": 0,
+  "combined_erosion_level": "low",
+  "data_sources": {
+    "terrain": "opentopography",
+    "weather": "nasa_power"
+  }
+}

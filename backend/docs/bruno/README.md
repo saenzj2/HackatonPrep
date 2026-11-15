@@ -1,7 +1,8 @@
 # API requests for Bruno (or Postman)
 
 `guardians-of-the-harvest.postman_collection.json` has every endpoint, ready to send:
-health, crops, conditions, three recommendation requests and one request per expected 422 error.
+health, crops, conditions, daily weather, erosion, soil profile, three recommendation requests
+and one request per expected 422 error.
 
 ## Use it
 1. Start the API: `make dev` (from the repo root).

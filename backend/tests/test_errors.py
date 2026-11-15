@@ -13,7 +13,7 @@ from fastapi.testclient import TestClient
 
 from app import services
 from app.errors import DomainInvariantError, ErrorCode
-from app.integrations.nasa_power import BASE_URL
+from app.integrations.nasa_power import BASE_URL, DAILY_URL
 from app.main import create_app
 from app.settings import DataMode
 
@@ -158,7 +158,91 @@ def test_planting_windows_input_errors(client, params, code):
     assert_error(client.get("/planting-windows", params=params), 422, code)
 
 
+JAN = {**CR, "start": "2026-01-01", "end": "2026-01-31"}
+PERIOD_ENDPOINTS = ("/weather/daily", "/erosion")
+
+
+@pytest.mark.parametrize("path", PERIOD_ENDPOINTS)
+@pytest.mark.parametrize(
+    ("start", "end", "match"),
+    [
+        ("2026-02-01", "2026-01-31", "start must be on or before end"),
+        ("2024-01-01", "2025-01-01", "at most 366 days"),  # 367 days
+        ("1980-12-31", "1981-01-31", "on or after 1981-01-01"),
+        ("2999-01-01", "2999-01-31", "not be in the future"),
+        ("2026-01-01", "31/01/2026", "date"),
+    ],
+)
+def test_invalid_period_is_validation_failed(client, path, start, end, match):
+    err = assert_error(
+        client.get(path, params={**CR, "start": start, "end": end}),
+        422,
+        ErrorCode.VALIDATION_FAILED,
+    )
+    assert match in err["message"]
+
+
+@pytest.mark.parametrize("path", PERIOD_ENDPOINTS)
+def test_period_endpoints_need_start_and_end(client, path):
+    err = assert_error(client.get(path, params=CR), 422, ErrorCode.VALIDATION_FAILED)
+    assert {f["loc"] for f in err["details"]["fields"]} == {"query.start", "query.end"}
+
+
+def test_full_leap_year_is_a_valid_period(client):
+    r = client.get("/erosion", params={**CR, "start": "2024-01-01", "end": "2024-12-31"})
+    assert r.status_code == 200, r.text
+
+
+@pytest.mark.parametrize(
+    ("path", "params"),
+    [
+        ("/weather/daily", {**JAN, "lat": 40.0, "lon": -3.7}),
+        ("/erosion", {**JAN, "lat": 40.0, "lon": -3.7}),
+        ("/soil", {"lat": 40.0, "lon": -3.7}),
+    ],
+)
+def test_out_of_region_on_field_data_endpoints(client, path, params):
+    err = assert_error(client.get(path, params=params), 422, ErrorCode.OUT_OF_REGION)
+    assert err["details"]["bbox"] == [-86.0, 8.0, -82.5, 11.3]
+
+
 # ---------------------------------------------------------------- 5xx from data sources
+@pytest.mark.parametrize(
+    ("path", "params", "source"),
+    [
+        ("/weather/daily", JAN, "nasa_power_daily"),
+        ("/erosion", JAN, "opentopography"),  # terrain is fetched first
+        ("/soil", CR, "openlandmap"),
+    ],
+)
+def test_cache_miss_on_field_data_endpoints(make_client, path, params, source):
+    err = assert_error(
+        make_client(data_mode=DataMode.CACHED).get(path, params=params), 503, ErrorCode.CACHE_MISS
+    )
+    assert err["details"] == {"source": source}
+
+
+@respx.mock
+def test_source_unavailable_on_daily_weather(make_client):
+    respx.get(DAILY_URL).mock(return_value=httpx.Response(503))
+    err = assert_error(
+        make_client(data_mode=DataMode.LIVE).get("/weather/daily", params=JAN),
+        502,
+        ErrorCode.SOURCE_UNAVAILABLE,
+    )
+    assert err["details"]["status"] == 503
+
+
+@respx.mock
+def test_source_bad_data_on_daily_weather(make_client):
+    respx.get(DAILY_URL).mock(return_value=httpx.Response(200, json={"unexpected": True}))
+    assert_error(
+        make_client(data_mode=DataMode.LIVE).get("/weather/daily", params=JAN),
+        502,
+        ErrorCode.SOURCE_BAD_DATA,
+    )
+
+
 def test_cache_miss_on_planting_windows(make_client):
     r = make_client(data_mode=DataMode.CACHED).get("/planting-windows", params=CR)
     assert_error(r, 503, ErrorCode.CACHE_MISS)
