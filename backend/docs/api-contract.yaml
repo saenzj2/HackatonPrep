@@ -188,6 +188,236 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /weather/daily:
+    get:
+      tags:
+      - weather
+      summary: Get Daily Weather
+      description: 'NASA POWER daily weather at a point: mean, max and min temperature (°C) and rainfall
+
+        (mm/day), one row per day from start to end (inclusive, at most 366 days).'
+      operationId: get_daily_weather_weather_daily_get
+      parameters:
+      - name: lat
+        in: query
+        required: true
+        schema:
+          type: number
+          maximum: 90
+          minimum: -90
+          examples:
+          - 9.93
+          title: Lat
+      - name: lon
+        in: query
+        required: true
+        schema:
+          type: number
+          maximum: 180
+          minimum: -180
+          examples:
+          - -84.08
+          title: Lon
+      - name: start
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+          description: First day, YYYY-MM-DD (inclusive)
+          examples:
+          - '2026-01-01'
+          title: Start
+        description: First day, YYYY-MM-DD (inclusive)
+      - name: end
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+          description: 'Last day, YYYY-MM-DD (inclusive). At most 366 days from start, and at least 30 days
+            before today: NASA POWER publishes daily data late'
+          examples:
+          - '2026-01-31'
+          title: End
+        description: 'Last day, YYYY-MM-DD (inclusive). At most 366 days from start, and at least 30 days
+          before today: NASA POWER publishes daily data late'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DailyWeatherResponse'
+        '422':
+          description: '`validation_failed`, `out_of_region`, `unknown_crop`, `invalid_priorities`, `invalid_rotation`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: '`internal_error`, `config_invalid`, `domain_invariant`: a backend bug'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: '`source_unavailable`, `source_bad_data`: an external data source failed'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: '`cache_miss`: data_mode=cached and this location was never fetched'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /erosion:
+    get:
+      tags:
+      - erosion
+      summary: Get Erosion
+      description: 'Erosion risk at a point (0 low, 1 medium, 2 high): terrain risk from the SRTM slope,
+        and
+
+        combined risk with NASA POWER daily rain over start..end (inclusive, at most 366 days).'
+      operationId: get_erosion_erosion_get
+      parameters:
+      - name: lat
+        in: query
+        required: true
+        schema:
+          type: number
+          maximum: 90
+          minimum: -90
+          examples:
+          - 9.93
+          title: Lat
+      - name: lon
+        in: query
+        required: true
+        schema:
+          type: number
+          maximum: 180
+          minimum: -180
+          examples:
+          - -84.08
+          title: Lon
+      - name: start
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+          description: First day, YYYY-MM-DD (inclusive)
+          examples:
+          - '2026-01-01'
+          title: Start
+        description: First day, YYYY-MM-DD (inclusive)
+      - name: end
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+          description: 'Last day, YYYY-MM-DD (inclusive). At most 366 days from start, and at least 30 days
+            before today: NASA POWER publishes daily data late'
+          examples:
+          - '2026-01-31'
+          title: End
+        description: 'Last day, YYYY-MM-DD (inclusive). At most 366 days from start, and at least 30 days
+          before today: NASA POWER publishes daily data late'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErosionRiskResponse'
+        '422':
+          description: '`validation_failed`, `out_of_region`, `unknown_crop`, `invalid_priorities`, `invalid_rotation`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: '`internal_error`, `config_invalid`, `domain_invariant`: a backend bug'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: '`source_unavailable`, `source_bad_data`: an external data source failed'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: '`cache_miss`: data_mode=cached and this location was never fetched'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /soil:
+    get:
+      tags:
+      - soil
+      summary: Get Soil
+      description: OpenLandMap soil properties (Google Earth Engine, 250 m) at 0, 10 and 30 cm depth.
+      operationId: get_soil_soil_get
+      parameters:
+      - name: lat
+        in: query
+        required: true
+        schema:
+          type: number
+          maximum: 90
+          minimum: -90
+          examples:
+          - 9.93
+          title: Lat
+      - name: lon
+        in: query
+        required: true
+        schema:
+          type: number
+          maximum: 180
+          minimum: -180
+          examples:
+          - -84.08
+          title: Lon
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SoilProfileResponse'
+        '422':
+          description: '`validation_failed`, `out_of_region`, `unknown_crop`, `invalid_priorities`, `invalid_rotation`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: '`internal_error`, `config_invalid`, `domain_invariant`: a backend bug'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: '`source_unavailable`, `source_bad_data`: an external data source failed'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: '`cache_miss`: data_mode=cached and this location was never fetched'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /recommendations:
     post:
       tags:
@@ -452,6 +682,283 @@ components:
       - soil
       - crops
       title: DataSources
+    DailyWeather:
+      properties:
+        date:
+          type: string
+          format: date
+          title: Date
+        temperature_c:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Temperature C
+          description: Daily mean air temperature at 2 m (POWER T2M), °C; null if missing
+        temperature_max_c:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Temperature Max C
+          description: Daily maximum air temperature at 2 m (POWER T2M_MAX), °C; null if missing or the source
+            has no extremes (mock)
+        temperature_min_c:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Temperature Min C
+          description: Daily minimum air temperature at 2 m (POWER T2M_MIN), °C; null if missing or the source
+            has no extremes (mock)
+        rainfall_mm:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Rainfall Mm
+          description: Daily precipitation (POWER PRECTOTCORR), mm/day; null if missing
+      additionalProperties: false
+      type: object
+      required:
+      - date
+      - temperature_c
+      - temperature_max_c
+      - temperature_min_c
+      - rainfall_mm
+      title: DailyWeather
+    DailyWeatherResponse:
+      properties:
+        location:
+          $ref: '#/components/schemas/Location'
+        start:
+          type: string
+          format: date
+          title: Start
+        end:
+          type: string
+          format: date
+          title: End
+        source:
+          type: string
+          title: Source
+          description: 'Data source: nasa_power, or mock in mock mode'
+        days:
+          items:
+            $ref: '#/components/schemas/DailyWeather'
+          type: array
+          title: Days
+          description: One per day from start to end, oldest first
+      additionalProperties: false
+      type: object
+      required:
+      - location
+      - start
+      - end
+      - source
+      - days
+      title: DailyWeatherResponse
+    ErosionDataSources:
+      properties:
+        terrain:
+          type: string
+          title: Terrain
+          description: 'Elevation source: opentopography (SRTM GL1), or mock'
+        weather:
+          type: string
+          title: Weather
+          description: 'Daily rainfall source: nasa_power, or mock'
+      additionalProperties: false
+      type: object
+      required:
+      - terrain
+      - weather
+      title: ErosionDataSources
+    ErosionRiskResponse:
+      properties:
+        location:
+          $ref: '#/components/schemas/Location'
+        start:
+          type: string
+          format: date
+          title: Start
+        end:
+          type: string
+          format: date
+          title: End
+        elevation_m:
+          type: integer
+          title: Elevation M
+          description: SRTM GL1 elevation, m above the EGM96 geoid
+        slope_pct:
+          type: number
+          minimum: 0.0
+          title: Slope Pct
+          description: Local slope over ~30 m, %
+        terrain_erosion_risk:
+          type: integer
+          maximum: 2.0
+          minimum: 0.0
+          title: Terrain Erosion Risk
+          description: 'Slope only: 0 below 5 %, 1 from 5 to 15 %, 2 above 15 %'
+        terrain_erosion_level:
+          type: string
+          enum:
+          - low
+          - medium
+          - high
+          title: Terrain Erosion Level
+          description: terrain_erosion_risk as a word
+        total_rainfall_mm:
+          type: number
+          minimum: 0.0
+          title: Total Rainfall Mm
+          description: Rainfall over the period, mm
+        avg_daily_rainfall_mm:
+          type: number
+          minimum: 0.0
+          title: Avg Daily Rainfall Mm
+          description: Mean over days with data, mm/day
+        heavy_rain_days:
+          type: integer
+          minimum: 0.0
+          title: Heavy Rain Days
+          description: Days with 30 mm or more
+        max_daily_rainfall_mm:
+          type: number
+          minimum: 0.0
+          title: Max Daily Rainfall Mm
+          description: Wettest day, mm. Reported only, not scored (grows with period length)
+        combined_erosion_risk:
+          type: integer
+          maximum: 2.0
+          minimum: 0.0
+          title: Combined Erosion Risk
+          description: 'Slope plus rain: high rain raises the terrain risk one step; never below terrain_erosion_risk'
+        combined_erosion_level:
+          type: string
+          enum:
+          - low
+          - medium
+          - high
+          title: Combined Erosion Level
+          description: combined_erosion_risk as a word
+        data_sources:
+          $ref: '#/components/schemas/ErosionDataSources'
+      additionalProperties: false
+      type: object
+      required:
+      - location
+      - start
+      - end
+      - elevation_m
+      - slope_pct
+      - terrain_erosion_risk
+      - terrain_erosion_level
+      - total_rainfall_mm
+      - avg_daily_rainfall_mm
+      - heavy_rain_days
+      - max_daily_rainfall_mm
+      - combined_erosion_risk
+      - combined_erosion_level
+      - data_sources
+      title: ErosionRiskResponse
+    SoilProfileLayer:
+      properties:
+        depth_cm:
+          type: integer
+          minimum: 0.0
+          title: Depth Cm
+          description: Depth below the surface, cm
+        ph:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Ph
+          description: pH in water (1:1 soil:water)
+        organic_carbon_g_kg:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Organic Carbon G Kg
+          description: Organic carbon, g/kg (stored in steps of 5 g/kg)
+        clay_pct:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Clay Pct
+          description: Clay, % of fine earth by weight
+        sand_pct:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Sand Pct
+          description: Sand, % of fine earth by weight
+        silt_pct:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Silt Pct
+          description: 100 - clay - sand, %; null if either is missing or they add up to over 100
+        bulk_density_kg_m3:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Bulk Density Kg M3
+          description: Bulk density of the fine earth, kg/m³
+        field_capacity_m3m3:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Field Capacity M3M3
+          description: Volumetric water content at 33 kPa (field capacity), m³/m³
+        texture_class:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Texture Class
+          description: USDA texture class, e.g. clay loam
+      additionalProperties: false
+      type: object
+      required:
+      - depth_cm
+      - ph
+      - organic_carbon_g_kg
+      - clay_pct
+      - sand_pct
+      - silt_pct
+      - bulk_density_kg_m3
+      - field_capacity_m3m3
+      - texture_class
+      title: SoilProfileLayer
+      description: Soil at one depth. null = no valid value for this pixel and depth, never guessed.
+    SoilProfileResponse:
+      properties:
+        location:
+          $ref: '#/components/schemas/Location'
+        source:
+          type: string
+          title: Source
+          description: OpenLandMap, or mock in mock mode
+        attribution:
+          type: string
+          title: Attribution
+          description: Credit line required by the CC-BY-SA 4.0 license
+        resolution_m:
+          type: integer
+          title: Resolution M
+          description: Nominal pixel size of the maps, m
+        layers:
+          items:
+            $ref: '#/components/schemas/SoilProfileLayer'
+          type: array
+          title: Layers
+          description: 0, 10 and 30 cm, shallowest first
+      additionalProperties: false
+      type: object
+      required:
+      - location
+      - source
+      - attribution
+      - resolution_m
+      - layers
+      title: SoilProfileResponse
     EnsoGroup:
       properties:
         years:

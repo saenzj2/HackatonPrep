@@ -9,8 +9,13 @@ They follow [`../api-contract.yaml`](../api-contract.yaml); `tests/test_examples
 | `recommendation_request_alajuela.json` | body sent to `POST /recommendations` |
 | `recommendation_alajuela.json` | `POST /recommendations` response: top 3 rotations + the farmer's current one (maize → maize) |
 | `crops.json` | `GET /crops` |
+| `weather_daily_san_jose.json` | `GET /weather/daily?lat=9.93&lon=-84.08&start=2026-01-01&end=2026-01-31` |
+| `erosion_san_jose.json` | `GET /erosion?lat=9.93&lon=-84.08&start=2026-01-01&end=2026-01-31` |
+| `soil_san_jose.json` | `GET /soil?lat=9.93&lon=-84.08` |
 
 **Demo field:** Alajuela, Costa Rica (lat 10.0, lon −84.2).
+**Daily weather, erosion and soil profile:** San José (lat 9.93, lon −84.08), January 2026, the
+point and period of the saved real responses for NASA POWER daily, SRTM (OpenTopography) and OpenLandMap.
 **Data behind it:** climate is real NASA POWER monthly normals (fixture `tests/fixtures/nasa_power/climatology_alajuela.json`).
 Soil is still mock, and crop ranges are approximate. The responses say so in `data_sources` and `data_gaps`.
 Every value is for that one point, not an area average: for a selected map area, send one explicitly

@@ -7,6 +7,7 @@ Class names are the OpenAPI component names, so renaming a class is a contract c
 from __future__ import annotations
 
 import calendar
+import datetime as dt
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
@@ -311,6 +312,140 @@ class PlantingWindowsResponse(Schema):
         description="One per requested crop id (duplicates ignored), in request order"
     )
     data_sources: DataSources
+
+
+# ---------------------------------------------------------------- daily weather, erosion, soil
+
+POWER_DAILY_FIRST_DAY = dt.date(1981, 1, 1)  # NASA POWER daily data starts here
+MAX_PERIOD_DAYS = 366  # one leap year; keeps live responses fast and payloads small
+# NASA POWER publishes daily data late (3 days on 2026-11-15; longer at times). A period inside the
+# delay would come back empty and fail as a 502, so `end` must be at least this many days ago.
+# Margin chosen in the PR #94 review (docs/decisions.md).
+POWER_DAILY_DELAY_DAYS = 30
+RiskLevel = Literal["low", "medium", "high"]
+
+
+class PointPeriodQuery(Schema):
+    """Query parameters of GET /weather/daily and GET /erosion: one point and a date range.
+
+    Never a response component: FastAPI turns it into the four query parameters. Unknown query
+    parameters are ignored, like on every other GET endpoint (a cache-busting `_=` or a shared
+    `lang` must not fail), unlike request bodies, which reject unknown fields.
+    """
+
+    model_config = ConfigDict(extra="ignore")
+
+    lat: float = Field(ge=-90, le=90, examples=[9.93])
+    lon: float = Field(ge=-180, le=180, examples=[-84.08])
+    start: dt.date = Field(description="First day, YYYY-MM-DD (inclusive)", examples=["2026-01-01"])
+    end: dt.date = Field(
+        description="Last day, YYYY-MM-DD (inclusive). At most 366 days from start, and at least "
+        "30 days before today: NASA POWER publishes daily data late",
+        examples=["2026-01-31"],
+    )
+
+    @model_validator(mode="after")
+    def _check_period(self) -> PointPeriodQuery:
+        # ValueError here becomes the standard 422 validation_failed (docs/errors.md, rule 1).
+        if self.start > self.end:
+            raise ValueError("start must be on or before end")
+        if (self.end - self.start).days + 1 > MAX_PERIOD_DAYS:
+            raise ValueError(f"the period can be at most {MAX_PERIOD_DAYS} days")
+        if self.start < POWER_DAILY_FIRST_DAY:
+            raise ValueError(f"start must be on or after {POWER_DAILY_FIRST_DAY.isoformat()}")
+        latest_end = datetime.now(dt.UTC).date() - dt.timedelta(days=POWER_DAILY_DELAY_DAYS)
+        if self.end > latest_end:
+            raise ValueError(
+                f"end must be on or before {latest_end.isoformat()}: NASA POWER publishes "
+                f"daily data with a delay, so the last {POWER_DAILY_DELAY_DAYS} days are not "
+                "available yet"
+            )
+        return self
+
+
+class DailyWeather(Schema):
+    date: dt.date
+    temperature_c: float | None = Field(
+        description="Daily mean air temperature at 2 m (POWER T2M), °C; null if missing"
+    )
+    temperature_max_c: float | None = Field(
+        description="Daily maximum air temperature at 2 m (POWER T2M_MAX), °C; null if missing "
+        "or the source has no extremes (mock)"
+    )
+    temperature_min_c: float | None = Field(
+        description="Daily minimum air temperature at 2 m (POWER T2M_MIN), °C; null if missing "
+        "or the source has no extremes (mock)"
+    )
+    rainfall_mm: float | None = Field(
+        description="Daily precipitation (POWER PRECTOTCORR), mm/day; null if missing"
+    )
+
+
+class DailyWeatherResponse(Schema):
+    location: Location
+    start: dt.date
+    end: dt.date
+    source: str = Field(description="Data source: nasa_power, or mock in mock mode")
+    days: list[DailyWeather] = Field(description="One per day from start to end, oldest first")
+
+
+class ErosionDataSources(Schema):
+    terrain: str = Field(description="Elevation source: opentopography (SRTM GL1), or mock")
+    weather: str = Field(description="Daily rainfall source: nasa_power, or mock")
+
+
+class ErosionRiskResponse(Schema):
+    location: Location
+    start: dt.date
+    end: dt.date
+    elevation_m: int = Field(description="SRTM GL1 elevation, m above the EGM96 geoid")
+    slope_pct: float = Field(ge=0, description="Local slope over ~30 m, %")
+    terrain_erosion_risk: int = Field(
+        ge=0, le=2, description="Slope only: 0 below 5 %, 1 from 5 to 15 %, 2 above 15 %"
+    )
+    terrain_erosion_level: RiskLevel = Field(description="terrain_erosion_risk as a word")
+    total_rainfall_mm: float = Field(ge=0, description="Rainfall over the period, mm")
+    avg_daily_rainfall_mm: float = Field(ge=0, description="Mean over days with data, mm/day")
+    heavy_rain_days: int = Field(ge=0, description="Days with 30 mm or more")
+    max_daily_rainfall_mm: float = Field(
+        ge=0, description="Wettest day, mm. Reported only, not scored (grows with period length)"
+    )
+    combined_erosion_risk: int = Field(
+        ge=0,
+        le=2,
+        description="Slope plus rain: high rain raises the terrain risk one step; never below "
+        "terrain_erosion_risk",
+    )
+    combined_erosion_level: RiskLevel = Field(description="combined_erosion_risk as a word")
+    data_sources: ErosionDataSources
+
+
+class SoilProfileLayer(Schema):
+    """Soil at one depth. null = no valid value for this pixel and depth, never guessed."""
+
+    depth_cm: int = Field(ge=0, description="Depth below the surface, cm")
+    ph: float | None = Field(description="pH in water (1:1 soil:water)")
+    organic_carbon_g_kg: float | None = Field(
+        description="Organic carbon, g/kg (stored in steps of 5 g/kg)"
+    )
+    clay_pct: float | None = Field(description="Clay, % of fine earth by weight")
+    sand_pct: float | None = Field(description="Sand, % of fine earth by weight")
+    silt_pct: float | None = Field(
+        description="100 - clay - sand, %; null if either is missing or they add up to over 100"
+    )
+    bulk_density_kg_m3: float | None = Field(description="Bulk density of the fine earth, kg/m³")
+    field_capacity_m3m3: float | None = Field(
+        description="Volumetric water content at 33 kPa (field capacity), m³/m³"
+    )
+    texture_class: str | None = Field(description="USDA texture class, e.g. clay loam")
+
+
+class SoilProfileResponse(Schema):
+    location: Location
+    source: str = Field(description="OpenLandMap, or mock in mock mode")
+    attribution: str = Field(description="Credit line required by the CC-BY-SA 4.0 license")
+    resolution_m: int = Field(description="Nominal pixel size of the maps, m")
+    layers: list[SoilProfileLayer] = Field(description="0, 10 and 30 cm, shallowest first")
 
 
 class ErrorBody(Schema):

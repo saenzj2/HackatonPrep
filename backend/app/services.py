@@ -11,7 +11,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from functools import lru_cache
-from typing import Literal, TypedDict, overload
+from typing import Any, Literal, TypedDict, overload
 
 import pandas as pd
 
@@ -28,6 +28,7 @@ from app.domain.enso import (
 )
 from app.domain.erosion import (
     DEFAULT_RAINFALL_THRESHOLDS,
+    ErosionRisk,
     RainfallThresholds,
     assess_erosion,
 )
@@ -483,7 +484,7 @@ def recommend(ctx: AppContext, req: s.RecommendationRequest) -> s.Recommendation
 
 
 class ErosionRiskResult(TypedDict):
-    """erosion_risk() output. Becomes a schema in app/api/schemas.py once an endpoint exists."""
+    """erosion_risk() output. GET /erosion returns it as ErosionRiskResponse (+ level words)."""
 
     elevation_m: int  # SRTM GL1, m above the EGM96 geoid
     slope_pct: float
@@ -524,8 +525,8 @@ def erosion_risk(
        Medium rain never changes the result, on purpose (decisions.md).
 
     Returns the 8 fields of the erosion output, rounded for display. All thresholds are
-    placeholders (docs/decisions.md). Not exposed over HTTP yet: that needs an api-contract.yaml
-    change. API cost: 5 OpenTopography calls (free key: 50/day) the first time a location is seen,
+    placeholders (docs/decisions.md). Served over HTTP by GET /erosion (erosion_response).
+    API cost: 5 OpenTopography calls (free key: 50/day) the first time a location is seen,
     in any mode afterwards 0 (SRTM never changes, so cached points are reused even in live mode);
     1 POWER call per request in live mode (no key or quota).
     """
@@ -771,7 +772,7 @@ class SoilLayerResult(TypedDict):
 
 
 class SoilDataResult(TypedDict):
-    """get_soil_data() output. Becomes a schema in app/api/schemas.py once an endpoint exists."""
+    """get_soil_data() output. GET /soil returns it as SoilProfileResponse (depths as a list)."""
 
     latitude: float  # as requested; the values are those of the 250 m pixel containing it
     longitude: float
@@ -836,8 +837,8 @@ def get_soil_data(
       - A masked pixel (sea, lake, ice, no prediction) gives None for that property, never a guess.
 
     `soil_source` defaults to the configured one (data_mode: mock, cached or live). Pass one to
-    reuse an app's sources or a fake in tests. Not exposed over HTTP yet: that needs an
-    api-contract.yaml change. Raises OutOfRegionError for impossible coordinates.
+    reuse an app's sources or a fake in tests. Served over HTTP by GET /soil
+    (soil_profile_response). Raises OutOfRegionError for impossible coordinates.
     """
     check_coordinates(latitude, longitude)
     source = soil_source or _default_soil_source()
@@ -1136,5 +1137,96 @@ def plan_risk(ctx: AppContext, req: s.PlanRiskRequest) -> s.PlanRiskResponse:
                 ],
                 _enso_gaps(roni, oni, [plan for _, plan in results]),
             )
+        ],
+    )
+
+
+# ---------------------------------------------------------------- HTTP: weather, erosion, soil
+# Thin adapters from the functions above to the API schemas. The logic stays in those functions.
+
+RISK_LEVELS: dict[int, s.RiskLevel] = {
+    ErosionRisk.LOW: "low",
+    ErosionRisk.MEDIUM: "medium",
+    ErosionRisk.HIGH: "high",
+}
+
+
+def _value_or_none(x: Any, ndigits: int) -> float | None:
+    # pandas marks a missing day as NaN; the API says null.
+    return None if pd.isna(x) else round(float(x), ndigits)
+
+
+def daily_weather_response(ctx: AppContext, q: s.PointPeriodQuery) -> s.DailyWeatherResponse:
+    """GET /weather/daily: the daily series from `Sources.daily` (NASA POWER, or mock)."""
+    ctx.check_location(q.lat, q.lon)
+    source = ctx.sources.daily
+    df = source.daily_weather(lat=q.lat, lon=q.lon, start=q.start, end=q.end)
+    missing = [None] * len(df)  # the mock source has no daily max / min columns
+
+    def column(name: str) -> list[Any]:
+        return df[name].tolist() if name in df.columns else missing
+
+    rows = zip(
+        df["date"],
+        column("temperature_c"),
+        column("temperature_max_c"),
+        column("temperature_min_c"),
+        column("rainfall_mm"),
+        strict=True,
+    )
+    return s.DailyWeatherResponse(
+        location=s.Location(lat=q.lat, lon=q.lon),
+        start=q.start,
+        end=q.end,
+        source=source.name,
+        days=[
+            s.DailyWeather(
+                date=day.date(),
+                temperature_c=_value_or_none(t, 2),
+                temperature_max_c=_value_or_none(t_max, 2),
+                temperature_min_c=_value_or_none(t_min, 2),
+                rainfall_mm=_value_or_none(rain, 2),
+            )
+            for day, t, t_max, t_min, rain in rows
+        ],
+    )
+
+
+def erosion_response(ctx: AppContext, q: s.PointPeriodQuery) -> s.ErosionRiskResponse:
+    """GET /erosion: erosion_risk() with the configured terrain and daily-weather sources."""
+    ctx.check_location(q.lat, q.lon)
+    r = erosion_risk(
+        terrain_source=ctx.sources.terrain,
+        weather_source=ctx.sources.daily,
+        lat=q.lat,
+        lon=q.lon,
+        start=q.start,
+        end=q.end,
+    )
+    return s.ErosionRiskResponse(
+        location=s.Location(lat=q.lat, lon=q.lon),
+        start=q.start,
+        end=q.end,
+        **r,
+        terrain_erosion_level=RISK_LEVELS[r["terrain_erosion_risk"]],
+        combined_erosion_level=RISK_LEVELS[r["combined_erosion_risk"]],
+        data_sources=s.ErosionDataSources(
+            terrain=ctx.sources.terrain.name, weather=ctx.sources.daily.name
+        ),
+    )
+
+
+def soil_profile_response(ctx: AppContext, lat: float, lon: float) -> s.SoilProfileResponse:
+    """GET /soil: get_soil_data() with the configured soil-profile source, depths as a list."""
+    ctx.check_location(lat, lon)
+    data = get_soil_data(latitude=lat, longitude=lon, soil_source=ctx.sources.soil_profile)
+    return s.SoilProfileResponse(
+        location=s.Location(lat=lat, lon=lon),
+        source=data["source"],
+        attribution=data["attribution"],
+        resolution_m=data["resolution_m"],
+        layers=[
+            s.SoilProfileLayer(depth_cm=depth, **data["soil"][f"{depth}cm"])
+            for depth in data["depths_cm"]
         ],
     )

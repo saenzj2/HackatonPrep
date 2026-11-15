@@ -63,6 +63,39 @@ def get_planting_windows(
     return services.planting_windows(ctx, lat, lon, crops)
 
 
+@router.get(
+    "/weather/daily",
+    response_model=s.DailyWeatherResponse,
+    responses=DATA_ERRORS,
+    tags=["weather"],
+)
+def get_daily_weather(
+    ctx: Ctx, q: Annotated[s.PointPeriodQuery, Query()]
+) -> s.DailyWeatherResponse:
+    """NASA POWER daily weather at a point: mean, max and min temperature (°C) and rainfall
+    (mm/day), one row per day from start to end (inclusive, at most 366 days)."""
+    return services.daily_weather_response(ctx, q)
+
+
+@router.get(
+    "/erosion", response_model=s.ErosionRiskResponse, responses=DATA_ERRORS, tags=["erosion"]
+)
+def get_erosion(ctx: Ctx, q: Annotated[s.PointPeriodQuery, Query()]) -> s.ErosionRiskResponse:
+    """Erosion risk at a point (0 low, 1 medium, 2 high): terrain risk from the SRTM slope, and
+    combined risk with NASA POWER daily rain over start..end (inclusive, at most 366 days)."""
+    return services.erosion_response(ctx, q)
+
+
+@router.get("/soil", response_model=s.SoilProfileResponse, responses=DATA_ERRORS, tags=["soil"])
+def get_soil(
+    ctx: Ctx,
+    lat: Annotated[float, Query(ge=-90, le=90, examples=[9.93])],
+    lon: Annotated[float, Query(ge=-180, le=180, examples=[-84.08])],
+) -> s.SoilProfileResponse:
+    """OpenLandMap soil properties (Google Earth Engine, 250 m) at 0, 10 and 30 cm depth."""
+    return services.soil_profile_response(ctx, lat, lon)
+
+
 @router.post(
     "/recommendations",
     response_model=s.RecommendationResponse,

@@ -1,0 +1,44 @@
+{
+  "location": {
+    "lat": 9.93,
+    "lon": -84.08
+  },
+  "source": "OpenLandMap",
+  "attribution": "OpenLandMap soil property maps v02 (field capacity v01), Hengl et al. 2018-2019, CC-BY-SA 4.0 (doi:10.5281/zenodo.1475457), via Google Earth Engine",
+  "resolution_m": 250,
+  "layers": [
+    {
+      "depth_cm": 0,
+      "ph": 6.6,
+      "organic_carbon_g_kg": 10.0,
+      "clay_pct": 38.0,
+      "sand_pct": 34.0,
+      "silt_pct": 28.0,
+      "bulk_density_kg_m3": 1270.0,
+      "field_capacity_m3m3": 0.34,
+      "texture_class": "clay loam"
+    },
+    {
+      "depth_cm": 10,
+      "ph": 6.6,
+      "organic_carbon_g_kg": 15.0,
+      "clay_pct": 39.0,
+      "sand_pct": 34.0,
+      "silt_pct": 27.0,
+      "bulk_density_kg_m3": 1280.0,
+      "field_capacity_m3m3": 0.34,
+      "texture_class": "clay loam"
+    },
+    {
+      "depth_cm": 30,
+      "ph": 6.7,
+      "organic_carbon_g_kg": 15.0,
+      "clay_pct": 38.0,
+      "sand_pct": 34.0,
+      "silt_pct": 28.0,
+      "bulk_density_kg_m3": 1330.0,
+      "field_capacity_m3m3": 0.34,
+      "texture_class": "clay loam"
+    }
+  ]
+}

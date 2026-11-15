@@ -34,9 +34,9 @@ class Sources:
     climate: ClimateSource
     soil: SoilSource
     crops: CropSource
-    daily: DailyWeatherSource  # erosion risk (services.erosion_risk); no endpoint yet
+    daily: DailyWeatherSource  # GET /weather/daily, GET /erosion (rain)
     terrain: TerrainSource
-    soil_profile: SoilProfileSource  # services.get_soil_data; no endpoint yet
+    soil_profile: SoilProfileSource  # GET /soil (services.get_soil_data)
     history: DailyHistorySource  # POST /plan-risk: ~25 years of daily IMERG rain + MERRA-2
     enso: EnsoIndexSource  # POST /plan-risk: NOAA CPC RONI (official) and ONI (legacy)
 

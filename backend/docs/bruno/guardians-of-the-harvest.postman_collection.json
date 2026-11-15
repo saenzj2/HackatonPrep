@@ -155,6 +155,119 @@
       ]
     },
     {
+      "name": "Weather",
+      "item": [
+        {
+          "name": "Daily weather - San José, Jan 2026",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/weather/daily?lat=9.93&lon=-84.08&start=2026-01-01&end=2026-01-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "weather",
+                "daily"
+              ],
+              "query": [
+                {
+                  "key": "lat",
+                  "value": "9.93"
+                },
+                {
+                  "key": "lon",
+                  "value": "-84.08"
+                },
+                {
+                  "key": "start",
+                  "value": "2026-01-01"
+                },
+                {
+                  "key": "end",
+                  "value": "2026-01-31"
+                }
+              ]
+            },
+            "description": "NASA POWER daily mean/max/min temperature and rainfall. Example: docs/examples/weather_daily_san_jose.json"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Erosion",
+      "item": [
+        {
+          "name": "Erosion - San José, Jan 2026",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/erosion?lat=9.93&lon=-84.08&start=2026-01-01&end=2026-01-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "erosion"
+              ],
+              "query": [
+                {
+                  "key": "lat",
+                  "value": "9.93"
+                },
+                {
+                  "key": "lon",
+                  "value": "-84.08"
+                },
+                {
+                  "key": "start",
+                  "value": "2026-01-01"
+                },
+                {
+                  "key": "end",
+                  "value": "2026-01-31"
+                }
+              ]
+            },
+            "description": "Terrain (SRTM slope) and combined (slope + rain) erosion risk. Example: docs/examples/erosion_san_jose.json"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Soil",
+      "item": [
+        {
+          "name": "Soil profile - San José",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/soil?lat=9.93&lon=-84.08",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "soil"
+              ],
+              "query": [
+                {
+                  "key": "lat",
+                  "value": "9.93"
+                },
+                {
+                  "key": "lon",
+                  "value": "-84.08"
+                }
+              ]
+            },
+            "description": "OpenLandMap soil at 0, 10, 30 cm. Example: docs/examples/soil_san_jose.json"
+          }
+        }
+      ]
+    },
+    {
       "name": "Recommendations",
       "item": [
         {
@@ -440,6 +553,41 @@
               ]
             },
             "description": "Point outside the MVP bbox."
+          }
+        },
+        {
+          "name": "422 validation_failed - erosion period longer than 366 days",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/erosion?lat=9.93&lon=-84.08&start=2024-01-01&end=2025-01-01",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "erosion"
+              ],
+              "query": [
+                {
+                  "key": "lat",
+                  "value": "9.93"
+                },
+                {
+                  "key": "lon",
+                  "value": "-84.08"
+                },
+                {
+                  "key": "start",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "end",
+                  "value": "2025-01-01"
+                }
+              ]
+            },
+            "description": "start/end must be at most 366 days apart (inclusive)."
           }
         }
       ]
