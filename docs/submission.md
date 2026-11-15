@@ -1,4 +1,7 @@
-# Space Apps 2026 submission: Guardians of the Harvest
+# Space Apps 2026 submission: Terra Cosmos (team Guardians of the Harvest)
+
+**Names:** the product is **Terra Cosmos**, like the site (https://terracosmos.space). **Guardians
+of the Harvest** is the team name. Use "Terra Cosmos" in Project Name, Summary and Details.
 
 Draft answers for the project form (Space Apps → Team → **Project** tab). Copy and paste them,
 then adjust. **Deadline: Sunday, November 15, 2026, 11:59 PM local time of our Local Event.**
@@ -8,7 +11,7 @@ Only the last click on **Submit for Judging** counts, and nothing can be edited 
 
 | # | Field | Required | Status | Owner |
 |---|---|---|---|---|
-| 1 | Project Name | yes | ✅ "Guardians of the Harvest" | — |
+| 1 | Project Name | yes | ✅ "Terra Cosmos" (the team is Guardians of the Harvest) | — |
 | 2 | Summary (≤ 1,500 characters) | yes | ✏️ Draft below | Andres |
 | 3 | Project Demonstration (public link) | yes | ❌ **Missing:** a video **≤ 30 s** *or* slides **≤ 7** (title included) | a teammate (name TBD) |
 | 4 | Project (public link) | yes | ✅ https://terracosmos.space (the repo is public too, see below) | — |
@@ -42,9 +45,9 @@ Tips from the form: use **Lock** while editing so two people don't overwrite eac
 
 ---
 
-## 2. Summary (paste as is: 161 words, 1,136 characters)
+## 2. Summary (paste as is: under the 1,500-character limit)
 
-> Guardians of the Harvest helps smallholder farmers compare crop rotation options using NASA Earth
+> Terra Cosmos helps smallholder farmers compare crop rotation options using NASA Earth
 > observation data. A farmer picks a field location, the crops they can grow, their current rotation
 > and what matters most to them (water, soil or climate). The tool then ranks two-season rotations
 > (Costa Rica's "primera" and "postrera" rainy seasons) for that field.
@@ -76,7 +79,7 @@ https://terracosmos.space
 
 ## 5. Project Details (paste and adjust)
 
-> **What it does.** Guardians of the Harvest is a decision-support web app and API that compares
+> **What it does.** Terra Cosmos is a decision-support web app and API that compares
 > crop rotation strategies for a specific field. Input: a location, candidate crops, the farmer's
 > current rotation and priorities (water, soil, climate). Output: a ranked list of rotations with a
 > 0–1 suitability score, a breakdown by category, and plain-language benefits, risks, data gaps and

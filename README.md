@@ -1,8 +1,10 @@
-# Guardians of the Harvest 🌱🛰️
+# Terra Cosmos 🌱🛰️
+
+By team **Guardians of the Harvest**. Live at https://terracosmos.space.
 
 **NASA Space Apps Challenge 2026 — "Field Shift: Adapting Farms with NASA Data"**
 
-> Guardians of the Harvest helps farmers compare crop rotation options by combining NASA Earth
+> Terra Cosmos helps farmers compare crop rotation options by combining NASA Earth
 > observation data with soil and crop information to identify more resilient agricultural strategies.
 
 This repo holds the **backend** (Python + FastAPI). The frontend's location (a `frontend/` folder here
