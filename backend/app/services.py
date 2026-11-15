@@ -400,8 +400,9 @@ def erosion_risk(
 class MonthlyIndicatorsResult(TypedDict):
     """One row of field_indicators(). Becomes an api/schemas.py schema once an endpoint exists.
 
-    `None` = no data for that variable in the month. heat_stress_days and frost_days are `None`
-    unless the source gives true daily max / min temperatures (NASA POWER daily T2M is a mean).
+    `None` = no data for that variable in the month. heat_stress_days and frost_days come from true
+    daily max / min (NASA POWER daily T2M_MAX / T2M_MIN); they are `None` when the source has no
+    extrema (e.g. the mock source) or none for any day of the month.
     """
 
     year: int
@@ -415,7 +416,7 @@ class MonthlyIndicatorsResult(TypedDict):
     dry_days: int | None  # rainfall < 1 mm
     longest_dry_spell_days: int | None  # consecutive dry days, cut at month edges
     extreme_rain_days: int | None  # rainfall >= 30 mm
-    heat_stress_days: int | None  # daily max >= 35 °C
+    heat_stress_days: int | None  # daily max >= 35 °C (provisional generic threshold)
     frost_days: int | None  # daily min <= 0 °C
 
 
