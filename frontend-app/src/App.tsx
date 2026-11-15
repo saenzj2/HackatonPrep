@@ -2,11 +2,13 @@ import { useEffect, useState, type ReactNode } from "react";
 import { HashRouter, Link, NavLink, Route, Routes, useLocation } from "react-router";
 import { BackgroundVideo } from "./components/BackgroundVideo";
 import { LanguageProvider, useI18n, type Lang } from "./i18n";
+import { About } from "./pages/About";
 import { Field } from "./pages/Field";
 import { Home } from "./pages/Home";
 import { Learn } from "./pages/Learn";
 import { Plan } from "./pages/Plan";
 import { Results } from "./pages/Results";
+import { Terms } from "./pages/Terms";
 import { PlanProvider } from "./state/PlanContext";
 
 const NAV = [
@@ -48,6 +50,8 @@ function Shell() {
             <Route path="/plan" element={<Plan />} />
             <Route path="/results" element={<Results />} />
             <Route path="/learn" element={<Learn />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/terms" element={<Terms />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </RouteFade>
@@ -63,6 +67,11 @@ function Shell() {
           <Link to="/learn" state={{ section: "ai-use" }}>
             {tr("How we used AI", "Cómo usamos IA")}
           </Link>
+        </p>
+        <p className="site-footer__line">
+          <Link to="/about">{tr("About", "Acerca de")}</Link> ·{" "}
+          <Link to="/terms">{tr("Terms and Conditions", "Términos y condiciones")}</Link> · Guardians of the Harvest ·
+          NASA Space Apps 2026
         </p>
       </footer>
     </>
