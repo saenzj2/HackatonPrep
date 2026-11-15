@@ -22,8 +22,8 @@
       "soil_ph": {
         "abs_min": 4.5,
         "opt_min": 5.5,
-        "opt_max": 7.5,
-        "abs_max": 8.0
+        "opt_max": 7.0,
+        "abs_max": 9.0
       },
       "root_depth_m": 1.0,
       "is_cover_crop": false,
@@ -45,11 +45,11 @@
       },
       "market_note": "Staple grain with steady local demand",
       "sources": [
-        "FAO EcoCrop (tolerance ranges, approximate)",
+        "FAO EcoCrop ecoportcode 1574 via Adaptation Atlas parquet (tolerance ranges, 2026-11-14)",
         "FAO-56 Table 22 (root depth)",
         "team estimate (cover crop, forage, nutrition, mycorrhizal, nitrogen demand)"
       ],
-      "verified": false
+      "verified": true
     },
     {
       "id": "beans",
@@ -71,10 +71,10 @@
         "abs_max": 4300.0
       },
       "soil_ph": {
-        "abs_min": 4.2,
+        "abs_min": 4.0,
         "opt_min": 5.5,
-        "opt_max": 6.8,
-        "abs_max": 8.2
+        "opt_max": 7.5,
+        "abs_max": 9.0
       },
       "root_depth_m": 0.9,
       "is_cover_crop": false,
@@ -96,11 +96,11 @@
       },
       "market_note": "Staple food legume with strong local demand",
       "sources": [
-        "FAO EcoCrop (tolerance ranges, approximate)",
+        "FAO EcoCrop ecoportcode 1668 via Adaptation Atlas parquet (tolerance ranges, 2026-11-14)",
         "FAO-56 Table 22 (root depth)",
         "team estimate (cover crop, forage, nutrition, mycorrhizal, nitrogen demand)"
       ],
-      "verified": false
+      "verified": true
     },
     {
       "id": "maize",
@@ -147,11 +147,11 @@
       },
       "market_note": "Staple grain and its stover is valued as cattle feed",
       "sources": [
-        "FAO EcoCrop (tolerance ranges, approximate)",
+        "FAO EcoCrop ecoportcode 238663 via Adaptation Atlas parquet (tolerance ranges, 2026-11-14)",
         "FAO-56 Table 22 (root depth)",
         "team estimate (cover crop, forage, nutrition, mycorrhizal, nitrogen demand)"
       ],
-      "verified": false
+      "verified": true
     }
   ]
 }

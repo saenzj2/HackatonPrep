@@ -1,6 +1,6 @@
 # Crop schema (T3.1, #23)
 
-> **Status: IMPLEMENTED for the 5 current crops, values not yet verified.** The CSV, loader,
+> **Status: IMPLEMENTED for the 5 current crops, tolerance ranges from FAO EcoCrop.** The CSV, loader,
 > `CropProfile`, `/crops` and the `Crop` schema in `api-contract.yaml` carry every field below.
 > Design questions: answered (see the end). Trait values: team estimates until #24 cites them.
 
@@ -20,7 +20,7 @@ explanations need lives here, so nothing about a crop is hardcoded in Python.
 | Temperature range | `temp_{abs_min,opt_min,opt_max,abs_max}` | °C | suitability scoring |
 | Water need | `rain_{abs_min,opt_min,opt_max,abs_max}` | mm **over the crop cycle** | suitability scoring; `water_need` badge derived from `rain_opt_min` (no extra column) |
 | — | `ph_{abs_min,opt_min,opt_max,abs_max}` | pH | suitability scoring, soil-test adjustment #32 |
-| — | `verified` | bool; `true` only once every value was checked against `sources` | `data_gaps` in responses |
+| — | `verified` | bool; `true` once the tolerance ranges come from a cited source (EcoCrop import). Traits are labelled separately in `sources` | `data_gaps` in responses |
 
 **New columns.**
 
@@ -66,7 +66,8 @@ Any violation stops startup with a `ConfigError` that names the file and line.
 - `sources`: at least one citation, separated by `;`. Quote the cell if a citation contains a comma.
 
 ## Current data (5 crops)
-See `data/ecocrop_subset.csv`. Every row is `verified=false`:
+See `data/ecocrop_subset.csv`. Every row is `verified=true`: the **temperature, rainfall and pH
+ranges come from FAO EcoCrop** (`scripts/import_ecocrop.py`, see `docs/sources/ecocrop.md`). Also:
 - **Root depth** comes from FAO-56 (Allen et al. 1998), Table 22, upper value of the range:
   rice 1.0, beans 0.9, maize 1.7, sorghum 2.0, cowpea 1.0 m.
 - **Cover crop, forage, nutrition, mycorrhizal and nitrogen demand** are a **team estimate**, and each

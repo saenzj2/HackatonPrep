@@ -69,7 +69,7 @@ class CropProfile:
     nitrogen_demand: float  # 1 = heavy feeder
     market_note: str  # one line of local market context, may be empty
     sources: tuple[str, ...]  # citations for this crop's values
-    verified: bool = False  # True once every value was checked against `sources`
+    verified: bool = False  # True once the tolerance ranges come from a cited source (EcoCrop)
 
     def __post_init__(self) -> None:
         if not 0 < self.root_depth_m <= MAX_ROOT_DEPTH_M:

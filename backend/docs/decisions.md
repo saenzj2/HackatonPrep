@@ -15,6 +15,25 @@ Template:
 
 ---
 
+## 2026-11-15 — Crop tolerance ranges imported from FAO EcoCrop (Adaptation Atlas copy)
+- **Decision:** `scripts/import_ecocrop.py` copies the temperature, rainfall and pH ranges of our 5
+  crops from the EcoCrop Parquet published by the Adaptation Atlas (CGIAR), picking each row by
+  `ecoportcode` (rice 1574, beans 1668, maize 238663, sorghum 48747, cowpea 2153). It cites the code
+  in `sources` and sets `verified=true`. The app still reads the CSV: no network at runtime.
+- **What changed:** maize identical; rice and beans pH only; sorghum rainfall max 3000 → 700 mm and
+  optimal temperature 27 → 22 °C; cowpea temperature, rainfall and pH. Rotation example scores
+  unchanged; the "tolerance ranges are approximate" data gaps are gone.
+- **`verified` now means** "tolerance ranges come from a cited source", which is what the API's data
+  gap already said. Traits (nitrogen demand, mycorrhizal, …) stay labelled "team estimate".
+- **Rainfall:** FAO defines these ranges as annual; the app keeps comparing them with rainfall over
+  the crop cycle (decided 2026-11-06, confirmed in the planting-windows review). See
+  `docs/sources/ecocrop.md`.
+- **License:** the Adaptation Atlas catalog record lists CC-BY-SA-4.0; not confirmed for this file.
+- **Not imported:** cycle min/max (too wide), killing temperature (mostly empty), soil and use fields.
+- **Tooling:** `pyarrow` is an optional `data` extra, only for the script; app and tests don't need it.
+- **Revisit if:** the license turns out different; crops are added (#24); a driest-month rainfall
+  check is adopted.
+
 ## 2026-11-14 — Restore daily extrema (#85) and the recommendations contract test (#84)
 - **Decision:** Re-apply the code, fixture, tests and docs of PRs #85 and #84 that the merge
   `9dc6b76` (main into `feat/planting-windows`, shipped with #86) dropped. Main still had the #85
