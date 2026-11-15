@@ -15,6 +15,131 @@ Template:
 
 ---
 
+## 2026-11-15 — Cowpea and jack bean (frijol abono) complete the 8 MVP crops
+- **Decision (engine owner):** `mvp.yaml` crops `[rice, beans, maize, squash, potato, onion, cowpea,
+  jack_bean]` (the limit is 8). Jack bean (*Canavalia ensiformis*, EcoCrop 609) is new in the
+  catalog as a green manure / cover crop: ranges from EcoCrop (it tolerates poorly drained soil, so
+  `needs_good_drainage` is false); cycle 90 days to cutting, root depth 1.0 m and traits are team
+  estimates (no FAO-56 entry), marked unverified.
+- **Why:** both are legumes; jack bean carries the soil-health story (green manure) the challenge
+  asks for. Candidates were scored on the 13 demo points first: almost every annual crop scores
+  0.8–1.0 almost everywhere (EcoCrop's wide ranges + the weighted mean), so the choice was made on
+  the story, not on the scores. Tomato, sweet pepper, cabbage and carrot were left out (mostly
+  irrigated or under cover; pests decide more than climate); sorghum fails everywhere wet (its
+  annual rain ceiling applied per cycle).
+- **Result (cached):** the top rotation now differs by region (maize → cowpea in the north,
+  beans → maize in Guanacaste and the Caribbean, maize → jack bean in the centre and south).
+  Jack bean wins the postrera at 5 of 13 points: the app then recommends a season of green manure,
+  with no harvest to sell. Ties at 1.00 are still common.
+
+## 2026-11-15 — Potato and onion added to the MVP crops anyway (engine owner)
+- **Decision (engine owner, after the warning below):** `mvp.yaml` crops are now
+  `[rice, beans, maize, squash, potato, onion]`, so both show in `GET /crops` and the app.
+- **Known effect:** potato enters the top 3 rotations at Los Chiles, Sarapiquí, Pérez Zeledón and
+  Buenos Aires (hot lowlands) until a cited tropical range replaces EcoCrop's
+  (`docs/follow-ups/permanent-crops-ranges.md`).
+
+## 2026-11-15 — New annual crops: squash (ayote) in the MVP list; potato and onion in the catalog only
+- **Decision (engine owner):** three rows added to `data/ecocrop_subset.csv`, ranges imported from
+  EcoCrop (1971 potato, 364 onion, 820 *Cucurbita moschata*); root depth from FAO-56 Table 22
+  (upper value: potato 0.6, onion 0.6, pumpkin / winter squash 1.5 m); cycle days (120, 120, 100),
+  traits and market notes are team estimates, marked unverified in `sources`. New family
+  `Amaryllidaceae` (onion) in `text.FAMILIES`. `mvp.yaml` crops: `[rice, beans, maize, squash]`.
+- **Why squash only in the default list:** with EcoCrop's potato range (optimum 15–25 °C, absolute
+  max 30 °C) and the rotation score being a priority-weighted mean, potato in primera scores
+  **0.98 at Los Chiles** (season mean ~26 °C) and **0.83 at Cartago**, its real growing area; it
+  entered the top 3 rotations at Los Chiles, Sarapiquí, Pérez Zeledón and Buenos Aires. Onion is
+  similar (0.86 Los Chiles, 0.95 Matina at ~2,800 mm). A demo default that recommends potato in the
+  northern lowlands would hurt credibility. Both stay in the catalog: the API accepts their ids
+  (`crops` in `/recommendations`, `/planting-windows`, `/plan-risk`), but `GET /crops` lists only
+  the `mvp.yaml` crops, so the app's crop picker doesn't show them.
+- **To put them in the default list:** tighter cited ranges for tropical potato and onion (cool
+  temperatures, dry-season onion) and an `agro-logic` review; see
+  `docs/follow-ups/permanent-crops-ranges.md`. Plan-risk uses the default stage constants for all
+  three (no crop-specific flowering, harvest-rain or heat values yet).
+
+## 2026-11-15 — Heat and frost now use the mean daily max / min (NASA POWER monthly API)
+- **Problem (found by the `agro-logic` review of permanent crops):** the climatology's `T2M_MAX` /
+  `T2M_MIN` keep the month's hourly **extreme** (POWER data processing docs: "extreme-value
+  parameters such as T2M_MAX retain the instantaneous hourly extreme rather than averaging",
+  https://power.larc.nasa.gov/docs/methodology/data/processing/). The app read them as the mean
+  daily max / min (`docs/sources/nasa_power.md` said so), so `heat` and `frost` in rotations,
+  planting windows and permanent crops, and the values `GET /conditions` shows, were 2–7 °C too
+  extreme. The climatology's `T2M_MAX_AVG` doesn't help: it is the mean of each year's monthly peak.
+- **Decision (engine owner):** `NasaPowerClimate.monthly_climate` keeps the climatology call as it
+  was (mean temperature and rain; same cache key, so the committed entries stay valid) and adds a
+  **monthly API** call for `T2M_MAX_AVG` / `T2M_MIN_AVG` (the mean of the daily max / min per month
+  and year), 2001–2025 like the climatology, averaged per calendar month
+  (`parse_daily_extremes`). New cache namespace `nasa_power_monthly`, fetched live for the 13 demo
+  points (~16 KB each) and committed to the snapshot. New fixture
+  `tests/fixtures/nasa_power/monthly_extremes_alajuela.json`.
+
+  | Point, month | Before (climatology `T2M_MAX`) | Now (mean daily max) | Daily API check |
+  |---|---|---|---|
+  | Liberia, Apr | 39.2 °C | 35.8 °C | 35.8 °C |
+  | Los Chiles, Feb | 38.3 °C | 31.0 °C | 31.0 °C |
+
+- **Effect on results (cached, 13 points):** rotations barely move (Liberia's top flips to
+  beans → maize, scores ±0.01); heat stops limiting almost everywhere. Permanent crops lose their
+  heat penalties: arabica coffee goes from poor to good in the hot lowlands (Los Chiles 0.22 →
+  0.92, Upala 0.40 → 0.95, Liberia 0.14 → 0.70). Those low scores came from the bug, not from a
+  sound range: the `agro-logic` blocker on coffee's EcoCrop optimum (14–28 °C, too wide; ICAFE
+  17–23 °C, unverified) is now what separates lowland from highland coffee.
+- **Revisit:** `HEAT_MARGIN_C` and the frost range were set while reading extremes; ask
+  `agro-logic` to recheck them with the real means. The daily API and plan-risk were not
+  affected (daily `T2M_MAX` is the day's max).
+
+## 2026-11-15 — Permanent crops (cacao, coffee, pineapple, banana): `GET /permanent-crops`
+- **Decision (engine owner):** permanent crops get their own catalog, config list and endpoint,
+  and stay out of rotations, `/crops` and plan-risk (a permanent crop id there is `unknown_crop`).
+  - Data: `data/perennial_crops.csv`, filled by `scripts/import_ecocrop.py` from EcoCrop
+    ecoportcodes 2074 (cacao), 749 (Coffea arabica), 402 (pineapple), 7848 (Musa acuminata;
+    "Musa sp." 2483 has no cycle, 1503 is empty). It adds `max_altitude_m` (EcoCrop `altmx`).
+    Rerunning the import updated the fetch date in the annual crops' citation; values unchanged.
+  - Config: `permanent_crops: [cacao, coffee, pineapple, banana]` in `mvp.yaml` (0 to 8, checked
+    at startup). The annual `crops` list and its 2–8 limit are untouched.
+  - Method (`app/domain/perennials.py`): the whole year at the point (annual rain, mean
+    temperature, hottest month's mean daily max, coldest month's mean daily min) plus soil pH,
+    with the existing trapezoids. EcoCrop rainfall ranges are annual, so they fit directly here.
+    **Score = the most limiting variable (minimum)**, as in Recocrop's "law of the minimum", not
+    the priority-weighted mean: the mean gave arabica coffee 0.91 at Liberia with heat at 0.14.
+    So farmer priorities don't change this score. Words: good ≥ `GOOD_SCORE` (0.8), fair ≥ 0.5,
+    poor > 0, unsuitable = 0. Soil moisture is not scored. A dry season of
+    `LONG_DRY_SEASON_MONTHS` (4) or more months under `DRY_MONTH_MM` (60 mm) adds a neutral note.
+    All three are placeholders.
+- **Why:** these crops don't fit the model: a rotation is one crop per season, season scoring
+  multiplies the season's monthly rain by the cycle (×12 for a 365-day crop, ignoring the dry
+  season), and plan-risk replays one sowing date with fixed stage windows. Matina, Bribri and the
+  south now get an answer of their own instead of maize and beans everywhere.
+- **Results (cached, 13 points, before the heat fix below):** coffee was poor in the hot lowlands
+  (Liberia 0.14, Los Chiles 0.22, Upala 0.40) and pineapple poor at Liberia, both from heat that
+  was overstated (see "Heat and frost now use the mean daily max / min"). Two results look too generous and
+  need the `agro-logic` review: arabica scores 1.00 at Parrita (26 °C: EcoCrop's optimum
+  14–28 °C is very wide), and cacao scores 0.93 at Cartago (EcoCrop grows it up to 900 m, Cartago
+  is ~1,400 m, and altitude isn't checked; `data_gaps` says so).
+- **Not covered:** yields, years to the first harvest, shade systems, prices, altitude, drainage.
+- **Revisit if:** the API gets elevation for the point (then score altitude), or agro-logic sets
+  per-crop dry-season needs (coffee needs a dry spell to flower, from memory, unverified).
+
+## 2026-11-15 — Demo cache: 13 points across Costa Rica, one NASA POWER cell each
+- **Decision (engine owner):** the committed snapshot now covers 13 points: Los Chiles and Alajuela
+  plus Upala, Sarapiquí, Liberia, Nicoya, Parrita, Cartago, Matina, Bribri, Pérez Zeledón,
+  Buenos Aires and Ciudad Neily (one or more per region, all on land with soil data). Each was
+  fetched once in `live` mode through every endpoint the React app calls (`/soil`, `/conditions`,
+  `/planting-windows`, `/recommendations`, `/plan-risk`; `/permanent-crops` reuses the same data);
+  OpenTopography was not called. The points are also the demo buttons in
+  `frontend-app/src/demoFields.ts`. The existing Los Chiles and Alajuela files were kept as
+  committed (a refetch had slightly different recent values).
+- **Every point is in its own NASA POWER cell** (0.5° × 0.625°, ~55 × 70 km): 13 distinct
+  climates. A first pick had Cartago, Turrialba and Guápiles in one cell (one climate for all
+  three, 20 °C, right for Cartago but not for lowland Guápiles) and Orotina with Alajuela. They
+  were replaced by Matina (10.1, −83.3), Bribri (9.6, −82.7; 9.6, −82.8 has no OpenLandMap pH and
+  9.6, −82.9 falls in a Talamanca mountain cell at 21 °C) and Parrita (9.6, −84.3).
+- **Why:** with 2 points, any other click in production answered "No data", the first thing a
+  judge tries. Cache keys are exact coordinates, so each point needs its own fetch.
+- **Cost:** the snapshot grows from ~2 MB to ~14 MB, almost all daily history (~1 MB per point).
+- **Revisit if:** the repo size matters, or the API gets a grid snap so nearby clicks reuse a point.
+
 ## 2026-11-15 — Frontend: React + Vite + TypeScript in `frontend-app/`
 - **Decision:** the real UI is a React app in `frontend-app/` (Vite, TypeScript, hash routes). The
   root `Dockerfile` builds it in a Node stage and ships `dist/` at `/srv/frontend-app` next to the

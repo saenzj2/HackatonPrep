@@ -94,6 +94,27 @@ RULE_SUMMARY = {
 }
 WATERLOGGING_SUMMARY = Text("risk of waterlogging", "riesgo de encharcamiento")
 
+# Crops whose EcoCrop ranges are too broad for the tropics, so a high score alone can mislead.
+# Potato: optimum 15-25 °C scores it 0.98 at Los Chiles (~26 °C) vs 0.83 at Cartago, where it is
+# grown (decisions.md 2026-11-15). Shown as a risk until a cited tropical range replaces it.
+CROP_CAVEATS: dict[str, Text] = {
+    "potato": Text(
+        "Potato: check your farm's altitude. Potato does best in cool highlands, such as the "
+        "slopes of the Irazú volcano in Cartago. In warm lowlands it rarely does well, even when "
+        "it scores high here, because the crop data behind the score is very broad for the tropics",
+        "Papa: revise la altura de su finca. La papa se da mejor en zonas altas y frescas, como "
+        "las faldas del volcán Irazú en Cartago. En zonas bajas y calientes casi nunca se da bien, "
+        "aunque aquí salga con buen puntaje, porque los datos del cultivo que usamos son muy "
+        "amplios para el trópico",
+    ),
+}
+
+
+def crop_caveats(r: RotationResult) -> tuple[Text, ...]:
+    """One caveat per crop in the rotation that has one (CROP_CAVEATS), in sequence order."""
+    ids = dict.fromkeys(f.crop.id for f in r.sequence)
+    return tuple(CROP_CAVEATS[i] for i in ids if i in CROP_CAVEATS)
+
 
 def _mean_category(fits: Sequence[CropSeasonFit], name: str) -> float | None:
     vals = [getattr(f.categories, name) for f in fits]

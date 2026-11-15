@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router";
 import { api, type RecommendationRequest, type RecommendationResponse, type Rotation } from "../api/client";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { NeedsField } from "../components/NeedsField";
+import { PermanentCrops } from "../components/PermanentCrops";
 import { PlanRisk } from "../components/PlanRisk";
 import { SoilHealth } from "../components/SoilHealth";
 import { Stepper } from "../components/Stepper";
@@ -167,6 +168,8 @@ function ResultsView({ data }: { data: RecommendationResponse }) {
           </ul>
         </details>
       )}
+
+      <PermanentCrops lat={data.location.lat} lon={data.location.lon} />
 
       <p className="muted small">
         Scores run from 0 to 1: how well each rotation fits this field's climate, water and soil, plus

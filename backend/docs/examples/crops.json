@@ -47,7 +47,7 @@
       },
       "market_note": "Staple grain with steady local demand",
       "sources": [
-        "FAO EcoCrop ecoportcode 1574 via Adaptation Atlas parquet (tolerance ranges, 2026-11-14)",
+        "FAO EcoCrop ecoportcode 1574 via Adaptation Atlas parquet (tolerance ranges, 2026-11-15)",
         "FAO-56 Table 22 (root depth)",
         "team estimate (cover crop, forage, nutrition, nitrogen demand)",
         "Vallino et al. 2014, doi:10.1111/pce.12177 (mycorrhizal: low in flooded rice)"
@@ -101,7 +101,7 @@
       },
       "market_note": "Staple food legume with strong local demand",
       "sources": [
-        "FAO EcoCrop ecoportcode 1668 via Adaptation Atlas parquet (tolerance ranges, 2026-11-14)",
+        "FAO EcoCrop ecoportcode 1668 via Adaptation Atlas parquet (tolerance ranges, 2026-11-15)",
         "FAO-56 Table 22 (root depth)",
         "team estimate (cover crop, forage, nutrition, mycorrhizal, nitrogen demand)"
       ],
@@ -154,10 +154,278 @@
       },
       "market_note": "Staple grain and its fibrous low-protein stover is still valued as cattle feed",
       "sources": [
-        "FAO EcoCrop ecoportcode 238663 via Adaptation Atlas parquet (tolerance ranges, 2026-11-14)",
+        "FAO EcoCrop ecoportcode 238663 via Adaptation Atlas parquet (tolerance ranges, 2026-11-15)",
         "FAO-56 Table 22 (root depth)",
         "team estimate (cover crop, nutrition, mycorrhizal, nitrogen demand)",
         "Feedipedia, maize stover (forage: fibrous, low digestibility)"
+      ],
+      "verified": true
+    },
+    {
+      "id": "squash",
+      "name": "Squash (ayote)",
+      "name_es": "Ayote",
+      "scientific_name": "Cucurbita moschata",
+      "family": "Cucurbitaceae",
+      "is_legume": false,
+      "cycle_days": 100,
+      "temperature_c": {
+        "abs_min": 10.0,
+        "opt_min": 20.0,
+        "opt_max": 30.0,
+        "abs_max": 40.0
+      },
+      "rainfall_mm": {
+        "abs_min": 300.0,
+        "opt_min": 600.0,
+        "opt_max": 1600.0,
+        "abs_max": 2800.0
+      },
+      "soil_ph": {
+        "abs_min": 4.5,
+        "opt_min": 5.5,
+        "opt_max": 7.5,
+        "abs_max": 8.3
+      },
+      "root_depth_m": 1.5,
+      "is_cover_crop": true,
+      "needs_good_drainage": true,
+      "forage_value": {
+        "level": "medium",
+        "score": 0.67
+      },
+      "nutrition_density": {
+        "level": "medium",
+        "score": 0.67
+      },
+      "mycorrhizal_affinity": {
+        "level": "high",
+        "score": 1.0
+      },
+      "nitrogen_demand": {
+        "level": "medium",
+        "score": 0.67
+      },
+      "market_note": "Traditional milpa crop sold in local markets",
+      "sources": [
+        "FAO EcoCrop ecoportcode 820 via Adaptation Atlas parquet (tolerance ranges, 2026-11-15)",
+        "FAO-56 Table 22 (root depth, pumpkin and winter squash)",
+        "team estimate (cycle days, cover crop, forage, nutrition, mycorrhizal, nitrogen demand, market note",
+        "unverified)"
+      ],
+      "verified": true
+    },
+    {
+      "id": "potato",
+      "name": "Potato",
+      "name_es": "Papa",
+      "scientific_name": "Solanum tuberosum",
+      "family": "Solanaceae",
+      "is_legume": false,
+      "cycle_days": 120,
+      "temperature_c": {
+        "abs_min": 7.0,
+        "opt_min": 15.0,
+        "opt_max": 25.0,
+        "abs_max": 30.0
+      },
+      "rainfall_mm": {
+        "abs_min": 250.0,
+        "opt_min": 500.0,
+        "opt_max": 800.0,
+        "abs_max": 2000.0
+      },
+      "soil_ph": {
+        "abs_min": 4.2,
+        "opt_min": 5.0,
+        "opt_max": 6.2,
+        "abs_max": 8.5
+      },
+      "root_depth_m": 0.6,
+      "is_cover_crop": false,
+      "needs_good_drainage": true,
+      "forage_value": {
+        "level": "low",
+        "score": 0.33
+      },
+      "nutrition_density": {
+        "level": "medium",
+        "score": 0.67
+      },
+      "mycorrhizal_affinity": {
+        "level": "medium",
+        "score": 0.67
+      },
+      "nitrogen_demand": {
+        "level": "high",
+        "score": 1.0
+      },
+      "market_note": "Grown mostly in the Cartago highlands for the local market",
+      "sources": [
+        "FAO EcoCrop ecoportcode 1971 via Adaptation Atlas parquet (tolerance ranges, 2026-11-15)",
+        "FAO-56 Table 22 (root depth)",
+        "team estimate (cycle days, cover crop, forage, nutrition, mycorrhizal, nitrogen demand, market note",
+        "unverified)"
+      ],
+      "verified": true
+    },
+    {
+      "id": "onion",
+      "name": "Onion",
+      "name_es": "Cebolla",
+      "scientific_name": "Allium cepa",
+      "family": "Amaryllidaceae",
+      "is_legume": false,
+      "cycle_days": 120,
+      "temperature_c": {
+        "abs_min": 4.0,
+        "opt_min": 12.0,
+        "opt_max": 25.0,
+        "abs_max": 30.0
+      },
+      "rainfall_mm": {
+        "abs_min": 300.0,
+        "opt_min": 350.0,
+        "opt_max": 600.0,
+        "abs_max": 2800.0
+      },
+      "soil_ph": {
+        "abs_min": 4.3,
+        "opt_min": 6.0,
+        "opt_max": 7.0,
+        "abs_max": 8.3
+      },
+      "root_depth_m": 0.6,
+      "is_cover_crop": false,
+      "needs_good_drainage": true,
+      "forage_value": {
+        "level": "none",
+        "score": 0.0
+      },
+      "nutrition_density": {
+        "level": "low",
+        "score": 0.33
+      },
+      "mycorrhizal_affinity": {
+        "level": "high",
+        "score": 1.0
+      },
+      "nitrogen_demand": {
+        "level": "medium",
+        "score": 0.67
+      },
+      "market_note": "Grown mostly in Cartago for the local market",
+      "sources": [
+        "FAO EcoCrop ecoportcode 364 via Adaptation Atlas parquet (tolerance ranges, 2026-11-15)",
+        "FAO-56 Table 22 (root depth)",
+        "team estimate (cycle days, cover crop, forage, nutrition, mycorrhizal, nitrogen demand, market note",
+        "unverified)"
+      ],
+      "verified": true
+    },
+    {
+      "id": "cowpea",
+      "name": "Cowpea",
+      "name_es": "Caupí",
+      "scientific_name": "Vigna unguiculata",
+      "family": "Fabaceae",
+      "is_legume": true,
+      "cycle_days": 90,
+      "temperature_c": {
+        "abs_min": 15.0,
+        "opt_min": 25.0,
+        "opt_max": 35.0,
+        "abs_max": 40.0
+      },
+      "rainfall_mm": {
+        "abs_min": 300.0,
+        "opt_min": 500.0,
+        "opt_max": 1500.0,
+        "abs_max": 4100.0
+      },
+      "soil_ph": {
+        "abs_min": 4.0,
+        "opt_min": 5.5,
+        "opt_max": 7.5,
+        "abs_max": 8.8
+      },
+      "root_depth_m": 1.0,
+      "is_cover_crop": true,
+      "needs_good_drainage": true,
+      "forage_value": {
+        "level": "high",
+        "score": 1.0
+      },
+      "nutrition_density": {
+        "level": "high",
+        "score": 1.0
+      },
+      "mycorrhizal_affinity": {
+        "level": "high",
+        "score": 1.0
+      },
+      "nitrogen_demand": {
+        "level": "low",
+        "score": 0.33
+      },
+      "market_note": "Small local market and both leaves and grain are eaten",
+      "sources": [
+        "FAO EcoCrop ecoportcode 2153 via Adaptation Atlas parquet (tolerance ranges, 2026-11-15)",
+        "FAO-56 Table 22 (root depth)",
+        "team estimate (cover crop, forage, nutrition, mycorrhizal, nitrogen demand)"
+      ],
+      "verified": true
+    },
+    {
+      "id": "jack_bean",
+      "name": "Jack bean (green manure)",
+      "name_es": "Frijol abono (canavalia)",
+      "scientific_name": "Canavalia ensiformis",
+      "family": "Fabaceae",
+      "is_legume": true,
+      "cycle_days": 90,
+      "temperature_c": {
+        "abs_min": 14.0,
+        "opt_min": 20.0,
+        "opt_max": 28.0,
+        "abs_max": 36.0
+      },
+      "rainfall_mm": {
+        "abs_min": 600.0,
+        "opt_min": 800.0,
+        "opt_max": 2000.0,
+        "abs_max": 4300.0
+      },
+      "soil_ph": {
+        "abs_min": 4.3,
+        "opt_min": 5.0,
+        "opt_max": 6.0,
+        "abs_max": 8.0
+      },
+      "root_depth_m": 1.0,
+      "is_cover_crop": true,
+      "needs_good_drainage": false,
+      "forage_value": {
+        "level": "low",
+        "score": 0.33
+      },
+      "nutrition_density": {
+        "level": "none",
+        "score": 0.0
+      },
+      "mycorrhizal_affinity": {
+        "level": "high",
+        "score": 1.0
+      },
+      "nitrogen_demand": {
+        "level": "low",
+        "score": 0.33
+      },
+      "market_note": "Green manure and cover crop; not sold as food",
+      "sources": [
+        "FAO EcoCrop ecoportcode 609 via Adaptation Atlas parquet (tolerance ranges, 2026-11-15)",
+        "team estimate (cycle days to cutting as green manure, root depth, cover crop, forage, nutrition, mycorrhizal, nitrogen demand, market note",
+        "unverified)"
       ],
       "verified": true
     }

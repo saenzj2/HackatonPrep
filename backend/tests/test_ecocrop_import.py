@@ -9,7 +9,12 @@ import csv
 import pytest
 
 from app.settings import BACKEND_DIR
-from scripts.import_ecocrop import ECOPORT_CODES, RANGE_COLUMNS, apply_ranges
+from scripts.import_ecocrop import (
+    ECOPORT_CODES,
+    PERENNIAL_ECOPORT_CODES,
+    RANGE_COLUMNS,
+    apply_ranges,
+)
 from tests.conftest import load_fixture
 
 FIXTURE = load_fixture("ecocrop/ecocrop_records.json")
@@ -68,3 +73,21 @@ def test_drainage_comes_from_ecocrop():
     assert rows["rice"]["needs_good_drainage"] == "false"
     for crop_id in ("beans", "maize", "sorghum", "cowpea"):
         assert rows[crop_id]["needs_good_drainage"] == "true"
+
+
+def test_committed_perennial_csv_has_the_ecocrop_ranges_and_altitude():
+    with (BACKEND_DIR / "data" / "perennial_crops.csv").open(encoding="utf-8", newline="") as f:
+        rows = {r["id"]: r for r in csv.DictReader(f)}
+    assert set(rows) == set(PERENNIAL_ECOPORT_CODES)
+    for crop_id, code in PERENNIAL_ECOPORT_CODES.items():
+        for ours, theirs in RANGE_COLUMNS.items():
+            assert float(rows[crop_id][ours]) == pytest.approx(RECORDS[code][theirs])
+        assert float(rows[crop_id]["max_altitude_m"]) == pytest.approx(RECORDS[code]["altmx"])
+        assert rows[crop_id]["verified"] == "true"
+
+
+def test_import_writes_drainage_only_where_the_csv_has_the_column():
+    row = {"id": "cacao", "max_altitude_m": "", "sources": "", "verified": "false"}
+    (new,) = apply_ranges([row], RECORDS, "x", PERENNIAL_ECOPORT_CODES)
+    assert "needs_good_drainage" not in new
+    assert new["max_altitude_m"] == "900"

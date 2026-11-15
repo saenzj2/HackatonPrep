@@ -15,6 +15,7 @@ from app.domain.enso import EnsoIndex
 from app.domain.models import (
     CropProfile,
     MonthlyClimate,
+    PerennialCropProfile,
     SoilConditions,
     SoilProfile,
     TerrainSample,
@@ -40,6 +41,13 @@ class CropSource(Protocol):
     name: str
 
     def all(self) -> dict[str, CropProfile]: ...
+
+
+@runtime_checkable
+class PerennialCropSource(Protocol):
+    name: str
+
+    def all(self) -> dict[str, PerennialCropProfile]: ...
 
 
 @runtime_checkable

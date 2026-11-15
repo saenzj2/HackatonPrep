@@ -2,13 +2,13 @@
 
 | Field | Value |
 |---|---|
-| **Used for** | Crop temperature, rainfall and pH ranges (`CropSource`) |
+| **Used for** | Crop temperature, rainfall and pH ranges (`CropSource`), and permanent crops (`PerennialCropSource`, `GET /permanent-crops`) |
 | **Adapter** | `app/integrations/ecocrop.py` (reads the CSV; no network) |
-| **Data** | `data/ecocrop_subset.csv` (versioned) |
+| **Data** | `data/ecocrop_subset.csv` (annual crops) and `data/perennial_crops.csv` (permanent crops), versioned |
 | **Import** | `scripts/import_ecocrop.py` (run by hand; needs `pip install -e ".[data]"` for pyarrow) |
-| **Source file** | `https://digital-atlas.s3.amazonaws.com/cdh/data/ecocrop/ecocrop.parquet`, fetched 2026-11-14 (2568 crops, 55 columns) |
-| **Fixture** | `tests/fixtures/ecocrop/ecocrop_records.json` (the 5 rows we use, real values) |
-| **Status** | ✅ Ranges from source for all 5 crops (`verified=true`) |
+| **Source file** | `https://digital-atlas.s3.amazonaws.com/cdh/data/ecocrop/ecocrop.parquet`, fetched 2026-11-14, re-fetched 2026-11-15 for the permanent crops (2568 crops, 55 columns; annual ranges unchanged) |
+| **Fixture** | `tests/fixtures/ecocrop/ecocrop_records.json` (the 13 rows we use, real values) |
+| **Status** | ✅ Ranges from source for all 9 annual and 4 permanent crops (`verified=true`) |
 
 ## Where the data comes from
 FAO developed the ECOCROP database in 1999 and discontinued it around 2015; FAO now points to the
@@ -33,6 +33,19 @@ by name. Mapping in `ECOPORT_CODES` (`scripts/import_ecocrop.py`).
 | maize | 238663 | Zea mays ssp. mays | 2175 "Zea mays" has the same ranges but empty descriptive fields |
 | sorghum | 48747 | Sorghum bicolor | 1982 is var. sweet |
 | cowpea | 2153 | Vigna unguiculata | 6 subspecies entries |
+| potato | 1971 | Solanum tuberosum | optimum 15–25 °C is too wide for the tropics (`decisions.md` 2026-11-15) |
+| onion | 364 | Allium cepa | 551 is var. cepa with the same ranges |
+| squash | 820 | Cucurbita moschata | ayote |
+| jack_bean | 609 | Canavalia ensiformis | frijol abono; tolerates poorly drained soil |
+
+Permanent crops (`PERENNIAL_ECOPORT_CODES`, `data/perennial_crops.csv`, also `altmx` → `max_altitude_m`):
+
+| Our id | ecoportcode | EcoCrop name | Note |
+|---|---|---|---|
+| cacao | 2074 | Theobroma cacao | `altmx` 900 m |
+| coffee | 749 | Coffea arabica | Costa Rica grows arabica only; robusta is 750 |
+| pineapple | 402 | Ananas comosus | |
+| banana | 7848 | Musa acuminata | "Musa sp." 2483 has no cycle, 1503 "Musa sapientum" is empty; plantain (AAB) is 7849 |
 
 ## Columns
 | Our CSV | EcoCrop | Unit |
@@ -70,6 +83,9 @@ Los Chiles, which isn't credible. The EcoCrop R implementation (Recocrop) also t
 values into per-month limits over the cycle. A per-month (driest-month) check is a possible
 improvement; it changes results, so it needs its own `decisions.md` entry.
 
+Permanent crops are the exception: they are scored on the **annual** total, as FAO intends
+(`app/domain/perennials.py`).
+
 Known effect: every EcoCrop rice entry asks for 1500–2000 mm (flooded or irrigated rice), so rainfed
 rice never fits by rainfall alone. Upland-rice values would need another source.
 
@@ -88,7 +104,8 @@ make check
 ```
 `tests/test_ecocrop_import.py` fails if a range in the CSV is edited by hand (it must match the
 fixture). To add a crop: add its row to the CSV with our own columns, add its `ecoportcode` to
-`ECOPORT_CODES`, then rerun the import with `--write-fixture`.
+`ECOPORT_CODES` (or `PERENNIAL_ECOPORT_CODES` for a permanent crop, in `data/perennial_crops.csv`),
+then rerun the import with `--write-fixture`.
 
 Rule: `abs_min ≤ opt_min ≤ opt_max ≤ abs_max`. The loader rejects rows that break it.
 

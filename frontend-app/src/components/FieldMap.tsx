@@ -17,6 +17,7 @@ interface Props {
 
 /**
  * Click the map to choose a point; demo fields are green markers. Loaded lazily (Field.tsx).
+ * Demo names show on hover (13 permanent labels overlap); only the selected field keeps its label.
  * Keyboard and screen-reader users have the demo buttons and the coordinate inputs instead.
  */
 export default function FieldMap({ bbox, selected, onPick, onPickDemo }: Props) {
@@ -36,13 +37,13 @@ export default function FieldMap({ bbox, selected, onPick, onPickDemo }: Props) 
     }).addTo(m);
     for (const field of DEMO_FIELDS) {
       L.circleMarker([field.lat, field.lon], {
-        radius: 9,
+        radius: 7,
         color: "#ffffff",
         weight: 2,
         fillColor: GREEN,
         fillOpacity: 1,
       })
-        .bindTooltip(`${field.name} (demo)`, { permanent: true, direction: "right", offset: [10, 0] })
+        .bindTooltip(field.name, { direction: "right", offset: [8, 0] })
         .on("click", (e) => {
           L.DomEvent.stopPropagation(e);
           handlers.current.onPickDemo(field);
@@ -82,12 +83,20 @@ export default function FieldMap({ bbox, selected, onPick, onPickDemo }: Props) 
     marker.current = null;
     if (!selected) return;
     marker.current = L.circleMarker([selected.lat, selected.lon], {
-      radius: 11,
+      radius: 10,
       color: "#ffffff",
       weight: 3,
       fillColor: NAVY,
       fillOpacity: 1,
+      interactive: false,
     }).addTo(map.current);
+    const demo = DEMO_FIELDS.find((f) => f.lat === selected.lat && f.lon === selected.lon);
+    marker.current.bindTooltip(demo ? demo.name : `${selected.lat}, ${selected.lon}`, {
+      permanent: true,
+      direction: "right",
+      offset: [10, 0],
+      className: "field-map__selected",
+    });
   }, [selected?.lat, selected?.lon]);
 
   return (
@@ -95,7 +104,7 @@ export default function FieldMap({ bbox, selected, onPick, onPickDemo }: Props) 
       ref={container}
       className="field-map"
       role="application"
-      aria-label="Map of the pilot region. Click to choose your field; green markers are demo fields."
+      aria-label="Map of the pilot region. Click to choose your field; green markers are demo fields (hover for the name)."
     />
   );
 }

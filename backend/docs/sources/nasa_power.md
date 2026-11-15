@@ -18,12 +18,23 @@ Example:
 https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2M,T2M_MAX,T2M_MIN,PRECTOTCORR&community=AG&longitude=-84.2&latitude=10.0&format=JSON
 ```
 
+## Monthly API: mean daily max / min (heat, frost)
+- Endpoint: `GET https://power.larc.nasa.gov/api/temporal/monthly/point`, `parameters=T2M_MAX_AVG,T2M_MIN_AVG`,
+  `community=AG`, `start=2001`, `end=2025` (the climatology's years). Cache namespace `nasa_power_monthly`.
+- One value per month and year (`YYYYMM`; `YYYY13` is the annual value, skipped), °C. The adapter
+  averages each calendar month over the years → `temperature_max_c` / `temperature_min_c`.
+- Why not the climatology: its `T2M_MAX` is the hourly extreme and its `T2M_MAX_AVG` is the mean of
+  each year's monthly peak. Checked 2026-11-15 at Liberia, April: climatology `T2M_MAX` 39.2 °C,
+  climatology `T2M_MAX_AVG` 37.7 °C, monthly `T2M_MAX_AVG` averaged 2001–2025 35.8 °C = mean of
+  the daily API's `T2M_MAX` (35.8 °C). `decisions.md` 2026-11-15.
+- Fixture: `tests/fixtures/nasa_power/monthly_extremes_alajuela.json` (lat 10.0, lon −84.2, 2001–2025, fetched 2026-11-15).
+
 ## Variables we request
 
 | Parameter | Meaning | Native unit | We convert to |
 |---|---|---|---|
 | `T2M` | Mean air temperature at 2 m | °C | °C (as is) |
-| `T2M_MAX` | Mean daily max temperature at 2 m | °C | `heat` variable: season mean vs crop abs max |
+| `T2M_MAX` / `T2M_MIN` | The month's hourly **extreme**, NOT the mean daily max / min (POWER keeps extremes through aggregation). Parsed and validated, then **replaced** by the monthly API's means (below) | °C | not used for scoring since 2026-11-15 |
 | `T2M_MIN` | Mean daily min temperature at 2 m | °C | `frost` variable: coldest month in the season |
 | `PRECTOTCORR` | Bias-corrected precipitation | **mm/day** | **mm/month** (× days in month, Feb = 28.25) |
 

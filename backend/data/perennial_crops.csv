@@ -1,0 +1,5 @@
+id,name,name_es,gender_es,scientific_name,family,temp_abs_min,temp_opt_min,temp_opt_max,temp_abs_max,rain_abs_min,rain_opt_min,rain_opt_max,rain_abs_max,ph_abs_min,ph_opt_min,ph_opt_max,ph_abs_max,max_altitude_m,sources,verified
+cacao,Cacao,Cacao,m,Theobroma cacao,Malvaceae,10,21,32,38,900,1200,3000,7600,4.0,5.0,6.5,8.0,900,"FAO EcoCrop ecoportcode 2074 via Adaptation Atlas parquet (tolerance ranges, 2026-11-15)",true
+coffee,Coffee,Café,m,Coffea arabica,Rubiaceae,10,14,28,34,750,1400,2300,4200,4.3,5.5,7.0,8.4,2800,"FAO EcoCrop ecoportcode 749 via Adaptation Atlas parquet (tolerance ranges, 2026-11-15)",true
+pineapple,Pineapple,Piña,f,Ananas comosus,Bromeliaceae,10,21,30,36,550,800,2500,3500,3.5,4.5,8.0,9.0,1800,"FAO EcoCrop ecoportcode 402 via Adaptation Atlas parquet (tolerance ranges, 2026-11-15)",true
+banana,Banana,Banano,m,Musa acuminata,Musaceae,12,23,33,42,650,1200,3600,5000,4.0,5.5,7.5,8.4,2400,"FAO EcoCrop ecoportcode 7848 via Adaptation Atlas parquet (tolerance ranges, 2026-11-15)",true

@@ -70,6 +70,11 @@ def seed_demo_cache(cache_dir: Path) -> None:
             "nasa_power/climatology_alajuela.json",
         ),
         (
+            nasa_power.MONTHLY_SOURCE,
+            NasaPowerClimate.monthly_request_params(LAT, LON),
+            "nasa_power/monthly_extremes_alajuela.json",
+        ),
+        (
             openlandmap.SOURCE,
             EarthEngineSoil.point_params(LAT, LON),
             "openlandmap/soil_alajuela.json",
@@ -147,6 +152,8 @@ def build_examples() -> dict[str, Any]:
         recommendation.raise_for_status()
         crops = client.get("/crops")
         crops.raise_for_status()
+        permanent = client.get("/permanent-crops", params={"lat": LAT, "lon": LON})
+        permanent.raise_for_status()
         daily = client.get("/weather/daily", params=SAN_JOSE_QUERY)
         daily.raise_for_status()
         erosion = client.get("/erosion", params=SAN_JOSE_QUERY)
@@ -161,6 +168,7 @@ def build_examples() -> dict[str, Any]:
         "recommendation_request_alajuela.json": RECOMMENDATION_REQUEST,
         "recommendation_alajuela.json": recommendation_body,
         "crops.json": crops.json(),
+        "permanent_crops_alajuela.json": permanent.json(),
         "weather_daily_san_jose.json": daily.json(),
         "erosion_san_jose.json": erosion.json(),
         "soil_san_jose.json": soil.json(),

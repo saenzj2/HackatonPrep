@@ -1,7 +1,120 @@
 {
   "source": "https://digital-atlas.s3.amazonaws.com/cdh/data/ecocrop/ecocrop.parquet",
-  "fetched": "2026-11-14",
+  "fetched": "2026-11-15",
   "records": [
+    {
+      "ecoportcode": 364,
+      "scientificname": "Allium cepa",
+      "tmin": 4,
+      "topmn": 12,
+      "topmx": 25,
+      "tmax": 30,
+      "rmin": 300,
+      "ropmn": 350,
+      "ropmx": 600,
+      "rmax": 2800,
+      "phmin": 4.3,
+      "phopmn": 6.0,
+      "phopmx": 7.0,
+      "phmax": 8.3,
+      "gmin": 85,
+      "gmax": 175,
+      "altmx": 2000,
+      "drar": [
+        "well (dry spells)"
+      ]
+    },
+    {
+      "ecoportcode": 402,
+      "scientificname": "Ananas comosus",
+      "tmin": 10,
+      "topmn": 21,
+      "topmx": 30,
+      "tmax": 36,
+      "rmin": 550,
+      "ropmn": 800,
+      "ropmx": 2500,
+      "rmax": 3500,
+      "phmin": 3.5,
+      "phopmn": 4.5,
+      "phopmx": 8.0,
+      "phmax": 9.0,
+      "gmin": 330,
+      "gmax": 365,
+      "altmx": 1800,
+      "drar": [
+        "well (dry spells)",
+        "excessive (dry/moderately dry)"
+      ]
+    },
+    {
+      "ecoportcode": 609,
+      "scientificname": "Canavalia ensiformis",
+      "tmin": 14,
+      "topmn": 20,
+      "topmx": 28,
+      "tmax": 36,
+      "rmin": 600,
+      "ropmn": 800,
+      "ropmx": 2000,
+      "rmax": 4300,
+      "phmin": 4.3,
+      "phopmn": 5.0,
+      "phopmx": 6.0,
+      "phmax": 8.0,
+      "gmin": 80,
+      "gmax": 300,
+      "altmx": 1800,
+      "drar": [
+        "poorly (saturated >50% of year)",
+        "well (dry spells)",
+        "excessive (dry/moderately dry)"
+      ]
+    },
+    {
+      "ecoportcode": 749,
+      "scientificname": "Coffea arabica",
+      "tmin": 10,
+      "topmn": 14,
+      "topmx": 28,
+      "tmax": 34,
+      "rmin": 750,
+      "ropmn": 1400,
+      "ropmx": 2300,
+      "rmax": 4200,
+      "phmin": 4.3,
+      "phopmn": 5.5,
+      "phopmx": 7.0,
+      "phmax": 8.4,
+      "gmin": 210,
+      "gmax": 330,
+      "altmx": 2800,
+      "drar": [
+        "well (dry spells)"
+      ]
+    },
+    {
+      "ecoportcode": 820,
+      "scientificname": "Cucurbita moschata",
+      "tmin": 10,
+      "topmn": 20,
+      "topmx": 30,
+      "tmax": 40,
+      "rmin": 300,
+      "ropmn": 600,
+      "ropmx": 1600,
+      "rmax": 2800,
+      "phmin": 4.5,
+      "phopmn": 5.5,
+      "phopmx": 7.5,
+      "phmax": 8.3,
+      "gmin": 80,
+      "gmax": 140,
+      "altmx": 2400,
+      "drar": [
+        "well (dry spells)"
+      ]
+    },
     {
       "ecoportcode": 1574,
       "scientificname": "Oryza sativa",
@@ -19,6 +132,7 @@
       "phmax": 9.0,
       "gmin": 80,
       "gmax": 180,
+      "altmx": 2500,
       "drar": [
         "poorly (saturated >50% of year)"
       ]
@@ -40,6 +154,52 @@
       "phmax": 9.0,
       "gmin": 50,
       "gmax": 270,
+      "altmx": 3000,
+      "drar": [
+        "well (dry spells)"
+      ]
+    },
+    {
+      "ecoportcode": 1971,
+      "scientificname": "Solanum tuberosum",
+      "tmin": 7,
+      "topmn": 15,
+      "topmx": 25,
+      "tmax": 30,
+      "rmin": 250,
+      "ropmn": 500,
+      "ropmx": 800,
+      "rmax": 2000,
+      "phmin": 4.2,
+      "phopmn": 5.0,
+      "phopmx": 6.2,
+      "phmax": 8.5,
+      "gmin": 90,
+      "gmax": 160,
+      "altmx": 2800,
+      "drar": [
+        "well (dry spells)",
+        "excessive (dry/moderately dry)"
+      ]
+    },
+    {
+      "ecoportcode": 2074,
+      "scientificname": "Theobroma cacao",
+      "tmin": 10,
+      "topmn": 21,
+      "topmx": 32,
+      "tmax": 38,
+      "rmin": 900,
+      "ropmn": 1200,
+      "ropmx": 3000,
+      "rmax": 7600,
+      "phmin": 4.0,
+      "phopmn": 5.0,
+      "phopmx": 6.5,
+      "phmax": 8.0,
+      "gmin": 180,
+      "gmax": 365,
+      "altmx": 900,
       "drar": [
         "well (dry spells)"
       ]
@@ -61,9 +221,32 @@
       "phmax": 8.8,
       "gmin": 30,
       "gmax": 240,
+      "altmx": 2000,
       "drar": [
         "well (dry spells)",
         "excessive (dry/moderately dry)"
+      ]
+    },
+    {
+      "ecoportcode": 7848,
+      "scientificname": "Musa acuminata",
+      "tmin": 12,
+      "topmn": 23,
+      "topmx": 33,
+      "tmax": 42,
+      "rmin": 650,
+      "ropmn": 1200,
+      "ropmx": 3600,
+      "rmax": 5000,
+      "phmin": 4.0,
+      "phopmn": 5.5,
+      "phopmx": 7.5,
+      "phmax": 8.4,
+      "gmin": 180,
+      "gmax": 365,
+      "altmx": 2400,
+      "drar": [
+        "well (dry spells)"
       ]
     },
     {
@@ -83,6 +266,7 @@
       "phmax": 8.0,
       "gmin": 90,
       "gmax": 300,
+      "altmx": 2500,
       "drar": [
         "well (dry spells)",
         "excessive (dry/moderately dry)"
@@ -105,6 +289,7 @@
       "phmax": 8.5,
       "gmin": 65,
       "gmax": 365,
+      "altmx": 4000,
       "drar": [
         "well (dry spells)",
         "excessive (dry/moderately dry)"

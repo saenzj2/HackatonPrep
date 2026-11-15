@@ -14,11 +14,12 @@ from app.integrations.base import (
     DailyHistorySource,
     DailyWeatherSource,
     EnsoIndexSource,
+    PerennialCropSource,
     SoilProfileSource,
     SoilSource,
     TerrainSource,
 )
-from app.integrations.ecocrop import EcoCropCatalog
+from app.integrations.ecocrop import EcoCropCatalog, PerennialCropCatalog
 from app.integrations.measured_soil import MeasuredSoil
 from app.integrations.mock import MockClimate, MockEnso, MockSoil, MockSoilProfile, MockTerrain
 from app.integrations.nasa_power import NasaPowerClimate
@@ -39,6 +40,7 @@ class Sources:
     soil_profile: SoilProfileSource  # GET /soil (services.get_soil_data)
     history: DailyHistorySource  # POST /plan-risk: ~25 years of daily IMERG rain + MERRA-2
     enso: EnsoIndexSource  # POST /plan-risk: NOAA CPC RONI (official) and ONI (legacy)
+    perennials: PerennialCropSource  # GET /permanent-crops: cacao, coffee… (local CSV)
 
     def names(self) -> dict[str, str]:
         # Only the sources the current API reports (DataSources in the contract).
@@ -47,6 +49,7 @@ class Sources:
 
 def build_sources(config: MvpConfig, env: EnvSettings) -> Sources:
     crops = EcoCropCatalog(env.crop_catalog)
+    perennials = PerennialCropCatalog(env.perennial_crop_catalog)
     if config.data_mode == DataMode.MOCK:
         climate = MockClimate()
         return Sources(
@@ -58,6 +61,7 @@ def build_sources(config: MvpConfig, env: EnvSettings) -> Sources:
             soil_profile=MockSoilProfile(),
             history=climate,
             enso=MockEnso(),
+            perennials=perennials,
         )
     cache = JsonCache(env.cache_dir, config.data_mode, snapshot=env.cache_snapshot_dir)
     power = NasaPowerClimate(cache)
@@ -76,4 +80,5 @@ def build_sources(config: MvpConfig, env: EnvSettings) -> Sources:
         soil_profile=soil_profile,
         history=power,
         enso=NoaaEnso(cache),
+        perennials=perennials,
     )

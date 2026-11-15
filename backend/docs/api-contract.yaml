@@ -188,6 +188,82 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /permanent-crops:
+    get:
+      tags:
+      - crops
+      summary: Get Permanent Crops
+      description: 'How well permanent crops (cacao, coffee…) suit a point, scored over the whole year.
+
+
+        They stay in the field for years, so they are not part of rotations or plan-risk.'
+      operationId: get_permanent_crops_permanent_crops_get
+      parameters:
+      - name: lat
+        in: query
+        required: true
+        schema:
+          type: number
+          maximum: 90
+          minimum: -90
+          examples:
+          - 10.2
+          title: Lat
+      - name: lon
+        in: query
+        required: true
+        schema:
+          type: number
+          maximum: 180
+          minimum: -180
+          examples:
+          - -83.8
+          title: Lon
+      - name: crops
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+          - type: 'null'
+          description: Permanent crop ids (cacao, coffee, pineapple, banana), repeatable. Omit for the MVP permanent
+            crops.
+          title: Crops
+        description: Permanent crop ids (cacao, coffee, pineapple, banana), repeatable. Omit for the MVP permanent
+          crops.
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermanentCropsResponse'
+        '422':
+          description: '`validation_failed`, `out_of_region`, `unknown_crop`, `invalid_priorities`, `invalid_rotation`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: '`internal_error`, `config_invalid`, `domain_invariant`: a backend bug'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: '`source_unavailable`, `source_bad_data`: an external data source failed'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: '`cache_miss`: data_mode=cached and this location was never fetched'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /weather/daily:
     get:
       tags:
@@ -1989,6 +2065,135 @@ components:
       - es
       title: LocalizedText
       description: Farmer-facing text in English and Spanish (Costa Rica). Show the one the user picked.
+    YearClimateSummary:
+      properties:
+        annual_rainfall_mm:
+          type: number
+          title: Annual Rainfall Mm
+          description: Sum of the 12 monthly normals
+        temperature_c:
+          type: number
+          title: Temperature C
+          description: Mean of the 12 monthly means
+        hottest_month_max_c:
+          type: number
+          title: Hottest Month Max C
+          description: Highest monthly mean of the daily maximum
+        coldest_month_min_c:
+          type: number
+          title: Coldest Month Min C
+          description: Lowest monthly mean of the daily minimum
+        dry_months:
+          items:
+            type: integer
+          type: array
+          title: Dry Months
+          description: Months (1..12) with less than 60 mm of rain
+      additionalProperties: false
+      type: object
+      required:
+      - annual_rainfall_mm
+      - temperature_c
+      - hottest_month_max_c
+      - coldest_month_min_c
+      - dry_months
+      title: YearClimateSummary
+    PermanentCropFit:
+      properties:
+        crop_id:
+          type: string
+          title: Crop Id
+        crop_name:
+          $ref: '#/components/schemas/LocalizedText'
+        scientific_name:
+          type: string
+          title: Scientific Name
+        score:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Score
+          description: 0 when any variable is outside the crop's range
+        suitability:
+          type: string
+          enum:
+          - good
+          - fair
+          - poor
+          - unsuitable
+          title: Suitability
+          description: good ≥ 0.8, fair ≥ 0.5, poor > 0, unsuitable = 0
+        variable_scores:
+          additionalProperties:
+            type: number
+          type: object
+          title: Variable Scores
+          description: '0..1 per variable: temperature, rainfall, heat, frost, soil_ph'
+        breakdown:
+          $ref: '#/components/schemas/CategoryBreakdown'
+        max_altitude_m:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Max Altitude M
+          description: Highest altitude where EcoCrop says the crop is grown; not checked here
+        summary:
+          $ref: '#/components/schemas/LocalizedText'
+        risks:
+          items:
+            $ref: '#/components/schemas/LocalizedText'
+          type: array
+          title: Risks
+          description: Variables that limit the crop here
+        benefits:
+          items:
+            $ref: '#/components/schemas/LocalizedText'
+          type: array
+          title: Benefits
+      additionalProperties: false
+      type: object
+      required:
+      - crop_id
+      - crop_name
+      - scientific_name
+      - score
+      - suitability
+      - variable_scores
+      - breakdown
+      - max_altitude_m
+      - summary
+      - risks
+      - benefits
+      title: PermanentCropFit
+    PermanentCropsResponse:
+      properties:
+        location:
+          $ref: '#/components/schemas/Location'
+        year_climate:
+          $ref: '#/components/schemas/YearClimateSummary'
+        crops:
+          items:
+            $ref: '#/components/schemas/PermanentCropFit'
+          type: array
+          title: Crops
+          description: Best score first
+        data_sources:
+          $ref: '#/components/schemas/DataSources'
+          description: '`crops` names the permanent crop catalog'
+        data_gaps:
+          items:
+            $ref: '#/components/schemas/LocalizedText'
+          type: array
+          title: Data Gaps
+      additionalProperties: false
+      type: object
+      required:
+      - location
+      - year_climate
+      - crops
+      - data_sources
+      - data_gaps
+      title: PermanentCropsResponse
     YearsEvaluated:
       properties:
         first:

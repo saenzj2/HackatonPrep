@@ -1323,3 +1323,98 @@ details[open] > :not(summary) {
   z-index: 2;
 }
 
+
+/* ---- Permanent crops (components/PermanentCrops.tsx) ---- */
+.perennial {
+  border-top: 5px solid var(--agri-green);
+}
+
+.perennial h2 {
+  margin-top: 4px;
+}
+
+.perennial__year {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin: 0;
+  padding: 10px 14px;
+  list-style: none;
+  background: var(--ivory);
+  border-radius: 8px;
+}
+
+.perennial__crop {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-left-width: 5px;
+  border-radius: 8px;
+  min-width: 0;
+}
+
+.perennial__crop p,
+.perennial__crop ul {
+  margin: 0;
+}
+
+.perennial__crop--good {
+  border-left-color: var(--agri-green);
+}
+
+.perennial__crop--fair {
+  border-left-color: var(--solar-gold);
+}
+
+.perennial__crop--poor {
+  border-left-color: var(--error);
+}
+
+.perennial__crop--unsuitable {
+  border-left-color: var(--muted);
+}
+
+.perennial__badge--good {
+  border-color: var(--agri-green);
+  color: var(--agri-green);
+}
+
+.perennial__badge--fair {
+  border-color: var(--solar-gold);
+  color: #6b4e00;
+}
+
+.perennial__badge--poor {
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.perennial__badge--unsuitable {
+  border-color: var(--muted);
+  color: var(--muted);
+}
+
+.perennial__fill--good {
+  background: var(--agri-green);
+}
+
+.perennial__fill--fair {
+  background: var(--solar-gold);
+}
+
+.perennial__fill--poor {
+  background: var(--error);
+}
+
+.perennial__fill--unsuitable {
+  background: var(--muted);
+}
+
+/* Selected field's label on the map (components/FieldMap.tsx) */
+.leaflet-tooltip.field-map__selected {
+  font-weight: 600;
+  color: var(--space-navy);
+  border-color: var(--space-navy);
+}

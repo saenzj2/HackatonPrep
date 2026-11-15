@@ -399,6 +399,23 @@ def test_server_errors_log_error_with_traceback(lenient_client, monkeypatch, cap
     assert rec.exc_info is not None
 
 
+def test_permanent_crops_unknown_crop(client):
+    r = client.get("/permanent-crops", params={**CR, "crops": ["cacao", "maize"]})
+    err = assert_error(r, 422, ErrorCode.UNKNOWN_CROP)
+    assert err["details"]["unknown"] == ["maize"]  # annual crops are not permanent crops
+    assert "cacao" in err["details"]["available"]
+
+
+def test_permanent_crops_out_of_region(client):
+    r = client.get("/permanent-crops", params={"lat": 40.0, "lon": -3.7})
+    assert_error(r, 422, ErrorCode.OUT_OF_REGION)
+
+
+def test_plan_risk_rejects_a_permanent_crop(client):
+    body = {"lat": 11.0, "lon": -84.6, "plantings": [{"crop": "coffee", "sowing_month": 5}]}
+    assert_error(client.post("/plan-risk", json=body), 422, ErrorCode.UNKNOWN_CROP)
+
+
 def test_plan_risk_out_of_region(client):
     body = {"lat": 40.0, "lon": -3.7, "plantings": [{"crop": "maize", "sowing_month": 5}]}
     assert_error(client.post("/plan-risk", json=body), 422, ErrorCode.OUT_OF_REGION)

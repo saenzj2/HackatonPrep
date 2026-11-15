@@ -17,7 +17,8 @@
 2. [Conventions you'll see everywhere](#2-conventions-youll-see-everywhere)
 3. [Endpoints](#3-endpoints)
    - [GET /health](#get-health) · [GET /crops](#get-crops) · [GET /conditions](#get-conditions) ·
-     [GET /planting-windows](#get-planting-windows) · [GET /weather/daily](#get-weatherdaily) ·
+     [GET /planting-windows](#get-planting-windows) · [GET /permanent-crops](#get-permanent-crops) ·
+     [GET /weather/daily](#get-weatherdaily) ·
      [GET /erosion](#get-erosion) · [GET /soil](#get-soil) ·
      [POST /recommendations](#post-recommendations) · [POST /plan-risk](#post-plan-risk)
 4. [Errors](#4-errors)
@@ -129,6 +130,7 @@ show a visible "demo data" banner.
 | GET | `/crops` | The candidate crops with their tolerances and traits | 500 |
 | GET | `/conditions?lat&lon` | Climate by month and season + soil at a point | 422, 500, 502, 503 |
 | GET | `/planting-windows?lat&lon[&crops]` | Best months to sow each crop | 422, 500, 502, 503 |
+| GET | `/permanent-crops?lat&lon[&crops]` | How well cacao, coffee, pineapple and banana suit a point, over the whole year | 422, 500, 502, 503 |
 | GET | `/weather/daily?lat&lon&start&end` | NASA POWER weather day by day (≤ 366 days) | 422, 500, 502, 503 |
 | GET | `/erosion?lat&lon&start&end` | Erosion risk: slope alone, and slope + rain over the period | 422, 500, 502, 503 |
 | GET | `/soil?lat&lon` | Soil properties at 0, 10 and 30 cm (OpenLandMap) | 422, 500, 502, 503 |
@@ -298,6 +300,48 @@ For each crop: in which months it's good to sow at this point, and why the other
 
 Real Los Chiles results: maize sow **May–Sep** (best May), beans **Jun–Oct** (best Jun); waterlogging
 flagged when maize is sown in Aug and beans in Sep.
+
+---
+
+### GET /permanent-crops
+Permanent crops (cacao, coffee, pineapple, banana) stay in the field for years, so they are **not**
+rotation candidates: they are not in `GET /crops`, `/recommendations` or `/plan-risk` (sending one
+there is `unknown_crop`). This endpoint scores each one on the **whole year** at the point.
+
+**Request:** `GET /permanent-crops?lat=10.1&lon=-83.3` (optional repeatable `crops=cacao&crops=coffee`;
+omit for the MVP permanent crops). Example response: `docs/examples/permanent_crops_alajuela.json`.
+
+```json
+{
+  "location": { "lat": 10.0, "lon": -84.2 },
+  "year_climate": { "annual_rainfall_mm": 1793.2, "temperature_c": 23.45,
+                    "hottest_month_max_c": 34.65, "coldest_month_min_c": 15.79, "dry_months": [1, 2, 3] },
+  "crops": [ {
+    "crop_id": "coffee", "crop_name": { "en": "Coffee", "es": "Café" }, "scientific_name": "Coffea arabica",
+    "score": 0.8917, "suitability": "good",
+    "variable_scores": { "temperature": 1.0, "rainfall": 1.0, "soil_ph": 1.0, "heat": 0.8917, "frost": 1.0 },
+    "breakdown": { "climate": 0.9639, "water": 1.0, "soil": 1.0 },
+    "max_altitude_m": 2800,
+    "summary": { "en": "Coffee: good fit here (score 0.89 of 1)", "es": "Café: se adapta bien aquí (puntaje 0,89 de 1)" },
+    "risks": [], "benefits": []
+  }, … best score first … ],
+  "data_sources": { "climate": "nasa_power", "soil": "openlandmap+nasa_smap", "crops": "ecocrop_perennials" },
+  "data_gaps": [ { "en": "Altitude is not checked. EcoCrop grows cacao up to 900 m, …", "es": "…" }, … ]
+}
+```
+
+| Field | Meaning | How to use it |
+|---|---|---|
+| `year_climate` | The whole year at the point: annual rain (mm), mean temperature, the hottest month's mean daily max and the coldest month's mean daily min (°C), and `dry_months` (1..12) with less than 60 mm | A small "your year" strip above the cards |
+| `crops[]` | One per crop, **best score first** | One card each |
+| `score` | 0–1, the **most limiting** variable (the minimum of `variable_scores`). Farmer priorities do **not** change it (unlike rotations) | Bar or number |
+| `suitability` | `good` (≥ 0.8), `fair` (≥ 0.5), `poor` (> 0), `unsuitable` (0) | **The one to colour** (green, amber, orange, grey) and label ([§6](#6-label-maps-english--spanish)) |
+| `variable_scores` / `breakdown` | 0–1 per variable and per category | Detail tooltip; the lowest one is the reason |
+| `max_altitude_m` | Highest altitude EcoCrop says the crop is grown at. **Not checked** against the point | "Grows up to 900 m": let the farmer compare with their farm |
+| `summary` | One sentence with the word and the score | Card headline |
+| `risks` | Variables that limit the crop here, with the value and the crop's best range; plus a note on a long dry season (≥ 4 months) | "What limits it" list |
+| `benefits` | Present when every variable is in the best range | "Why it fits" |
+| `data_gaps` | ~50 km climate, climate and pH only (no yields, years to harvest, shade, prices), no drainage, altitude not checked | "About this data", always reachable |
 
 ---
 
@@ -874,6 +918,14 @@ layouts (calendar cells can shrink to initials "E F M A M J J A S O N D"), table
 
 ---
 
+### 5.12 Permanent crops
+Show them in their own section of the results ("Permanent crops for this place" / "Cultivos
+permanentes para este lugar"), **after** the rotations and visually separate: they are a different
+decision (plant once, harvest for years). Never mix them into the rotation ranking or the crop
+picker. Colour by `suitability`, show `summary` and `risks`, and put the altitude line under each
+card. If the farmer picks a permanent crop as their current crop, say it is evaluated here, not in
+rotations.
+
 ## 6. Label maps (English / Spanish)
 
 Copy these into the frontend (the backend sends ids for these):
@@ -886,6 +938,14 @@ export const VARIABLE_LABELS = {
   soil_moisture: { en: "Soil moisture (dry soil)",  es: "Humedad del suelo (suelo seco)" },
   heat:          { en: "Heat (daily highs)",        es: "Calor (máximas diarias)" },
   frost:         { en: "Frost (coldest nights)",    es: "Helada (noches más frías)" },
+} as const;
+
+// GET /permanent-crops: `rainfall` there is the ANNUAL total, not the crop cycle.
+export const SUITABILITY_LABELS = {
+  good:       { en: "Good fit",   es: "Se adapta bien" },
+  fair:       { en: "Fair fit",   es: "Se adapta, con limitaciones" },
+  poor:       { en: "Poor fit",   es: "Se adapta poco" },
+  unsuitable: { en: "Not suited", es: "No se adapta" },
 } as const;
 
 export const CATEGORY_LABELS = {
@@ -1062,6 +1122,22 @@ export interface PlanRiskPlanting {
   failed_years: number; failure_rate: number; summary: LocalizedText;
   causes: PlanRiskCause[]; years: PlanRiskYear[]; enso_split: EnsoSplit | null; alternatives: PlanAlternative[];
 }
+// GET /permanent-crops
+export interface YearClimateSummary {
+  annual_rainfall_mm: number; temperature_c: number; hottest_month_max_c: number;
+  coldest_month_min_c: number; dry_months: number[];                          // 1..12
+}
+export interface PermanentCropFit {
+  crop_id: string; crop_name: LocalizedText; scientific_name: string;
+  score: number; suitability: "good" | "fair" | "poor" | "unsuitable";
+  variable_scores: Record<string, number>; breakdown: { climate: number | null; water: number | null; soil: number | null };
+  max_altitude_m: number | null; summary: LocalizedText; risks: LocalizedText[]; benefits: LocalizedText[];
+}
+export interface PermanentCropsResponse {
+  location: Location; year_climate: YearClimateSummary; crops: PermanentCropFit[];
+  data_sources: DataSources; data_gaps: LocalizedText[];
+}
+
 export interface PlanRiskResponse {
   location: Location; years_evaluated: YearsEvaluated; data_sources: string[];
   enso_now: EnsoNow | null; plantings: PlanRiskPlanting[]; data_gaps: LocalizedText[];

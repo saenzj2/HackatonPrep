@@ -1,0 +1,178 @@
+{
+  "location": {
+    "lat": 10.0,
+    "lon": -84.2
+  },
+  "year_climate": {
+    "annual_rainfall_mm": 1793.2,
+    "temperature_c": 23.45,
+    "hottest_month_max_c": 30.92,
+    "coldest_month_min_c": 19.06,
+    "dry_months": [
+      1,
+      2,
+      3
+    ]
+  },
+  "crops": [
+    {
+      "crop_id": "banana",
+      "crop_name": {
+        "en": "Banana",
+        "es": "Banano"
+      },
+      "scientific_name": "Musa acuminata",
+      "score": 1.0,
+      "suitability": "good",
+      "variable_scores": {
+        "temperature": 1.0,
+        "rainfall": 1.0,
+        "soil_ph": 1.0,
+        "heat": 1.0,
+        "frost": 1.0
+      },
+      "breakdown": {
+        "climate": 1.0,
+        "water": 1.0,
+        "soil": 1.0
+      },
+      "max_altitude_m": 2400.0,
+      "summary": {
+        "en": "Banana: good fit here (score 1.00 of 1)",
+        "es": "Banano: se adapta bien aquí (puntaje 1,00 de 1)"
+      },
+      "risks": [],
+      "benefits": [
+        {
+          "en": "Temperature, rain and soil pH here are all in the best range for banana",
+          "es": "La temperatura, la lluvia y el pH del suelo aquí están en el mejor rango para el banano"
+        }
+      ]
+    },
+    {
+      "crop_id": "cacao",
+      "crop_name": {
+        "en": "Cacao",
+        "es": "Cacao"
+      },
+      "scientific_name": "Theobroma cacao",
+      "score": 1.0,
+      "suitability": "good",
+      "variable_scores": {
+        "temperature": 1.0,
+        "rainfall": 1.0,
+        "soil_ph": 1.0,
+        "heat": 1.0,
+        "frost": 1.0
+      },
+      "breakdown": {
+        "climate": 1.0,
+        "water": 1.0,
+        "soil": 1.0
+      },
+      "max_altitude_m": 900.0,
+      "summary": {
+        "en": "Cacao: good fit here (score 1.00 of 1)",
+        "es": "Cacao: se adapta bien aquí (puntaje 1,00 de 1)"
+      },
+      "risks": [],
+      "benefits": [
+        {
+          "en": "Temperature, rain and soil pH here are all in the best range for cacao",
+          "es": "La temperatura, la lluvia y el pH del suelo aquí están en el mejor rango para el cacao"
+        }
+      ]
+    },
+    {
+      "crop_id": "coffee",
+      "crop_name": {
+        "en": "Coffee",
+        "es": "Café"
+      },
+      "scientific_name": "Coffea arabica",
+      "score": 1.0,
+      "suitability": "good",
+      "variable_scores": {
+        "temperature": 1.0,
+        "rainfall": 1.0,
+        "soil_ph": 1.0,
+        "heat": 1.0,
+        "frost": 1.0
+      },
+      "breakdown": {
+        "climate": 1.0,
+        "water": 1.0,
+        "soil": 1.0
+      },
+      "max_altitude_m": 2800.0,
+      "summary": {
+        "en": "Coffee: good fit here (score 1.00 of 1)",
+        "es": "Café: se adapta bien aquí (puntaje 1,00 de 1)"
+      },
+      "risks": [],
+      "benefits": [
+        {
+          "en": "Temperature, rain and soil pH here are all in the best range for coffee",
+          "es": "La temperatura, la lluvia y el pH del suelo aquí están en el mejor rango para el café"
+        }
+      ]
+    },
+    {
+      "crop_id": "pineapple",
+      "crop_name": {
+        "en": "Pineapple",
+        "es": "Piña"
+      },
+      "scientific_name": "Ananas comosus",
+      "score": 1.0,
+      "suitability": "good",
+      "variable_scores": {
+        "temperature": 1.0,
+        "rainfall": 1.0,
+        "soil_ph": 1.0,
+        "heat": 1.0,
+        "frost": 1.0
+      },
+      "breakdown": {
+        "climate": 1.0,
+        "water": 1.0,
+        "soil": 1.0
+      },
+      "max_altitude_m": 1800.0,
+      "summary": {
+        "en": "Pineapple: good fit here (score 1.00 of 1)",
+        "es": "Piña: se adapta bien aquí (puntaje 1,00 de 1)"
+      },
+      "risks": [],
+      "benefits": [
+        {
+          "en": "Temperature, rain and soil pH here are all in the best range for pineapple",
+          "es": "La temperatura, la lluvia y el pH del suelo aquí están en el mejor rango para la piña"
+        }
+      ]
+    }
+  ],
+  "data_sources": {
+    "climate": "nasa_power",
+    "soil": "openlandmap+nasa_smap",
+    "crops": "ecocrop_perennials"
+  },
+  "data_gaps": [
+    {
+      "en": "Climate comes from NASA POWER monthly averages over a square about 50 km wide, not measured on your farm",
+      "es": "El clima viene de promedios mensuales de NASA POWER para un cuadro de unos 50 km de lado, no se midió en su finca"
+    },
+    {
+      "en": "Scored on climate and soil pH only: no yields, years to the first harvest, shade, pests, diseases or prices",
+      "es": "Solo se evalúan el clima y el pH del suelo: no incluye rendimientos, años hasta la primera cosecha, sombra, plagas, enfermedades ni precios"
+    },
+    {
+      "en": "Soil drainage and soil moisture are not scored for permanent crops",
+      "es": "El drenaje y la humedad del suelo no se evalúan para cultivos permanentes"
+    },
+    {
+      "en": "Altitude is not checked. EcoCrop grows cacao up to 900 m, coffee up to 2800 m, pineapple up to 1800 m, banana up to 2400 m: compare with your farm's altitude",
+      "es": "No se revisa la altura. Según EcoCrop se siembra cacao hasta 900 m, café hasta 2800 m, piña hasta 1800 m, banano hasta 2400 m: compárelo con la altura de su finca"
+    }
+  ]
+}

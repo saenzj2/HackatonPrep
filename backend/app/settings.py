@@ -39,6 +39,7 @@ class EnvSettings(BaseSettings):
     # Lets a fresh clone run in `cached` mode with real data. None disables it (tests do).
     cache_snapshot_dir: Path | None = BACKEND_DIR / "app" / "cache" / "snapshots"
     crop_catalog: Path = BACKEND_DIR / "data" / "ecocrop_subset.csv"
+    perennial_crop_catalog: Path = BACKEND_DIR / "data" / "perennial_crops.csv"
     cors_origins: str = "http://localhost:3000,http://localhost:5173"
     # Static frontend served by the API under /app (FRONTEND_DIR). None = API only (tests, local
     # dev without a frontend). The Docker image sets it, so one service hosts both parts.
@@ -108,6 +109,8 @@ class MvpConfig(BaseModel):
 
     region: Region
     crops: list[str] = Field(min_length=2, max_length=8)
+    # Permanent crops for GET /permanent-crops (data/perennial_crops.csv). Not in rotations.
+    permanent_crops: list[str] = Field(default_factory=list, max_length=8)
     variables: list[Variable] = Field(min_length=1)
     priority_weights: PriorityWeights
     seasons: list[SeasonConfig] = Field(min_length=2, max_length=4)

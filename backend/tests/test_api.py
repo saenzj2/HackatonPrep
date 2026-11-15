@@ -100,9 +100,24 @@ def test_without_current_rotation_there_is_no_baseline(client):
     assert not any(r["is_current"] for r in body["rotations"])
 
 
+def test_rotation_with_potato_warns_to_check_the_altitude(client):
+    body = client.post(
+        "/recommendations", json={**CR, "crops": ["potato", "beans"], "top_n": 4}
+    ).json()
+    for r in body["rotations"]:
+        has_potato = any(step["crop_id"] == "potato" for step in r["sequence"])
+        warned = any(t["es"].startswith("Papa: revise la altura") for t in r["risks"])
+        assert warned == has_potato, r["sequence"]
+    # once per rotation, even when potato is in both seasons
+    (both,) = [r for r in body["rotations"] if {s["crop_id"] for s in r["sequence"]} == {"potato"}]
+    assert sum(t["en"].startswith("Potato:") for t in both["risks"]) == 1
+
+
 def test_current_rotation_is_the_baseline(client):
     body = client.post(
-        "/recommendations", json={**CR, "current_rotation": ["maize", "maize"], "top_n": 9}
+        # top_n 50 (the max) lists every rotation, whatever the number of MVP crops.
+        "/recommendations",
+        json={**CR, "current_rotation": ["maize", "maize"], "top_n": 50},
     ).json()
     current = body["current_rotation"]
     assert [s["crop_id"] for s in current["sequence"]] == ["maize", "maize"]
@@ -232,6 +247,32 @@ def test_spanish_texts_read_right(client):
         "Muy seco para establecer maíz sembrado en febrero: febrero suele tener solo 18 mm de "
         "lluvia, y el maíz necesita unos 100 mm al mes para establecerse y crecer (mínimo 80)"
     ) in es
+
+
+def test_permanent_crops_scores_the_mvp_permanent_crops_best_first(client, config):
+    r = client.get("/permanent-crops", params={"lat": 10.0, "lon": -84.2})
+    assert r.status_code == 200, r.text
+    data = r.json()
+    assert {c["crop_id"] for c in data["crops"]} == set(config.permanent_crops)
+    scores = [c["score"] for c in data["crops"]]
+    assert scores == sorted(scores, reverse=True)
+    for crop in data["crops"]:
+        assert crop["score"] == pytest.approx(min(crop["variable_scores"].values()), abs=1e-4)
+    assert data["data_sources"]["crops"] == "ecocrop_perennials"
+    assert len(data["year_climate"]["dry_months"]) <= 12
+
+
+def test_permanent_crops_accepts_a_subset_and_says_altitude_is_not_checked(client):
+    r = client.get("/permanent-crops", params={"lat": 10.0, "lon": -84.2, "crops": ["cacao"]})
+    data = r.json()
+    assert [c["crop_id"] for c in data["crops"]] == ["cacao"]
+    assert data["crops"][0]["max_altitude_m"] == 900
+    assert any("cacao hasta 900 m" in g["es"] for g in data["data_gaps"])
+
+
+def test_permanent_crops_are_not_in_the_rotation_catalog(client):
+    ids = {c["id"] for c in client.get("/crops").json()["crops"]}
+    assert not ids & {"cacao", "coffee", "pineapple", "banana"}
 
 
 PLAN = {

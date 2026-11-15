@@ -21,7 +21,7 @@ comparison. Reasons marked *(check)* are judgement, not verified.
 | Crop | EcoCrop code | Family | Cycle (d, shortest) | Los Chiles window (sow) | What it adds |
 |---|---|---|---|---|---|
 | **Sunn hemp** (*Crotalaria juncea*) | 801 | Fabaceae | 60 | Aug–Oct | Fast cover crop and green manure; a legume that isn't a grain crop |
-| **Squash / ayote** (*Cucurbita moschata*) | 820 | Cucurbitaceae | 80 | Jul–Sep | New family; part of the maize–bean–squash milpa |
+| **Squash / ayote** (*Cucurbita moschata*) | 820 | Cucurbitaceae | 80 | Jul–Sep | ✅ Added 2026-11-15 (`squash`, in the MVP list). New family; part of the maize–bean–squash milpa |
 | **Peanut** (*Arachis hypogaea*) | 2199 | Fabaceae | 90 | May, Jul–Oct | Legume cash crop, nutritious |
 | **Soybean** (*Glycine max*) | 1150 | Fabaceae | 75 | Aug–Sep | High-protein legume |
 | **Hyacinth bean / lablab** (*Lablab purpureus*) | 1311 | Fabaceae | 70 | Aug–Sep | Food legume and cover crop |

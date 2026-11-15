@@ -36,6 +36,7 @@ from app.domain.indicators import monthly_indicators
 from app.domain.models import (
     CropProfile,
     MonthlyClimate,
+    PerennialCropProfile,
     Range,
     RotationResult,
     Season,
@@ -43,6 +44,14 @@ from app.domain.models import (
     SoilLayer,
     Weights,
 )
+from app.domain.perennials import (
+    PerennialFit,
+    dry_season_note,
+    perennial_fit,
+    year_climate,
+)
+from app.domain.perennials import rank as rank_perennials
+from app.domain.perennials import summary as perennial_summary
 from app.domain.plan_advice import (
     actions_for,
     day_month,
@@ -60,7 +69,7 @@ from app.domain.plan_risk import (
 )
 from app.domain.planting_windows import SowingMonth, fixed_limits, sowing_calendar
 from app.domain.planting_windows import planting_windows as find_planting_windows
-from app.domain.ranking import explain, rank_rotations
+from app.domain.ranking import crop_caveats, explain, rank_rotations
 from app.domain.suitability import MARGINAL_SCORE, cycle_rainfall_mm, season_climate
 from app.domain.text import Text, num, pct
 from app.domain.text import month as text_month
@@ -123,6 +132,17 @@ class AppContext:
         if unknown:
             raise UnknownCropError(
                 f"Unknown crop ids: {', '.join(unknown)}",
+                details={"unknown": unknown, "available": sorted(catalog)},
+            )
+        return [catalog[c] for c in dict.fromkeys(ids)]
+
+    def resolve_permanent_crops(self, ids: list[str] | None) -> list[PerennialCropProfile]:
+        catalog = self.sources.perennials.all()
+        ids = self.config.permanent_crops if ids is None else ids
+        unknown = [c for c in dict.fromkeys(ids) if c not in catalog]
+        if unknown:
+            raise UnknownCropError(
+                f"Unknown permanent crop ids: {', '.join(unknown)}",
                 details={"unknown": unknown, "available": sorted(catalog)},
             )
         return [catalog[c] for c in dict.fromkeys(ids)]
@@ -425,10 +445,10 @@ def _rotation_schema(r: RotationResult, rank: int, rc: _RotationContext) -> s.Ro
         is_current=is_current,
         score_delta_vs_current=(None if rc.current is None else _score(r.score - rc.current.score)),
         benefits=[_lt(t) for t in r.benefits],
-        risks=[_lt(t) for t in r.risks],
+        risks=[_lt(t) for t in (*r.risks, *crop_caveats(r))],
         data_gaps=[_lt(t) for t in _data_gaps(r, rc.sources, rc.variables)],
         evidence=[_lt(t) for t in _evidence(r, rc.climate, rc.soil, rc.sources)],
-        notes=[_lt(t) for t in (*r.benefits, *r.risks)],
+        notes=[_lt(t) for t in (*r.benefits, *r.risks, *crop_caveats(r))],
     )
 
 
@@ -738,6 +758,98 @@ def planting_windows(
         location=s.Location(lat=lat, lon=lon),
         crops=result,
         data_sources=s.DataSources(**ctx.sources.names()),
+    )
+
+
+# ---------------------------------------------------------------- permanent crops
+
+_PERMANENT_CROP_GAPS = (
+    Text(
+        "Climate comes from NASA POWER monthly averages over a square about 50 km wide, not "
+        "measured on your farm",
+        "El clima viene de promedios mensuales de NASA POWER para un cuadro de unos 50 km de "
+        "lado, no se midió en su finca",
+    ),
+    Text(
+        "Scored on climate and soil pH only: no yields, years to the first harvest, shade, pests, "
+        "diseases or prices",
+        "Solo se evalúan el clima y el pH del suelo: no incluye rendimientos, años hasta la "
+        "primera cosecha, sombra, plagas, enfermedades ni precios",
+    ),
+    Text(
+        "Soil drainage and soil moisture are not scored for permanent crops",
+        "El drenaje y la humedad del suelo no se evalúan para cultivos permanentes",
+    ),
+)
+
+
+def _altitude_gap(crops: Sequence[PerennialCropProfile]) -> Text | None:
+    """Altitude matters (cacao stops at ~900 m) but the API has no elevation for the point."""
+    limits = [(c, c.max_altitude_m) for c in crops if c.max_altitude_m is not None]
+    if not limits:
+        return None
+    en = ", ".join(f"{c.label.en.lower()} up to {num(m).en} m" for c, m in limits)
+    es = ", ".join(f"{c.label.es.lower()} hasta {num(m).es} m" for c, m in limits)
+    return Text(
+        f"Altitude is not checked. EcoCrop grows {en}: compare with your farm's altitude",
+        f"No se revisa la altura. Según EcoCrop se siembra {es}: compárelo con la altura de su "
+        "finca",
+    )
+
+
+def _permanent_crop_schema(fit: PerennialFit, dry_note: Text | None) -> s.PermanentCropFit:
+    risks = [*fit.risks, *([dry_note] if dry_note is not None else [])]
+    return s.PermanentCropFit(
+        crop_id=fit.crop.id,
+        crop_name=_lt(fit.crop.label),
+        scientific_name=fit.crop.scientific_name,
+        score=_score(fit.score),
+        suitability=fit.suitability,
+        variable_scores={k: _score(v) for k, v in fit.variable_scores.items()},
+        breakdown=s.CategoryBreakdown(
+            climate=_score(fit.categories.climate),
+            water=_score(fit.categories.water),
+            soil=_score(fit.categories.soil),
+        ),
+        max_altitude_m=fit.crop.max_altitude_m,
+        summary=_lt(perennial_summary(fit)),
+        risks=[_lt(t) for t in risks],
+        benefits=[_lt(t) for t in fit.benefits],
+    )
+
+
+def permanent_crops(
+    ctx: AppContext, lat: float, lon: float, crop_ids: list[str] | None
+) -> s.PermanentCropsResponse:
+    """Permanent crops (cacao, coffee…) at a point, scored on the whole year, best first."""
+    ctx.check_location(lat, lon)
+    crops = ctx.resolve_permanent_crops(crop_ids)  # unknown ids → 422 before any fetch
+    climate = ctx.sources.climate.monthly_climate(lat, lon)
+    soil = ctx.sources.soil.soil(lat, lon)
+    year = year_climate(climate)
+    fits = rank_perennials(
+        [perennial_fit(crop=c, year=year, soil=soil, variables=ctx.config.variables) for c in crops]
+    )
+    dry_note = dry_season_note(year)
+    altitude = _altitude_gap(crops)
+    return s.PermanentCropsResponse(
+        location=s.Location(lat=lat, lon=lon),
+        year_climate=s.YearClimateSummary(
+            annual_rainfall_mm=round(year.annual_rainfall_mm, 1),
+            temperature_c=round(year.temperature_c, 2),
+            hottest_month_max_c=round(year.hottest_month_max_c, 2),
+            coldest_month_min_c=round(year.coldest_month_min_c, 2),
+            dry_months=list(year.dry_months),
+        ),
+        crops=[_permanent_crop_schema(f, dry_note) for f in fits],
+        data_sources=s.DataSources(
+            climate=ctx.sources.climate.name,
+            soil=ctx.sources.soil.name,
+            crops=ctx.sources.perennials.name,
+        ),
+        data_gaps=[
+            _lt(t) for t in (*_PERMANENT_CROP_GAPS, *([altitude] if altitude is not None else []))
+        ],
     )
 
 

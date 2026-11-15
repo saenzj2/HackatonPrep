@@ -111,6 +111,45 @@ class CropProfile:
 
 
 @dataclass(frozen=True)
+class PerennialCropProfile:
+    """A permanent crop (cacao, coffee…): in the field for years, so no cycle, season or rotation.
+
+    Ranges come from EcoCrop. Its rainfall ranges are ANNUAL totals, which is what a permanent
+    crop is scored on (unlike annual crops, where they are applied per cycle)."""
+
+    id: str
+    name: str
+    scientific_name: str
+    family: str
+    temperature_c: Range  # mean annual temperature
+    rainfall_mm: Range  # annual rainfall
+    soil_ph: Range
+    sources: tuple[str, ...]
+    max_altitude_m: float | None = None  # EcoCrop altmx: highest altitude where it is grown
+    name_es: str | None = None
+    gender_es: str = "m"
+    verified: bool = False
+
+    @property
+    def label(self) -> Text:
+        return Text(self.name, self.name_es or self.name)
+
+    @property
+    def the_es(self) -> str:
+        """'el cacao' / 'la piña'."""
+        name = (self.name_es or self.name).lower()
+        return f"{'la' if self.gender_es == 'f' else 'el'} {name}"
+
+    def __post_init__(self) -> None:
+        if self.gender_es not in ("m", "f"):
+            raise DomainInvariantError(
+                f"{self.id}: gender_es must be 'm' or 'f', got {self.gender_es!r}"
+            )
+        if not self.sources:
+            raise DomainInvariantError(f"{self.id}: every crop needs at least one source")
+
+
+@dataclass(frozen=True)
 class MonthlyClimate:
     """Long-term monthly normals, index 0 = January."""
 

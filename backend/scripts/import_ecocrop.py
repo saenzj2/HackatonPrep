@@ -1,8 +1,9 @@
-"""Refresh the crop tolerance ranges in data/ecocrop_subset.csv from FAO EcoCrop.
+"""Refresh crop tolerance ranges in the crop CSVs (annual and permanent) from FAO EcoCrop.
 
 Source: the EcoCrop table published by the Adaptation Atlas (CGIAR) as Parquet. Only the
 temperature, rainfall and pH ranges and `needs_good_drainage` (from the drainage classes the crop
-tolerates) come from EcoCrop; every other column is kept as it is.
+tolerates) come from EcoCrop, plus `max_altitude_m` for permanent crops; every other column is
+kept as it is.
 Rows are matched by EcoCrop `ecoportcode` (ECOPORT_CODES), never by name: EcoCrop has several
 entries per species (subspecies, varieties).
 
@@ -31,6 +32,7 @@ log = logging.getLogger(__name__)
 
 ECOCROP_URL = "https://digital-atlas.s3.amazonaws.com/cdh/data/ecocrop/ecocrop.parquet"
 CSV_PATH = BACKEND_DIR / "data" / "ecocrop_subset.csv"
+PERENNIAL_CSV_PATH = BACKEND_DIR / "data" / "perennial_crops.csv"
 FIXTURE_PATH = BACKEND_DIR / "tests" / "fixtures" / "ecocrop" / "ecocrop_records.json"
 
 # Our crop id → EcoCrop ecoportcode (the main entry for the species, checked by hand).
@@ -40,7 +42,19 @@ ECOPORT_CODES = {
     "maize": 238663,  # Zea mays ssp. mays (entry 2175 "Zea mays" has empty fields)
     "sorghum": 48747,  # Sorghum bicolor
     "cowpea": 2153,  # Vigna unguiculata
+    "potato": 1971,  # Solanum tuberosum
+    "onion": 364,  # Allium cepa (551 is var. cepa, same ranges)
+    "squash": 820,  # Cucurbita moschata (ayote)
+    "jack_bean": 609,  # Canavalia ensiformis (frijol abono / canavalia)
 }
+# Permanent crops (GET /permanent-crops), same rules: the species' main entry, checked by hand.
+PERENNIAL_ECOPORT_CODES = {
+    "cacao": 2074,  # Theobroma cacao
+    "coffee": 749,  # Coffea arabica (Costa Rica grows arabica only)
+    "pineapple": 402,  # Ananas comosus
+    "banana": 7848,  # Musa acuminata (entry 2483 "Musa sp." has no cycle; 1503 is empty)
+}
+CATALOGS = ((CSV_PATH, ECOPORT_CODES), (PERENNIAL_CSV_PATH, PERENNIAL_ECOPORT_CODES))
 
 # Our CSV column → EcoCrop column. Units: °C, mm (EcoCrop: annual rainfall, see
 # docs/sources/ecocrop.md for how the app uses it), pH.
@@ -61,12 +75,16 @@ RANGE_COLUMNS = {
 # `drar`: soil drainage classes the crop tolerates (a list),
 # e.g. ["poorly (saturated >50% of year)"] for rice.
 LIST_COLUMNS = ["drar"]
+# Our CSV column → EcoCrop column, written only when the CSV has the column (perennial CSV).
+# altmx: maximum altitude (m) where the crop is grown.
+OPTIONAL_COLUMNS = {"max_altitude_m": "altmx"}
 FIXTURE_COLUMNS = [
     "ecoportcode",
     "scientificname",
     *RANGE_COLUMNS.values(),
     "gmin",
     "gmax",
+    *OPTIONAL_COLUMNS.values(),
     *LIST_COLUMNS,
 ]
 DRAINAGE_COLUMN = "needs_good_drainage"  # our CSV column, after is_cover_crop
@@ -74,11 +92,12 @@ SOURCE_PREFIX = "FAO EcoCrop"  # any old EcoCrop citation in `sources` is replac
 
 
 def load_records(parquet: Path) -> dict[int, dict[str, Any]]:
-    """EcoCrop rows for ECOPORT_CODES, keyed by ecoportcode, as plain JSON-able values."""
+    """EcoCrop rows for every catalog's codes, keyed by ecoportcode, as plain JSON-able values."""
     import pandas as pd  # noqa: PLC0415  (only this script needs pandas + pyarrow)
 
     df = pd.read_parquet(parquet)
-    rows = df[df["ecoportcode"].isin(ECOPORT_CODES.values())]
+    codes = {code for _, catalog in CATALOGS for code in catalog.values()}
+    rows = df[df["ecoportcode"].isin(codes)]
     records: dict[int, dict[str, Any]] = {}
     for _, row in rows.iterrows():
         record: dict[str, Any] = {}
@@ -90,7 +109,7 @@ def load_records(parquet: Path) -> dict[int, dict[str, Any]]:
                 continue
             record[column] = None if pd.isna(value) else getattr(value, "item", lambda v=value: v)()
         records[int(row["ecoportcode"])] = record
-    missing = set(ECOPORT_CODES.values()) - set(records)
+    missing = codes - set(records)
     if missing:
         raise SystemExit(f"EcoCrop file has no rows for ecoportcode {sorted(missing)}")
     return records
@@ -121,15 +140,19 @@ def needs_good_drainage(record: dict[str, Any]) -> bool:
 
 
 def apply_ranges(
-    rows: list[dict[str, str]], records: dict[int, dict[str, Any]], fetched: str
+    rows: list[dict[str, str]],
+    records: dict[int, dict[str, Any]],
+    fetched: str,
+    codes: dict[str, int] = ECOPORT_CODES,
 ) -> list[dict[str, str]]:
     """New CSV rows: EcoCrop ranges, EcoCrop cited first in `sources`, verified=true.
 
-    Only crops in ECOPORT_CODES change; every other column and row is kept as it is.
+    Only crops in `codes` change; every other column and row is kept as it is. Drainage and the
+    OPTIONAL_COLUMNS are written only in a CSV that has those columns.
     """
     out = []
     for row in rows:
-        code = ECOPORT_CODES.get(row["id"])
+        code = codes.get(row["id"])
         if code is None:
             out.append(dict(row))
             continue
@@ -140,8 +163,12 @@ def apply_ranges(
         new = dict(row)
         for ours, theirs in RANGE_COLUMNS.items():
             new[ours] = _number(record[theirs])
+        for ours, theirs in OPTIONAL_COLUMNS.items():
+            if ours in row:
+                new[ours] = "" if record[theirs] is None else _number(record[theirs])
         new["sources"] = _sources(row["sources"], code, fetched)
-        new[DRAINAGE_COLUMN] = "true" if needs_good_drainage(record) else "false"
+        if DRAINAGE_COLUMN in row:
+            new[DRAINAGE_COLUMN] = "true" if needs_good_drainage(record) else "false"
         new["verified"] = "true"
         out.append(new)
     return out
@@ -152,6 +179,23 @@ def _download(dest_dir: Path) -> Path:
     log.info("downloading %s", ECOCROP_URL)
     urllib.request.urlretrieve(ECOCROP_URL, dest)
     return dest
+
+
+def _rewrite(
+    path: Path, codes: dict[str, int], records: dict[int, dict[str, Any]], fetched: str
+) -> None:
+    with path.open(encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f)
+        header = list(reader.fieldnames or [])
+        if path == CSV_PATH and DRAINAGE_COLUMN not in header:
+            header.insert(header.index("is_cover_crop") + 1, DRAINAGE_COLUMN)
+        rows = list(reader)
+    new_rows = apply_ranges(rows, records, fetched, codes)
+    with path.open("w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=header, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(new_rows)
+    log.info("wrote %s (%d crops from EcoCrop)", path.relative_to(BACKEND_DIR), len(codes))
 
 
 def main() -> None:
@@ -168,20 +212,8 @@ def main() -> None:
         parquet = _download(Path(tmp)) if args.download else args.parquet
         records = load_records(parquet)
 
-    with CSV_PATH.open(encoding="utf-8", newline="") as f:
-        reader = csv.DictReader(f)
-        header = list(reader.fieldnames or [])
-        if DRAINAGE_COLUMN not in header:
-            header.insert(header.index("is_cover_crop") + 1, DRAINAGE_COLUMN)
-        rows = list(reader)
-    new_rows = apply_ranges(rows, records, fetched)
-    with CSV_PATH.open("w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=header, lineterminator="\n")
-        writer.writeheader()
-        writer.writerows(new_rows)
-    log.info(
-        "wrote %s (%d crops from EcoCrop)", CSV_PATH.relative_to(BACKEND_DIR), len(ECOPORT_CODES)
-    )
+    for path, codes in CATALOGS:
+        _rewrite(path, codes, records, fetched)
 
     if args.write_fixture:
         FIXTURE_PATH.parent.mkdir(parents=True, exist_ok=True)
