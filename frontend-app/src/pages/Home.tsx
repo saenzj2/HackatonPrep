@@ -1,6 +1,33 @@
-import { Link } from "react-router";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router";
+import { api } from "../api/client";
+import { DEMO_FIELDS, DEMO_SCENARIO } from "../demoFields";
+import { usePlan } from "../state/PlanContext";
 
 export function Home() {
+  const navigate = useNavigate();
+  const { setField, setCrops, setCurrentRotation, setPriorities } = usePlan();
+  const [loading, setLoading] = useState(false);
+
+  // Fills the plan with a demo field and current rotation, then opens the results in one click.
+  async function tryDemo() {
+    const field = DEMO_FIELDS.find((f) => f.id === DEMO_SCENARIO.fieldId) ?? DEMO_FIELDS[0];
+    setLoading(true);
+    try {
+      const conditions = await api.conditions(field.lat, field.lon);
+      const seasons = conditions.seasons.map(({ name, months }) => ({ name, months }));
+      setField({ lat: field.lat, lon: field.lon, name: field.name, seasons });
+      setCrops(null);
+      setPriorities(null);
+      setCurrentRotation(seasons.map(() => DEMO_SCENARIO.currentCrop));
+      navigate("/results");
+    } catch {
+      navigate("/field"); // the field step explains the problem and offers the demo fields
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="stack">
       <section className="hero">
@@ -14,6 +41,9 @@ export function Home() {
           <Link to="/field" className="btn">
             Start with my field
           </Link>
+          <button type="button" className="btn btn--demo" onClick={() => void tryDemo()} disabled={loading}>
+            {loading ? "Loading demo…" : "Try a demo"}
+          </button>
           <Link to="/learn" className="btn btn--secondary">
             How it works
           </Link>

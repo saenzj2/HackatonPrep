@@ -44,7 +44,8 @@ interface PlanContextValue {
   setField: (field: Field) => void;
   setCrops: (crops: string[] | null) => void;
   setCurrentRotation: (rotation: string[]) => void;
-  setPriorities: (priorities: Priorities) => void;
+  /** null = back to the MVP default weights. */
+  setPriorities: (priorities: Priorities | null) => void;
 }
 
 const PlanContext = createContext<PlanContextValue | null>(null);
