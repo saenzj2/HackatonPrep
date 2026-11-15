@@ -3,14 +3,16 @@
 A rotation is one crop per season, repeated every year, so transitions are cyclic
 (the last season is followed by the first one of the next year).
 
-score = mean(crop/season scores) + rotation adjustments, clamped to 0..1
-  - monoculture penalty: same crop in consecutive seasons (pest/disease build-up, soil depletion)
-  - same-family penalty: different crops of the same botanical family in consecutive seasons
-    (they share most pests and diseases, so the cycle is not broken)
-  - legume bonus: legume after a non-legume (biological nitrogen fixation for the next crop)
-A rotation is "viable" only if every crop/season score is > 0.
+score = mean(crop/season scores) + rotation adjustments / number of seasons, clamped to 0..1.
+The adjustments come from the rotation rules in rotation_rules.py (monoculture, same family,
+legume after a non-legume, two heavy feeders in a row, ...), applied to every consecutive pair.
+A rotation is "viable" only if every crop/season score is > 0. Rules lower or raise the score,
+they never make a rotation non-viable.
 
-Each rotation carries plain-language `benefits` and `risks` for the farmer.
+Each rotation carries plain-language `benefits` and `risks` for the farmer (T4.4, #29). `risks`
+always ends with "Local review: ..." items: what this tool does not judge, for a local agronomist
+or extension officer to check before acting. `benefits` is never empty: if nothing qualifies, it
+says so.
 """
 
 from __future__ import annotations
@@ -29,14 +31,27 @@ from app.domain.models import (
     SoilConditions,
     Weights,
 )
+from app.domain.rotation_rules import judge_transition
 from app.domain.suitability import crop_season_fit, season_climate
 from app.errors import DomainInvariantError
 
-MONOCULTURE_PENALTY = 0.10
-SAME_FAMILY_PENALTY = 0.05
-LEGUME_BONUS = 0.05
 # A category (climate, water, soil) at or above this is listed as a benefit.
 STRONG_CATEGORY = 0.8
+
+# Said instead of an empty list (possible for monoculture or same family with a weak fit).
+NO_BENEFIT = (
+    "No benefit found by the rotation rules and no strong climate, water or soil fit; "
+    "compare with the other options"
+)
+# What the score does not see. Always listed, so the farmer knows where local expertise is needed.
+# Pests and diseases are only approximated by crop family (rotation_rules.py); slope and erosion
+# (erosion.py) are not part of the ranking; seasons are rainfed (mvp.yaml); markets and labour are
+# not modelled.
+LOCAL_REVIEW_UNSCORED = (
+    "Local review: actual pest and disease pressure (judged here only by crop family), field "
+    "slope and erosion, irrigation, labour and market prices are not scored; ask a local "
+    "agronomist or extension officer to check them for this field"
+)
 
 
 def _mean_category(fits: Sequence[CropSeasonFit], name: str) -> float | None:
@@ -52,29 +67,10 @@ def score_rotation(fits: Sequence[CropSeasonFit]) -> RotationResult:
     benefits: list[str] = []
     risks: list[str] = []
     for i in range(n):
-        prev, cur = fits[i - 1].crop, fits[i].crop  # i-1 wraps around: cyclic
-        if cur.id == prev.id:
-            adjustment -= MONOCULTURE_PENALTY / n
-            risks.append(
-                f"{cur.name} follows itself: monoculture builds up pests and depletes the soil"
-            )
-            continue
-        if cur.family == prev.family:
-            adjustment -= SAME_FAMILY_PENALTY / n
-            risks.append(
-                f"{cur.name} after {prev.name}: same family ({cur.family}), "
-                "the pest and disease cycle is not broken"
-            )
-        else:
-            benefits.append(
-                f"{prev.name} ({prev.family}) → {cur.name} ({cur.family}): "
-                "family change breaks pest and disease cycles"
-            )
-        if cur.is_legume and not prev.is_legume:
-            adjustment += LEGUME_BONUS / n
-            benefits.append(
-                f"{cur.name} (legume) after {prev.name}: fixes nitrogen for the next crop"
-            )
+        judgement = judge_transition(fits[i - 1].crop, fits[i].crop)  # i-1 wraps around: cyclic
+        adjustment += judgement.adjustment / n
+        for hit in judgement.hits:
+            (benefits if hit.effect == "benefit" else risks).append(hit.reason)
     for f in fits:
         risks.extend(f.risks)
     breakdown = CategoryScores(
@@ -85,14 +81,25 @@ def score_rotation(fits: Sequence[CropSeasonFit]) -> RotationResult:
     for name, value in vars(breakdown).items():
         if value is not None and value >= STRONG_CATEGORY:
             benefits.append(f"Strong {name} fit across the year ({value:.2f})")
+    risks.extend(local_review(fits))
     return RotationResult(
         sequence=tuple(fits),
         score=min(1.0, max(0.0, base + adjustment)),
         breakdown=breakdown,
         viable=all(f.score > 0 for f in fits),
-        benefits=tuple(dict.fromkeys(benefits)),  # dedupe, keep order
+        benefits=tuple(dict.fromkeys(benefits)) or (NO_BENEFIT,),  # dedupe, keep order
         risks=tuple(dict.fromkeys(risks)),
     )
+
+
+def local_review(fits: Sequence[CropSeasonFit]) -> list[str]:
+    """Where local expertise is needed before acting on this rotation. Never empty."""
+    steps = ", ".join(f"{f.crop.name} in {f.season.name}" for f in fits)
+    return [
+        f"Local review: check sowing dates and varieties for {steps}; the seasons here are fixed "
+        "calendar months, not the local planting calendar",
+        LOCAL_REVIEW_UNSCORED,
+    ]
 
 
 def rank_rotations(

@@ -71,6 +71,21 @@ def test_rotations_explain_benefits_risks_gaps_and_evidence(client):
     assert rot["notes"] == rot["benefits"] + rot["risks"]
 
 
+@pytest.mark.parametrize("current", [None, ["maize", "beans"], ["rice", "rice"]])
+def test_every_strategy_carries_all_five_explanation_parts(client, current):
+    """#29: why (explanation), evidence, benefits, information gaps, risks for local review."""
+    body = client.post("/recommendations", json={**CR, "top_n": 9, "current_rotation": current})
+    strategies = body.json()["rotations"]
+    if current:
+        strategies.append(body.json()["current_rotation"])
+    for rot in strategies:
+        ids = [step["crop_id"] for step in rot["sequence"]]
+        assert rot["explanation"], ids
+        for part in ("evidence", "benefits", "data_gaps", "risks"):
+            assert rot[part], f"{part} empty for {ids}"
+        assert any(r.startswith("Local review") for r in rot["risks"]), ids
+
+
 def test_without_current_rotation_there_is_no_baseline(client):
     body = client.post("/recommendations", json=CR).json()
     assert body["current_rotation"] is None
@@ -106,6 +121,15 @@ def test_current_rotation_crops_join_the_candidates(client):
         json={**CR, "crops": ["beans", "maize"], "current_rotation": ["sorghum", "sorghum"]},
     ).json()
     assert body["current_rotation"]["sequence"][0]["crop_id"] == "sorghum"
+
+
+def test_recommendation_is_for_the_requested_point(client):
+    # The API takes one representative point (e.g. picked inside a selected area) and echoes it
+    # unchanged: no snapping, no area or polygon average.
+    point = {"lat": 10.37, "lon": -84.47}
+    body = client.post("/recommendations", json=point).json()
+    assert body["location"] == point
+    assert body["conditions"]["location"] == point
 
 
 def test_same_input_same_output(client):

@@ -200,22 +200,25 @@
       "is_current": false,
       "score_delta_vs_current": 0.1,
       "benefits": [
-        "Maize (Poaceae) → Common bean (Fabaceae): family change breaks pest and disease cycles",
-        "Common bean (legume) after Maize: fixes nitrogen for the next crop",
-        "Common bean (Fabaceae) → Maize (Poaceae): family change breaks pest and disease cycles",
+        "Maize (Poaceae) → Common bean (Fabaceae): family change helps break pest and disease cycles",
+        "Common bean (legume) after Maize, a heavy feeder: it takes most of its nitrogen from the air instead of the soil, and its residues leave a little for the next crop",
+        "Common bean (Fabaceae) → Maize (Poaceae): family change helps break pest and disease cycles",
         "Strong climate fit across the year (1.00)",
         "Strong water fit across the year (1.00)",
         "Strong soil fit across the year (1.00)"
       ],
       "risks": [
-        "Maize cycle (120 d) is longer than postrera (~91 d)"
+        "Maize cycle (120 d) is longer than postrera (~91 d)",
+        "Local review: check sowing dates and varieties for Common bean in primera, Maize in postrera; the seasons here are fixed calendar months, not the local planting calendar",
+        "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field"
       ],
       "data_gaps": [
         "Soil pH and moisture are mock values, not measured for this location",
         "Soil moisture uses one generic range for all crops",
         "Frost risk uses one generic threshold for all crops",
         "Common bean tolerance ranges are approximate (not yet verified)",
-        "Maize tolerance ranges are approximate (not yet verified)"
+        "Maize tolerance ranges are approximate (not yet verified)",
+        "Scoring thresholds and rotation rule values are placeholders, not yet reviewed by an agronomist"
       ],
       "evidence": [
         "primera (May–Aug): mean 23.6 °C, average daily max 31.8 °C, coldest-month daily min 16.3 °C, 203 mm/month (NASA POWER monthly normals)",
@@ -225,13 +228,15 @@
         "Soil: pH 5.9, moisture 0.26 m³/m³ (mock data)"
       ],
       "notes": [
-        "Maize (Poaceae) → Common bean (Fabaceae): family change breaks pest and disease cycles",
-        "Common bean (legume) after Maize: fixes nitrogen for the next crop",
-        "Common bean (Fabaceae) → Maize (Poaceae): family change breaks pest and disease cycles",
+        "Maize (Poaceae) → Common bean (Fabaceae): family change helps break pest and disease cycles",
+        "Common bean (legume) after Maize, a heavy feeder: it takes most of its nitrogen from the air instead of the soil, and its residues leave a little for the next crop",
+        "Common bean (Fabaceae) → Maize (Poaceae): family change helps break pest and disease cycles",
         "Strong climate fit across the year (1.00)",
         "Strong water fit across the year (1.00)",
         "Strong soil fit across the year (1.00)",
-        "Maize cycle (120 d) is longer than postrera (~91 d)"
+        "Maize cycle (120 d) is longer than postrera (~91 d)",
+        "Local review: check sowing dates and varieties for Common bean in primera, Maize in postrera; the seasons here are fixed calendar months, not the local planting calendar",
+        "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field"
       ]
     },
     {
@@ -288,20 +293,24 @@
       "is_current": false,
       "score_delta_vs_current": 0.1,
       "benefits": [
-        "Common bean (Fabaceae) → Maize (Poaceae): family change breaks pest and disease cycles",
-        "Maize (Poaceae) → Common bean (Fabaceae): family change breaks pest and disease cycles",
-        "Common bean (legume) after Maize: fixes nitrogen for the next crop",
+        "Common bean (Fabaceae) → Maize (Poaceae): family change helps break pest and disease cycles",
+        "Maize (Poaceae) → Common bean (Fabaceae): family change helps break pest and disease cycles",
+        "Common bean (legume) after Maize, a heavy feeder: it takes most of its nitrogen from the air instead of the soil, and its residues leave a little for the next crop",
         "Strong climate fit across the year (1.00)",
         "Strong water fit across the year (1.00)",
         "Strong soil fit across the year (1.00)"
       ],
-      "risks": [],
+      "risks": [
+        "Local review: check sowing dates and varieties for Maize in primera, Common bean in postrera; the seasons here are fixed calendar months, not the local planting calendar",
+        "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field"
+      ],
       "data_gaps": [
         "Soil pH and moisture are mock values, not measured for this location",
         "Soil moisture uses one generic range for all crops",
         "Frost risk uses one generic threshold for all crops",
         "Maize tolerance ranges are approximate (not yet verified)",
-        "Common bean tolerance ranges are approximate (not yet verified)"
+        "Common bean tolerance ranges are approximate (not yet verified)",
+        "Scoring thresholds and rotation rule values are placeholders, not yet reviewed by an agronomist"
       ],
       "evidence": [
         "primera (May–Aug): mean 23.6 °C, average daily max 31.8 °C, coldest-month daily min 16.3 °C, 203 mm/month (NASA POWER monthly normals)",
@@ -311,12 +320,14 @@
         "Soil: pH 5.9, moisture 0.26 m³/m³ (mock data)"
       ],
       "notes": [
-        "Common bean (Fabaceae) → Maize (Poaceae): family change breaks pest and disease cycles",
-        "Maize (Poaceae) → Common bean (Fabaceae): family change breaks pest and disease cycles",
-        "Common bean (legume) after Maize: fixes nitrogen for the next crop",
+        "Common bean (Fabaceae) → Maize (Poaceae): family change helps break pest and disease cycles",
+        "Maize (Poaceae) → Common bean (Fabaceae): family change helps break pest and disease cycles",
+        "Common bean (legume) after Maize, a heavy feeder: it takes most of its nitrogen from the air instead of the soil, and its residues leave a little for the next crop",
         "Strong climate fit across the year (1.00)",
         "Strong water fit across the year (1.00)",
-        "Strong soil fit across the year (1.00)"
+        "Strong soil fit across the year (1.00)",
+        "Local review: check sowing dates and varieties for Maize in primera, Common bean in postrera; the seasons here are fixed calendar months, not the local planting calendar",
+        "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field"
       ]
     },
     {
@@ -378,13 +389,16 @@
         "Strong soil fit across the year (1.00)"
       ],
       "risks": [
-        "Common bean follows itself: monoculture builds up pests and depletes the soil"
+        "Common bean follows itself (monoculture): pests and diseases of Common bean build up season after season",
+        "Local review: check sowing dates and varieties for Common bean in primera, Common bean in postrera; the seasons here are fixed calendar months, not the local planting calendar",
+        "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field"
       ],
       "data_gaps": [
         "Soil pH and moisture are mock values, not measured for this location",
         "Soil moisture uses one generic range for all crops",
         "Frost risk uses one generic threshold for all crops",
-        "Common bean tolerance ranges are approximate (not yet verified)"
+        "Common bean tolerance ranges are approximate (not yet verified)",
+        "Scoring thresholds and rotation rule values are placeholders, not yet reviewed by an agronomist"
       ],
       "evidence": [
         "primera (May–Aug): mean 23.6 °C, average daily max 31.8 °C, coldest-month daily min 16.3 °C, 203 mm/month (NASA POWER monthly normals)",
@@ -397,7 +411,9 @@
         "Strong climate fit across the year (1.00)",
         "Strong water fit across the year (1.00)",
         "Strong soil fit across the year (1.00)",
-        "Common bean follows itself: monoculture builds up pests and depletes the soil"
+        "Common bean follows itself (monoculture): pests and diseases of Common bean build up season after season",
+        "Local review: check sowing dates and varieties for Common bean in primera, Common bean in postrera; the seasons here are fixed calendar months, not the local planting calendar",
+        "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field"
       ]
     }
   ],
@@ -460,14 +476,17 @@
       "Strong soil fit across the year (1.00)"
     ],
     "risks": [
-      "Maize follows itself: monoculture builds up pests and depletes the soil",
-      "Maize cycle (120 d) is longer than postrera (~91 d)"
+      "Maize follows itself (monoculture): pests and diseases of Maize build up season after season",
+      "Maize cycle (120 d) is longer than postrera (~91 d)",
+      "Local review: check sowing dates and varieties for Maize in primera, Maize in postrera; the seasons here are fixed calendar months, not the local planting calendar",
+      "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field"
     ],
     "data_gaps": [
       "Soil pH and moisture are mock values, not measured for this location",
       "Soil moisture uses one generic range for all crops",
       "Frost risk uses one generic threshold for all crops",
-      "Maize tolerance ranges are approximate (not yet verified)"
+      "Maize tolerance ranges are approximate (not yet verified)",
+      "Scoring thresholds and rotation rule values are placeholders, not yet reviewed by an agronomist"
     ],
     "evidence": [
       "primera (May–Aug): mean 23.6 °C, average daily max 31.8 °C, coldest-month daily min 16.3 °C, 203 mm/month (NASA POWER monthly normals)",
@@ -480,8 +499,10 @@
       "Strong climate fit across the year (1.00)",
       "Strong water fit across the year (1.00)",
       "Strong soil fit across the year (1.00)",
-      "Maize follows itself: monoculture builds up pests and depletes the soil",
-      "Maize cycle (120 d) is longer than postrera (~91 d)"
+      "Maize follows itself (monoculture): pests and diseases of Maize build up season after season",
+      "Maize cycle (120 d) is longer than postrera (~91 d)",
+      "Local review: check sowing dates and varieties for Maize in primera, Maize in postrera; the seasons here are fixed calendar months, not the local planting calendar",
+      "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field"
     ]
   },
   "method_version": "suitability-v1",

@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {bounds, normalize, constrain, selectionBounds} from './model.mjs';
+assert.deepEqual(normalize([0, 0, 0]), [0, 0, 0]);
+assert.deepEqual(normalize([4, 3, 3]), [0.4, 0.3, 0.3]);
+assert.deepEqual(constrain({x: -20, y: 30, w: 25, h: 25}), {x: 0, y: 30, w: 25, h: 25});
+assert.deepEqual(constrain({x: 90, y: 95, w: 25, h: 25}), {x: 75, y: 75, w: 25, h: 25});
+assert.deepEqual(selectionBounds({x: 0, y: 0, w: 100, h: 100}), bounds);
+const center = selectionBounds({x: 50, y: 50, w: 0, h: 0});
+assert.ok(Math.abs(center[0] + 84.6) < 1e-9);
+assert.ok(Math.abs(center[1] - 11) < 1e-9);
+console.log('PASS: normalization, selection limits and north-up WGS84 display bounds');

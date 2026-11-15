@@ -19,6 +19,7 @@ from app.domain.erosion import (
     RainfallThresholds,
     assess_erosion,
 )
+from app.domain.indicators import monthly_indicators
 from app.domain.models import (
     CropProfile,
     MonthlyClimate,
@@ -77,7 +78,7 @@ class AppContext:
     def resolve_crops(self, ids: list[str] | None) -> list[CropProfile]:
         catalog = self.sources.crops.all()
         ids = self.config.crops if ids is None else ids
-        unknown = [c for c in ids if c not in catalog]
+        unknown = [c for c in dict.fromkeys(ids) if c not in catalog]  # once each, in request order
         if unknown:
             raise UnknownCropError(
                 f"Unknown crop ids: {', '.join(unknown)}",
@@ -206,6 +207,12 @@ def _evidence(
     return list(dict.fromkeys(lines))
 
 
+PLACEHOLDER_RULES_GAP = (
+    "Scoring thresholds and rotation rule values are placeholders, "
+    "not yet reviewed by an agronomist"
+)
+
+
 def _data_gaps(r: RotationResult, sources: dict[str, str], variables: Sequence[str]) -> list[str]:
     """What is missing or approximate behind this result. Shown so nobody over-trusts it."""
     gaps: list[str] = []
@@ -220,6 +227,8 @@ def _data_gaps(r: RotationResult, sources: dict[str, str], variables: Sequence[s
     for c in dict.fromkeys(f.crop for f in r.sequence):
         if not c.verified:
             gaps.append(f"{c.name} tolerance ranges are approximate (not yet verified)")
+    # True until an agronomist reviews them (docs/decisions.md), so data_gaps is never empty.
+    gaps.append(PLACEHOLDER_RULES_GAP)
     return gaps
 
 
@@ -384,6 +393,71 @@ def erosion_risk(
         "max_daily_rainfall_mm": round(a.rainfall.max_daily_mm, 1),
         "combined_erosion_risk": int(a.combined_erosion_risk),
     }
+
+
+class MonthlyIndicatorsResult(TypedDict):
+    """One row of field_indicators(). Becomes an api/schemas.py schema once an endpoint exists.
+
+    `None` = no data for that variable in the month. heat_stress_days and frost_days come from true
+    daily max / min (NASA POWER daily T2M_MAX / T2M_MIN); they are `None` when the source has no
+    extrema (e.g. the mock source) or none for any day of the month.
+    """
+
+    year: int
+    month: int  # 1..12
+    days: int  # days of the month inside start..end
+    temperature_days: int  # days with a mean temperature
+    rainfall_days: int  # days with rainfall data
+    extrema_days: int  # days with both daily max and min temperature
+    mean_temperature_c: float | None  # mean of the daily means (T2M), 2 decimals
+    total_rainfall_mm: float | None  # sum over rainfall_days only, 1 decimal
+    dry_days: int | None  # rainfall < 1 mm
+    longest_dry_spell_days: int | None  # consecutive dry days, cut at month edges
+    extreme_rain_days: int | None  # rainfall >= 30 mm
+    heat_stress_days: int | None  # daily max >= 35 °C (provisional generic threshold)
+    frost_days: int | None  # daily min <= 0 °C
+
+
+def _round(x: float | None, ndigits: int) -> float | None:
+    return None if x is None else round(x, ndigits)
+
+
+def field_indicators(
+    *, weather_source: DailyWeatherSource, lat: float, lon: float, start: date, end: date
+) -> list[MonthlyIndicatorsResult]:
+    """Monthly indicator table for a field from its daily series, start..end inclusive.
+
+    Uses `temperature_max_c` / `temperature_min_c` columns when the source returns them; without
+    them, heat-stress and frost days stay None instead of being guessed from the daily mean.
+    Thresholds, units and missing-day rules: docs/indicators.md. Not exposed over HTTP yet.
+    """
+    df = weather_source.daily_weather(lat=lat, lon=lon, start=start, end=end)
+    has_extrema = {"temperature_max_c", "temperature_min_c"} <= set(df.columns)
+    months = monthly_indicators(
+        dates=[d.date() for d in df["date"]],
+        temperature_c=df["temperature_c"].tolist(),
+        rainfall_mm=df["rainfall_mm"].tolist(),
+        temperature_max_c=df["temperature_max_c"].tolist() if has_extrema else None,
+        temperature_min_c=df["temperature_min_c"].tolist() if has_extrema else None,
+    )
+    return [
+        {
+            "year": m.year,
+            "month": m.month,
+            "days": m.days,
+            "temperature_days": m.temperature_days,
+            "rainfall_days": m.rainfall_days,
+            "extrema_days": m.extrema_days,
+            "mean_temperature_c": _round(m.mean_temperature_c, 2),
+            "total_rainfall_mm": _round(m.total_rainfall_mm, 1),
+            "dry_days": m.dry_days,
+            "longest_dry_spell_days": m.longest_dry_spell_days,
+            "extreme_rain_days": m.extreme_rain_days,
+            "heat_stress_days": m.heat_stress_days,
+            "frost_days": m.frost_days,
+        }
+        for m in months
+    ]
 
 
 # ---------------------------------------------------------------- soil profile (OpenLandMap)

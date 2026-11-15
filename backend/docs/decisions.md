@@ -36,6 +36,122 @@ Template:
 - **Revisit if:** pH or texture should drive `soil` scoring; an endpoint is added (needs an
   api-contract.yaml change); we need 60–200 cm (the bands exist, add them to `DEPTHS_CM`).
 
+## 2026-11-14 — NASA POWER daily adapter requests true daily max / min (T2.3, #19)
+- **Decision:** The daily adapter now requests `T2M,T2M_MAX,T2M_MIN,PRECTOTCORR` and `parse_daily`
+  returns `temperature_max_c` / `temperature_min_c` (°C, as POWER sends them). `field_indicators`
+  already used those columns, so heat-stress and frost days are now real counts for POWER data.
+  The San José fixture was refetched from the public API on 2026-11-14 with the four parameters;
+  `T2M` and `PRECTOTCORR` are identical to the previous fixture. `parse_daily` also rejects a
+  response whose declared `parameters.<P>.units` differ from `C` / `mm/day` (no conversion is done).
+- **Why:** Heat-stress and frost days need the day's true extremes; the mean cannot show them.
+  POWER provides them in the same request at no extra cost.
+- **Cache:** the request string is the cache key, so daily entries cached before this change (key
+  with `T2M,PRECTOTCORR`) are never served. They have no extrema. In `cached` mode those points
+  raise `cache_miss` until refetched once in `live` mode. No daily cache is committed and demo
+  responses are not cached yet (#18), so nothing shipped is affected.
+- **Not changed:** `HEAT_STRESS_MAX_C = 35.0` stays a provisional generic placeholder (no
+  `agro-logic` review, not crop-specific, not scored). No scoring constant or crop scoring changed.
+  The mock daily source still has no extrema, so heat/frost stay `None` in `mock` mode.
+- **Alternatives considered:** serving old cache entries under the legacy key (would silently mix
+  responses with and without extrema); making extrema optional in `parse_daily` (a response that
+  drops them would quietly turn real counts into `None`).
+- **Revisit if:** demo fields are chosen and cached (#15, #18); the heat threshold gets an
+  `agro-logic` review or crop-specific values; an endpoint exposes the table (#40).
+
+## 2026-11-14 — Every strategy carries all five explanation parts (T4.4, #29)
+- **Decision:** No contract change and no score change. `ranking.score_rotation()` now ends `risks`
+  with two "Local review: …" items: (1) check sowing dates and varieties for each crop/season, since
+  seasons are fixed calendar months from `mvp.yaml`; (2) what the score does not see: actual pest and
+  disease pressure (only approximated by crop family in the #25 rules), field slope and erosion
+  (`erosion.py` is not part of the ranking), irrigation (seasons are rainfed), labour and market prices.
+  `benefits` says "No benefit found by the rotation rules and no strong climate, water or soil fit…"
+  instead of being empty (possible for monoculture or same family with a weak fit). `data_gaps` always
+  ends with "Scoring thresholds and rotation rule values are placeholders, not yet reviewed by an
+  agronomist". `explanation` (why) and `evidence` were already always filled.
+- **Why:** After #25, the top Alajuela strategy (maize → beans) still returned `risks: []`, so the
+  issue's "risks for local review" part was missing and nothing told the farmer where a local expert is
+  needed. With live data, verified crops and no generic variables, `data_gaps` could also be empty.
+- **Left out on purpose:** a legume inoculant note (no source in the repo supports it for these crops
+  and soils) and any list of individual rules in the no-benefit text (it would go stale as rules change).
+- **Alternatives considered:** a new `local_review` field (needs a contract change agreed with the
+  frontend; easy to split out later because every item starts with "Local review").
+- **Review limits:** wording not yet reviewed by `agro-logic`, an agronomist or the frontend.
+- **Revisit if:** the frontend wants local-review items as their own field, or an agronomist reviews
+  the rules (then drop the placeholder gap).
+
+## 2026-11-14 — Monthly field indicators from daily data; no heat/frost days from the daily mean (T2.3, #19)
+- **Decision:** `app/domain/indicators.py` turns a daily series into one row per calendar month:
+  mean temperature, rainfall total, dry days (< 1 mm), longest dry spell, extreme-rain days (>= 30 mm,
+  same as erosion's `HEAVY_RAIN_MM`), heat-stress days (daily max >= 35 °C) and frost days (daily
+  min <= 0 °C, = `FROST_C`). `services.field_indicators()` returns the table; no endpoint yet.
+  Heat-stress and frost days are `None` unless the source gives true daily max / min. Missing days
+  are skipped and counted per variable, end a dry spell, and an empty month gives `None`.
+  Full rules: `docs/indicators.md`.
+- **Why:** NASA POWER daily `T2M` is a daily mean and cannot show a hot afternoon or a frosty dawn,
+  so counting heat or frost days from it would be a false claim. 1 mm is the ETCCDI wet-day
+  threshold. Reusing 30 mm keeps the erosion and indicator counts consistent.
+- **Placeholders:** `HEAT_STRESS_MAX_C = 35.0` (generic, needs an `agro-logic` review before scoring).
+  `DRY_DAY_MM` and `HEAT_STRESS_MAX_C` are new; no existing scoring constant changed.
+- **Alternatives considered:** estimating max/min from the monthly climatology or a fixed daily
+  range (invented numbers); requesting `T2M_MAX`/`T2M_MIN` in the daily adapter now (needs a new real
+  fixture and changes the daily cache key; left as a follow-up).
+- **Open (issue #19 is not done):** (1) real data has no daily max / min yet, so heat-stress and
+  frost days are always `None` for POWER; (2) the 35 °C heat threshold is unvalidated (no
+  `agro-logic` review); (3) demo fields are not chosen (#15) and their daily responses are not
+  cached (#18), so the only table is for the San José fixture.
+- **Revisit if:** the daily adapter adds `T2M_MAX`/`T2M_MIN`; demo fields are chosen (#15); an
+  endpoint exposes the table (#40).
+
+## 2026-11-14 — Recommendations: representative point, no-baseline path, unsupported crops (T8.2, #41)
+- **Decision:** No new fields. The contract now states what `POST /recommendations`
+  already does: `lat`/`lon` (and every `Location`) are **one representative point**, never an area or
+  polygon average; omitting `current_rotation` is the supported "no current crop" path (no baseline,
+  `score_delta_vs_current` null); crop ids not in `GET /crops`, such as `pineapple` for the San Carlos
+  walkthrough, fail with `unknown_crop` (422) and are never substituted. `unknown_crop` details now list
+  each unknown id once (`["pineapple", "pineapple"]` used to report it twice). Description-only contract
+  change; pending review by the frontend (#43) and contract owners.
+- **Why:** The pilot demo selects an area on a map and assumes pineapple as current crop. Saying the
+  boundaries in the contract keeps the frontend from labeling a point value as an area average or
+  silently swapping pineapple for a configured crop.
+- **Alternatives considered:** Accepting a bbox/polygon and averaging (needs a new contract, gridded
+  data and sampling rules; out of MVP scope); adding pineapple now (traits, cycle and season fit are
+  unvalidated, #24); adding a data-gap line to every response (changes responses and examples for a
+  limitation the contract can state once).
+- **Revisit if:** The team agrees an area input and point-selection rule, or pineapple is added to the
+  catalog with sourced traits (#24).
+
+## 2026-11-14 — Rotation rules with verdicts and reasons (T3.3, #25)
+- **Decision:** `app/domain/rotation_rules.py` judges every consecutive crop pair (cyclic) and returns a
+  verdict (favoured / allowed / discouraged), one reason per rule that fired, and a score adjustment.
+  Rules: monoculture (−0.10, skips the others), same family (−0.05), family change (benefit, 0),
+  legume after a non-legume (+0.05; stronger reason after a heavy feeder), **new** two heavy feeders in
+  a row (−0.05), **new** non-host before a fungi-dependent crop (−0.05). Any risk → discouraged; else a
+  scoring benefit → favoured; else allowed. "Heavy feeder" / "depends on fungi" = the trait's API word
+  is `high` (`level_for`), so rules and API agree. `ranking.score_rotation()` now uses these rules.
+  For two different crops the penalties are capped at `MAX_PAIR_PENALTY` (0.075), so changing crops
+  always beats repeating one.
+- **Choices (engine owner, marceconejo):** legume bonus kept for any non-legume (no score change);
+  new rules get −0.05 placeholders, like same family; verdicts stay inside the domain (reasons already
+  reach the API as `benefits` / `risks`, no contract change); rules never make a rotation non-viable.
+- **`agro-logic` review (applied):** (1) cap added: rice → maize (same family + two heavy feeders) tied
+  with maize monoculture; (2) rice `nitrogen_demand` 1 → 0.67: rainfed rice removes about as much
+  nitrogen as sorghum, maize is the textbook heavy feeder; (3) reasons reworded to avoid overclaiming
+  (beans fix little nitrogen and most leaves with the grain; same family shares *some* pests; a family
+  change *helps* break cycles; monoculture builds up pests rather than "depleting the soil"). The
+  reviewer cited references from memory (e.g. Giller 2001; Herridge et al. 2008), not checked yet.
+- **Effect on the current 5 crops:** no score changes. Maize is the only heavy feeder now, so heavy after
+  heavy can't fire (maize → maize is monoculture), and fungi break needs a non-host crop. Both stay ready
+  for #24, which must add a non-host (see `docs/sources/ecocrop.md` to-do 5).
+- **Alternatives considered:** bonus only after heavy feeders (lowers sorghum → legume); verdict-only
+  rules with no score effect (left #27 without inputs); exposing verdicts in the API now (contract change
+  better done with explanations #29); `HEAVY_AFTER_HEAVY_PENALTY = 0.03` instead of a cap (fixes only
+  today's pair, not crops added later).
+- **Open (team, not this PR):** the review warns that beans planted in primera (May–Aug) in humid
+  San Carlos face heavy web blight; the regional bean season is around Nov–Dec. Check the season setup
+  in `mvp.yaml` with a local source (MAG / INTA) before the demo.
+- **Revisit if:** an agronomist disagrees with a rule or value; #29 needs per-transition verdicts in the
+  response; sorghum joins the MVP crops (closer-relative penalty, slow start after sorghum).
+
 ## 2026-11-14 — Crop schema v1: soil-health, nutrition and market traits (T3.1, #23)
 - **Decision:** `data/ecocrop_subset.csv` gains `root_depth_m`, `is_cover_crop`, `forage_value`,
   `nutrition_density`, `mycorrhizal_affinity`, `nitrogen_demand`, `market_note` and `sources`. The four

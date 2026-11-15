@@ -22,8 +22,9 @@ Folder rules load automatically when you work in a folder: each `CLAUDE.md` ther
 ## Hooks and permissions (`.claude/settings.json`)
 - After every Edit/Write of a `backend/**/*.py` file, ruff formats and fixes it automatically.
 - When you finish a turn that changed `backend/`, fast tests run. If they fail you'll be asked to fix them.
-- `.env` files are unreadable by design; `git commit`, `rm -rf`, force-push and `reset --hard` are denied.
-  `git add` asks first.
+- `.env` files are unreadable by design; `rm -rf`, force-push and `reset --hard` remain denied.
+  `git add` and `git commit` are subject to the active runtime permission rules; authorization in
+  conversation does not bypass a permission prompt or denial.
 - Personal overrides go in `.claude/settings.local.json` (gitignored).
 
 ## Working style
@@ -31,4 +32,6 @@ Folder rules load automatically when you work in a folder: each `CLAUDE.md` ther
 - Run `make check` before saying a task is done. Report failures honestly.
 - Parallel sessions: use a git worktree per task (`git worktree add ../hp-<task> -b feat/<task>`).
 - Ask before changing `mvp.yaml`, the API contract or scoring constants. Those are team decisions.
-- **Never commit, push or open PRs.** Leave changes uncommitted. People review and commit their own work.
+- Commit, push or open a PR only when the user explicitly authorizes that operation, and follow
+  the repository branch, review and CI rules. Never bypass runtime permission checks. Merge remains
+  a separate user decision; do not add AI attribution to commits.

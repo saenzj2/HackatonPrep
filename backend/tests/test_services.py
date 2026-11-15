@@ -7,11 +7,20 @@ import pandas as pd
 import pytest
 
 from app.cache import JsonCache
-from app.domain.models import TerrainSample
+from app.domain.models import (
+    CropProfile,
+    MonthlyClimate,
+    Range,
+    Season,
+    SoilConditions,
+    TerrainSample,
+    Weights,
+)
+from app.domain.ranking import rank_rotations
 from app.errors import OutOfRegionError, SourceDataError
 from app.integrations.mock import MockClimate, MockSoilProfile, MockTerrain
 from app.integrations.openlandmap import EarthEngineSoil
-from app.services import erosion_risk, get_soil_data
+from app.services import PLACEHOLDER_RULES_GAP, _data_gaps, erosion_risk, get_soil_data
 from app.settings import DataMode
 from tests.conftest import load_fixture
 
@@ -92,6 +101,46 @@ def test_erosion_risk_works_offline_with_mock_sources():
     out = erosion_risk(terrain_source=MockTerrain(), weather_source=MockClimate(), **JAN)
     assert set(out) == EXPECTED_KEYS
     assert out["combined_erosion_risk"] >= out["terrain_erosion_risk"]
+
+
+def test_data_gaps_are_never_empty_with_real_sources_and_verified_crops():
+    """Real climate and soil, verified crops, no generic variables: placeholder rules stay a gap."""
+    beans = CropProfile(
+        id="beans",
+        name="Beans",
+        scientific_name="x",
+        family="Fabaceae",
+        is_legume=True,
+        cycle_days=90,
+        temperature_c=Range(10, 18, 32, 40),
+        rainfall_mm=Range(200, 400, 1200, 2000),
+        soil_ph=Range(4.5, 5.5, 7.0, 8.5),
+        root_depth_m=1.0,
+        is_cover_crop=False,
+        forage_value=0.5,
+        nutrition_density=0.5,
+        mycorrhizal_affinity=0.5,
+        nitrogen_demand=0.5,
+        market_note="",
+        sources=("test",),
+        verified=True,
+    )
+    (r,) = rank_rotations(
+        crops=[beans],
+        seasons=[Season("a", (5, 6, 7)), Season("b", (9, 10, 11))],
+        climate=MonthlyClimate(
+            temperature_c=(25.0,) * 12,
+            rainfall_mm=(200.0,) * 12,
+            temperature_max_c=(30.0,) * 12,
+            temperature_min_c=(20.0,) * 12,
+        ),
+        soil=SoilConditions(ph=6.0, moisture_m3m3=0.3),
+        weights=Weights(1, 1, 1),
+        variables=["temperature", "rainfall", "soil_ph"],
+        top_n=1,
+    )
+    gaps = _data_gaps(r, {"climate": "nasa_power", "soil": "soilgrids"}, ["temperature"])
+    assert gaps == [PLACEHOLDER_RULES_GAP]
 
 
 # ---------------------------------------------------------------- get_soil_data

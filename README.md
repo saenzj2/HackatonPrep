@@ -11,9 +11,14 @@ or a separate repo) is still to be decided. `backend/` is self-contained, so it 
 **New to the team?** Read the [shared project context](PROJECT_CONTEXT.md) for the challenge,
 participants, data-source candidates, provisional MVP status and 14–15 November local event plan.
 For the selected San Carlos example, start with the [visual pilot baseline](docs/pilot-baseline/README.md):
-five attributed images, what each dataset does (and does not) show, and the next farmer-facing steps.
+six attributed images, what each dataset does (and does not) show, and the next farmer-facing steps.
 
 ## Quickstart
+
+Want a no-install interactive satellite/evidence preview? Start the independent
+[local MVP preview](tools/local-mvp-preview/README.md):
+`python tools/local-mvp-preview/serve.py` → **http://127.0.0.1:8765**.
+It is offline/local-only, separate from the team frontend; no San Carlos ranking is invented.
 
 Requirements: **Python ≥ 3.11** (macOS: `brew install python@3.12`), `make`, `git`.
 
@@ -24,7 +29,20 @@ make dev        # API on http://localhost:8000 — interactive docs at http://lo
 make check      # ruff + mypy + tests: exactly what CI runs
 ```
 
-Run `make` with no arguments to list every command. On Windows, use WSL or Git Bash.
+Run `make` with no arguments to list every command.
+
+**Windows:** use WSL, or Git Bash plus GNU make (Git for Windows does not include `make`; for example
+`winget install ezwinports.make`, then reopen Git Bash). The Makefile uses the Windows venv layout
+(`backend/.venv/Scripts/`) automatically. If the Microsoft Store opens or Python ≥ 3.11 is not found,
+pass the interpreter explicitly: `make setup PYTHON=py` (Windows launcher) or the full `python.exe` path.
+
+### What starts today
+
+| Part | Start | Status |
+|------|-------|--------|
+| Backend API | `make dev` → http://localhost:8000/docs | Works with mock data out of the box |
+| Local MVP preview | `python tools/local-mvp-preview/serve.py` → http://127.0.0.1:8765 | Independent offline explorer, not the team frontend |
+| Team frontend | — | Not in this repo yet; tracked in issue #14 |
 
 ### Try it
 
@@ -41,7 +59,7 @@ build against it from day 1. Real sources are plugged in one at a time.
 ## How it works
 
 ```
-Farmer picks location + crops + priorities
+Farmer picks location + candidate crops + priorities
         │
         ▼
 Frontend ──POST /recommendations──► API (backend/app/api)
@@ -69,13 +87,32 @@ When the team decides them, edit that file (and log why in
 | mode     | what it does                                                         |
 |----------|----------------------------------------------------------------------|
 | `mock`   | deterministic fake data, no network (default)                        |
-| `live`   | calls real APIs and saves every response to the local cache          |
+| `live`   | fetches on every request, saves valid responses; falls back to cache on source errors |
 | `cached` | serves only from the cache, never touches the network (**use for the demo**) |
 
 Soil pH and moisture remain **mocked in every mode**. NASA POWER monthly normals feed
 conditions and ranking; the daily-weather adapter exists but is not connected to those services.
 The optional `current_rotation` request now enables comparison with a farmer-supplied baseline,
 including score deltas, benefits, risks, evidence and data gaps (contract `0.2.0-draft`).
+The farmer does **not** need a current crop: omit `current_rotation` for recommendations without
+a baseline; omit `crops` to use configured candidates (an empty list is invalid). `crops` selects
+candidates, not proof of what is growing. If a farmer supplies existing crops, the current comparison
+accepts supported catalog IDs **one per configured season**, not an arbitrary single-crop baseline.
+The intended flow includes advice for existing crops and alternatives only when supported by evidence;
+the current heuristic model does not establish validated crop-specific advice. Unsupported crops or
+insufficient evidence are gaps, not permission to invent alternatives. Pineapple at San Carlos is one
+hypothetical example, not exclusive scope or a supported crop claim. See
+[the two entry paths](PROJECT_CONTEXT.md#two-entry-paths-one-evidence-standard); changes to request
+fields, crop-cycle assumptions or response behavior require contract-first agreement.
+
+**Preferred direction: cache first, live only explicitly configured/allowed.** The implemented default
+remains `mock`; `cached` never calls the network and returns `cache_miss` (503) for missing/unreadable
+data. `live` is not cache-first, and there is no shared freshness/quota preflight. Do not silently
+switch modes on a miss or hide stale data, mock inputs or incomplete evidence. The
+[proposed cache policy and quota boundary](PROJECT_CONTEXT.md#cache-first-direction-and-quota-boundaries)
+distinguishes current behavior from follow-up implementation, including the OpenTopography limit
+identified in open PR #66, not a NASA POWER-wide 50/day limit.
+
 The current endpoints take a representative **point**, not a selected rectangle or polygon average.
 External Sentinel-2, WorldCover, SoilGrids and FTW research images are not backend integrations.
 
@@ -108,7 +145,9 @@ External Sentinel-2, WorldCover, SoilGrids and FTW research images are not backe
 3. **Small PRs, CI must pass.** Run `make check` before pushing.
 4. **Log decisions** in `backend/docs/decisions.md` (date, decision, why, who).
 5. **Never commit secrets.** Keys go in `backend/.env` (gitignored). `backend/.env.example` lists them without values.
-6. **Demo safety.** Before presenting, run once in `live` to fill the cache, then switch to `cached`.
+6. **Demo safety.** Reuse suitable cached evidence first. Acquire only agreed missing requests with
+   explicit live configuration/authorization and a checked budget, then switch to `cached`. Verify both
+   cache-hit and cache-miss behavior before presenting; a miss must not trigger hidden live calls.
 
 ### Adding a data source (by hand)
 

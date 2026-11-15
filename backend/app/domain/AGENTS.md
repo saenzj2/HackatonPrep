@@ -9,7 +9,10 @@ General backend rules: [`backend/AGENTS.md`](../../AGENTS.md).
 - `suitability.py`: trapezoid scoring per variable → categories (climate, water, soil) → one crop/season score.
 - `erosion.py`: slope → terrain risk, daily rain → rainfall risk, combined erosion risk (0/1/2).
 - `soil.py`: derived soil values (`silt_pct` from clay and sand, only when plausible).
-- `ranking.py`: builds every rotation, applies rotation rules, sorts, writes the farmer-facing explanation.
+- `indicators.py`: daily series → monthly indicators (rain, dry spells, extremes; heat/frost only from true max/min).
+- `rotation_rules.py`: one crop after another → verdict (favoured / allowed / discouraged), reasons, score
+  adjustment. Add a rule: one function + one entry in `RULES`.
+- `ranking.py`: builds every rotation, applies the rotation rules to each pair, sorts, writes the explanation.
 
 ## Rules
 - **Pure.** No I/O, no network, no files, no logging, no clock, no randomness. Same input → same output,
