@@ -1,0 +1,23 @@
+{
+ "bulk_density_b0": 127,
+ "bulk_density_b10": 128,
+ "bulk_density_b30": 133,
+ "clay_b0": 38,
+ "clay_b10": 39,
+ "clay_b30": 38,
+ "field_capacity_b0": 34,
+ "field_capacity_b10": 34,
+ "field_capacity_b30": 34,
+ "organic_carbon_b0": 2,
+ "organic_carbon_b10": 3,
+ "organic_carbon_b30": 3,
+ "ph_b0": 66,
+ "ph_b10": 66,
+ "ph_b30": 67,
+ "sand_b0": 34,
+ "sand_b10": 34,
+ "sand_b30": 34,
+ "texture_class_b0": 4,
+ "texture_class_b10": 4,
+ "texture_class_b30": 4
+}

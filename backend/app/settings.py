@@ -14,6 +14,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from app.errors import ConfigError
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
+# The team's Google Cloud project registered for Earth Engine. Not a secret (an ID, not a
+# credential); GEE_PROJECT_ID in .env overrides it.
+DEFAULT_GEE_PROJECT_ID = "advance-topic-243700"
 
 Variable = Literal["temperature", "rainfall", "soil_ph", "soil_moisture", "heat", "frost"]
 
@@ -37,6 +40,23 @@ class EnvSettings(BaseSettings):
     # OpenTopography API key (OPEN_TOPOGRAPHY_KEY). Only needed to fetch new elevation data in live
     # mode; SecretStr keeps it out of logs and reprs.
     open_topography_key: SecretStr | None = None
+    # Google Earth Engine (OpenLandMap soil). Only needed to fetch new soil data in live mode.
+    # Locally the credentials from `earthengine authenticate` (or gcloud ADC) are used; set a
+    # service-account JSON key path for deployment. The key file itself is never read into settings.
+    gee_project_id: str = DEFAULT_GEE_PROJECT_ID
+    gee_service_account_key_file: Path | None = None
+
+    @field_validator("gee_project_id", mode="before")
+    @classmethod
+    def _blank_project_is_default(cls, v: object) -> object:
+        # `GEE_PROJECT_ID=` copied from .env.example means "use the team project", not "".
+        return DEFAULT_GEE_PROJECT_ID if isinstance(v, str) and not v.strip() else v
+
+    @field_validator("gee_service_account_key_file", mode="before")
+    @classmethod
+    def _blank_key_file_is_unset(cls, v: object) -> object:
+        # `KEY=` copied from .env.example means "not set", not Path(".").
+        return None if isinstance(v, str) and not v.strip() else v
 
     @property
     def cors_origin_list(self) -> list[str]:

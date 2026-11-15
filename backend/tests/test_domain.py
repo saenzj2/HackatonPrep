@@ -21,6 +21,8 @@ from app.domain.models import (
     Season,
     SeasonClimate,
     SoilConditions,
+    SoilLayer,
+    SoilProfile,
     TerrainSample,
     Weights,
     level_for,
@@ -31,6 +33,7 @@ from app.domain.ranking import (
     explain,
     rank_rotations,
 )
+from app.domain.soil import silt_pct
 from app.domain.suitability import (
     HEAT_MARGIN_C,
     crop_season_fit,
@@ -486,3 +489,35 @@ def test_assess_erosion_end_to_end():
     assert a.terrain_erosion_risk == MEDIUM
     assert a.rainfall_erosion_risk == HIGH
     assert a.combined_erosion_risk == HIGH
+
+
+# ---------------------------------------------------------------- soil
+@pytest.mark.parametrize(
+    ("clay", "sand", "expected"),
+    [
+        (38.0, 34.0, 28.0),
+        (0.0, 0.0, 100.0),
+        (60.0, 40.0, 0.0),  # exactly 100 %: no silt, still valid
+        (60.0, 41.0, None),  # fractions modelled separately can exceed 100 %
+        (None, 34.0, None),
+        (38.0, None, None),
+        (-1.0, 34.0, None),
+        (38.0, 101.0, None),
+    ],
+)
+def test_silt_pct_only_from_valid_fractions(clay, sand, expected):
+    result = silt_pct(clay, sand)
+    if expected is None:
+        assert result is None
+    else:
+        assert result == pytest.approx(expected)
+
+
+def _layer(depth_cm):
+    return SoilLayer(depth_cm, None, None, None, None, None, None, None, None)
+
+
+@pytest.mark.parametrize("depths", [(), (10, 0), (0, 0)])
+def test_soil_profile_needs_unique_sorted_depths(depths):
+    with pytest.raises(DomainInvariantError, match="unique depths"):
+        SoilProfile(lat=0, lon=0, layers=tuple(_layer(d) for d in depths))

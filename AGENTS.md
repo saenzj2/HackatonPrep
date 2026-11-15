@@ -23,7 +23,7 @@ Backend-specific rules: [`backend/AGENTS.md`](backend/AGENTS.md).
 User: location + crops + priorities
   → Frontend → POST /recommendations
   → backend/app/api (validate) → app/services (orchestrate)
-      → app/integrations: climate (NASA POWER), soil (mock for now), crops (EcoCrop CSV), all cached
+      → app/integrations: climate (NASA POWER), soil (mock for scoring; OpenLandMap profile via Earth Engine), crops (EcoCrop CSV), all cached
       → app/domain: suitability per crop/season → rotation ranking → explanation
   → JSON response → Frontend dashboard or map
 ```

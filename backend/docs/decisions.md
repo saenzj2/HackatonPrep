@@ -15,6 +15,27 @@ Template:
 
 ---
 
+## 2026-11-14 — Soil profile from OpenLandMap via Google Earth Engine
+- **Decision:** New source: 7 OpenLandMap assets (pH, organic carbon, clay, sand, bulk density,
+  field capacity at 33 kPa, USDA texture class) at 0, 10 and 30 cm, read with `earthengine-api`
+  (new dependency) in **one** `reduceRegion` request per location, on the native ~232 m grid.
+  `services.get_soil_data(latitude=, longitude=)` returns a JSON-ready dict (`SoilDataResult`) with
+  units, attribution and depths. `silt_pct = 100 − clay − sand` only when both are valid and add up to
+  100 % or less. Masked pixels give `None`. Field capacity is returned in m³/m³ (`field_capacity_m3m3`),
+  the project's moisture unit, not in volumetric %. Config: `GEE_PROJECT_ID` (defaults to the team
+  project `advance-topic-243700` in `settings.py`: an ID, not a secret), optional
+  `GEE_SERVICE_ACCOUNT_KEY_FILE`. Each pixel is cached forever, in every mode (static maps).
+- **Why:** The task asked for Earth Engine and these assets. Earth Engine was already set up for the
+  team's project. One combined request is about 3 s, against 21 separate band reads. `ee` is imported
+  lazily, because it takes ~0.6 s and mock or cached runs never need it.
+- **Not changed:** `Sources.soil` / `MockSoil` (pH + moisture used for suitability scoring) and the
+  API's `data_sources`. Feeding OpenLandMap pH into scoring changes recommendations, so it needs a team
+  decision (and moisture still has no source).
+- **Alternatives considered:** ISRIC SoilGrids REST API (no Earth Engine account, but beta and
+  rate-limited); one request per asset (7 round trips).
+- **Revisit if:** pH or texture should drive `soil` scoring; an endpoint is added (needs an
+  api-contract.yaml change); we need 60–200 cm (the bands exist, add them to `DEPTHS_CM`).
+
 ## 2026-11-14 — Crop schema v1: soil-health, nutrition and market traits (T3.1, #23)
 - **Decision:** `data/ecocrop_subset.csv` gains `root_depth_m`, `is_cover_crop`, `forage_value`,
   `nutrition_density`, `mycorrhizal_affinity`, `nitrogen_demand`, `market_note` and `sources`. The four

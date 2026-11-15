@@ -14,7 +14,8 @@ General backend rules: [`backend/AGENTS.md`](../AGENTS.md).
 | `test_architecture.py` | layer import rules |
 | `test_contract.py` | app ↔ `docs/api-contract.yaml` agreement. **Don't edit it to make it pass.** |
 | `test_integrations.py` | adapters: parse real fixtures, `respx` for HTTP, cache modes |
-| `test_services.py` | service functions with in-memory fake sources (e.g. `erosion_risk`) |
+| `test_services.py` | service functions with in-memory fake sources (e.g. `erosion_risk`, `get_soil_data`) |
+| `test_openlandmap.py` | Earth Engine soil adapter: fixtures, cache, error translation (fake sampler, no network) |
 | `test_config.py` | `mvp.yaml` validation |
 | `fixtures/<source>/` | **real** saved responses, one folder per source |
 
