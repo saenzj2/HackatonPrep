@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { api, type RecommendationRequest, type RecommendationResponse, type Rotation } from "../api/client";
+import { CompareTable } from "../components/CompareTable";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { NeedsField } from "../components/NeedsField";
 import { PlanRisk } from "../components/PlanRisk";
@@ -137,6 +138,8 @@ function ResultsView({ data }: { data: RecommendationResponse }) {
         <Breakdown rotation={best} />
         <Details rotation={best} />
       </article>
+
+      <CompareTable lat={data.location.lat} lon={data.location.lon} rotations={data.rotations} current={current} />
 
       <PlanRisk
         key={best.sequence.map((s) => s.crop_id).join("-")}
