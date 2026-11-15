@@ -1324,6 +1324,23 @@ details[open] > :not(summary) {
 }
 
 
+/* Footer: data sources and the AI disclosure, one line each. */
+.site-footer__line {
+  margin: 0;
+}
+
+.site-footer__line + .site-footer__line {
+  margin-top: 4px;
+}
+
+.site-footer .ai-mark {
+  vertical-align: 1px;
+  margin-right: 4px;
+}
+
+#ai-use th[scope="row"] {
+  font-weight: 600;
+
 /* Home: one-click demo, secondary to "Start with my field" but easy to spot on the hero. */
 .btn--demo {
   background: var(--growth-lime);

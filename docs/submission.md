@@ -113,15 +113,34 @@ https://terracosmos.space
 
 ## 6. Use of Super Intelligence (SI)
 
-Team decision (2026-11-15): declare **Code** only.
+Team decision (2026-11-15): declared **Code** only. **Updated the same day:** the web app and the
+presentation now include AI-generated media and text, so the form should also select **Text**,
+**Images** and **Video** (team to confirm before submitting).
 
 - **Code:** yes. AI coding assistants (Anthropic Claude Code and OpenAI Codex) helped write and
   review code, tests and repository documentation. Team members reviewed every change through pull
   requests and CI.
-- **Text and data, images, video, audio:** not selected. Crop data comes from FAO EcoCrop and
-  climate, soil and moisture data come from NASA POWER, NASA SMAP and OpenLandMap. None of it is
-  AI-generated. If the demo uses any AI-generated image or video, add a **visible watermark** and
-  select that option too.
+- **Video:** yes. Veo (Google) made the background video clips, labeled "AI generated video".
+- **Images:** yes. The logo and brand artwork were made with an AI image generator (name the tool),
+  labeled "AI generated" in the app footer and on the project page. Claude made the video end card.
+- **Text:** yes. Claude drafted the glossary and practice-card texts (reviewed by the team) and
+  helped with the project backlog.
+- **Data:** no. Crop data comes from FAO EcoCrop and climate, soil and moisture data come from NASA
+  POWER, NASA SMAP, GPM IMERG, MERRA-2 and OpenLandMap. None of it is AI-generated, and no AI model
+  produces the recommendations.
+
+Paste for the project page ("Use of AI tools"):
+
+> - **Veo (Google):** generated the background video clips used in the app and in our presentation
+>   video. Each clip is labeled "AI generated".
+> - **Claude (Anthropic):** created the end card of the video, drafted the glossary and the
+>   regenerative-practice card texts, helped organize the project backlog, and helped write code for
+>   the web app (Claude Code). All AI-drafted content was reviewed by the team.
+> - **[Tool]:** generated the Terra Cosmos logo and brand artwork. Labeled "AI generated" wherever it
+>   appears.
+>
+> NASA data and all scores come from our own code and public datasets (NASA POWER, SMAP, GPM IMERG,
+> MERRA-2, OpenLandMap, FAO EcoCrop); no AI model produces the recommendations.
 
 The form requires code and data to acknowledge SI in descriptive text and metadata. The README's
 "Use of AI tools" section does this.
