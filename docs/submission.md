@@ -100,8 +100,8 @@ https://terracosmos.space
 > crops, variables and weights are configuration, not code, so the tool can be extended.
 >
 > **Tools.** Python 3.12, FastAPI, Pydantic, pandas, httpx, Google Earth Engine API, an OpenAPI
-> contract, pytest (600+ tests), ruff and mypy, HTML/CSS/JavaScript, Docker, GitHub Actions, Railway
-> hosting and Cloudflare DNS.
+> contract, pytest (600+ tests), ruff and mypy, React with TypeScript and Vite, Leaflet maps with
+> OpenStreetMap tiles, Docker, GitHub Actions, Railway hosting and Cloudflare DNS.
 >
 > **Creativity and factors considered.** We prioritized explainability and honesty over a black-box
 > score: each number is traceable to its NASA source. The demo runs from cached real data so it
@@ -143,6 +143,12 @@ The form requires code and data to acknowledge SI in descriptive text and metada
 | Google Earth Engine | https://earthengine.google.com/ |
 | OpenTopography API | https://opentopography.org/ |
 | FastAPI | https://fastapi.tiangolo.com/ |
+| NOAA CPC Oceanic Niño Index (ONI), ENSO context for past seasons | https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt |
+| NOAA CPC Relative Oceanic Niño Index (RONI) | https://www.cpc.ncep.noaa.gov/data/indices/RONI.ascii.txt |
+| OpenStreetMap map tiles (© OpenStreetMap contributors, ODbL) | https://www.openstreetmap.org/copyright |
+| Leaflet (map library) | https://leafletjs.com/ |
+| React | https://react.dev/ |
+| Vite | https://vite.dev/ |
 | Railway (hosting) | https://railway.com/ |
 | Cloudflare (DNS) | https://www.cloudflare.com/ |
 | Anthropic Claude Code (AI coding assistant) | https://www.anthropic.com/claude-code |
