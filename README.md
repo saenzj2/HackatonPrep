@@ -43,7 +43,7 @@ pass the interpreter explicitly: `make setup PYTHON=py` (Windows launcher) or th
 | Backend API | `make dev` → http://localhost:8000/docs | Works with mock data out of the box |
 | Local MVP preview | `python tools/local-mvp-preview/serve.py` → http://127.0.0.1:8765 | Independent offline explorer, not the team frontend |
 | Frontend (skeleton) | `make dev` → http://localhost:8000/app/ | Static page served by the API; the real UI is issue #14. Start with [`backend/docs/frontend-guide.md`](backend/docs/frontend-guide.md) |
-| Production | **Actions → Deploy**, or merge to `main` | One Railway service, any team member can deploy: [`docs/deploy.md`](docs/deploy.md) |
+| Production | **https://terracosmos.space** | One Railway service. Merge to `main` (or **Actions → Deploy**) to deploy: [`docs/deploy.md`](docs/deploy.md) |
 
 ### Try it
 
