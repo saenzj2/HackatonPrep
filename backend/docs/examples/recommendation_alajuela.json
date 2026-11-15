@@ -136,12 +136,41 @@
       }
     ],
     "soil": {
-      "ph": 5.87,
-      "moisture_m3m3": 0.256
+      "ph": 6.43,
+      "moisture_m3m3": 0.4638,
+      "moisture_monthly_m3m3": [
+        0.4487,
+        0.4132,
+        0.3835,
+        0.3828,
+        0.4256,
+        0.485,
+        0.5045,
+        0.5077,
+        0.5098,
+        0.5151,
+        0.5096,
+        0.4797
+      ],
+      "texture_class": "clay loam",
+      "wetness_monthly": [
+        0.825,
+        0.7597,
+        0.7051,
+        0.7037,
+        0.7825,
+        0.8919,
+        0.9278,
+        0.9337,
+        0.9374,
+        0.9473,
+        0.937,
+        0.8821
+      ]
     },
     "data_sources": {
       "climate": "nasa_power",
-      "soil": "mock",
+      "soil": "openlandmap+nasa_smap",
       "crops": "ecocrop_subset"
     }
   },
@@ -159,7 +188,7 @@
           ],
           "crop_id": "beans",
           "crop_name": "Common bean",
-          "score": 1.0,
+          "score": 0.916,
           "variable_scores": {
             "temperature": 1.0,
             "rainfall": 1.0,
@@ -178,7 +207,7 @@
           ],
           "crop_id": "maize",
           "crop_name": "Maize",
-          "score": 1.0,
+          "score": 0.8594,
           "variable_scores": {
             "temperature": 1.0,
             "rainfall": 1.0,
@@ -189,54 +218,160 @@
           }
         }
       ],
-      "score": 1.0,
+      "score": 0.9127,
       "viable": true,
       "breakdown": {
         "climate": 1.0,
         "water": 1.0,
         "soil": 1.0
       },
-      "explanation": "Common bean (primera) → Maize (postrera): balanced fit across climate, water, soil (score 1.00).",
+      "explanation": {
+        "en": "Common bean (primera) → Maize (postrera): changing crop family cuts pest cycles, the bean-family crop adds a little nitrogen; watch: risk of waterlogging. Score 0.91 of 1.",
+        "es": "Frijol (primera) → Maíz (postrera): cambiar de familia corta plagas, la leguminosa aporta un poco de nitrógeno; ojo: riesgo de encharcamiento. Puntaje 0,91 de 1."
+      },
       "is_current": false,
-      "score_delta_vs_current": 0.1,
+      "score_delta_vs_current": 0.125,
       "benefits": [
-        "Maize (Poaceae) → Common bean (Fabaceae): family change helps break pest and disease cycles",
-        "Common bean (legume) after Maize, a heavy feeder: it takes most of its nitrogen from the air instead of the soil, and its residues leave a little for the next crop",
-        "Common bean (Fabaceae) → Maize (Poaceae): family change helps break pest and disease cycles",
-        "Strong climate fit across the year (1.00)",
-        "Strong water fit across the year (1.00)",
-        "Strong soil fit across the year (1.00)"
+        {
+          "en": "Common bean after maize: changing from the grass family to the bean family helps cut pest and disease cycles",
+          "es": "Frijol después de maíz: pasar de la familia de las gramíneas a la familia de las leguminosas ayuda a cortar el ciclo de plagas y enfermedades"
+        },
+        {
+          "en": "Common bean after maize, which needs a lot of nitrogen: common bean (bean family) takes part of its nitrogen from the air, so it draws less from the soil; its crop residues add a little for the next crop",
+          "es": "Frijol después de maíz, que pide mucho nitrógeno: el frijol (leguminosa) toma parte de su nitrógeno del aire y gasta menos del suelo; los rastrojos dejan un poco para el siguiente cultivo"
+        },
+        {
+          "en": "Maize after common bean: changing from the bean family to the grass family helps cut pest and disease cycles",
+          "es": "Maíz después de frijol: pasar de la familia de las leguminosas a la familia de las gramíneas ayuda a cortar el ciclo de plagas y enfermedades"
+        },
+        {
+          "en": "The climate suits these crops in every season",
+          "es": "El clima les sirve a estos cultivos en todas las épocas"
+        },
+        {
+          "en": "There is enough rain for these crops, but watch drainage in the wettest months",
+          "es": "Hay lluvia suficiente para estos cultivos, pero vigile el drenaje en los meses más lluviosos"
+        },
+        {
+          "en": "The soil pH suits these crops",
+          "es": "El pH del suelo les sirve a estos cultivos"
+        }
       ],
       "risks": [
-        "Maize cycle (120 d) is longer than postrera (~91 d)",
-        "Local review: check sowing dates and varieties for Common bean in primera, Maize in postrera; the seasons here are fixed calendar months, not the local planting calendar",
-        "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field"
+        {
+          "en": "Common bean in primera: risk of waterlogged soil. Satellite data for the area (~9 km) shows the soil near saturation (88% on average), and common bean doesn't tolerate standing water. Check how your field drains; raised beds help.",
+          "es": "Frijol en primera: riesgo de encharcamiento. Los datos satelitales de la zona (~9 km) muestran el suelo casi saturado (88 % en promedio) y el frijol no aguanta el agua empozada. Revise cómo drena su terreno; sembrar en lomillos o camas levantadas ayuda."
+        },
+        {
+          "en": "Maize in postrera: risk of waterlogged soil. Satellite data for the area (~9 km) shows the soil near saturation (94% on average), and maize doesn't tolerate standing water. Check how your field drains; raised beds help.",
+          "es": "Maíz en postrera: riesgo de encharcamiento. Los datos satelitales de la zona (~9 km) muestran el suelo casi saturado (94 % en promedio) y el maíz no aguanta el agua empozada. Revise cómo drena su terreno; sembrar en lomillos o camas levantadas ayuda."
+        },
+        {
+          "en": "Maize needs about 120 days but postrera lasts about 91: the harvest falls in the dry months, or use a shorter-cycle variety",
+          "es": "El maíz necesita unos 120 días y la postrera dura unos 91: la cosecha caería en verano, o use una variedad más precoz"
+        },
+        {
+          "en": "Local review: check sowing dates and varieties for common bean in primera, maize in postrera; the seasons here are fixed calendar months, not the local planting calendar",
+          "es": "Revisión local: confirme fechas de siembra y variedades para frijol en primera, maíz en postrera; las épocas aquí son meses fijos del calendario, no el calendario de siembra de su zona"
+        },
+        {
+          "en": "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field",
+          "es": "Revisión local: no se evaluaron la presión real de plagas y enfermedades (aquí solo se estima por familia), la pendiente y erosión, el riego, la mano de obra ni los precios; consúltelos con un técnico del MAG o un agrónomo de la zona"
+        }
       ],
       "data_gaps": [
-        "Soil pH and moisture are mock values, not measured for this location",
-        "Soil moisture uses one generic range for all crops",
-        "Frost risk uses one generic threshold for all crops",
-        "Common bean tolerance ranges are approximate (not yet verified)",
-        "Maize tolerance ranges are approximate (not yet verified)",
-        "Scoring thresholds and rotation rule values are placeholders, not yet reviewed by an agronomist"
+        {
+          "en": "Soil pH comes from the OpenLandMap soil map (250 m, 0-30 cm), not a soil test of your field",
+          "es": "El pH sale del mapa de suelos OpenLandMap (250 m, 0-30 cm), no de un análisis de suelo de su finca"
+        },
+        {
+          "en": "Soil moisture comes from NASA SMAP (satellite + model), averaged over ~9 km and the years 2020-2024, not measured in your field",
+          "es": "La humedad del suelo viene de NASA SMAP (satélite + modelo), promedio de un área de ~9 km y de los años 2020-2024; no se midió en su finca"
+        },
+        {
+          "en": "The waterlogging warning uses how close to saturated the soil is over ~9 km; it can't see your field's own drainage (slope, ditches)",
+          "es": "El aviso de encharcamiento usa qué tan saturado está el suelo en un área de ~9 km; no ve el drenaje propio de su terreno (pendiente, zanjas)"
+        },
+        {
+          "en": "The dry-soil limit is the same for all crops",
+          "es": "El límite de suelo seco es el mismo para todos los cultivos"
+        },
+        {
+          "en": "Frost risk uses the same limit for all crops",
+          "es": "El riesgo de helada usa el mismo límite para todos los cultivos"
+        },
+        {
+          "en": "Scoring thresholds and rotation rule values are provisional, not yet reviewed by an agronomist",
+          "es": "Los límites de puntaje y las reglas de rotación son provisionales; aún no los revisa un agrónomo"
+        }
       ],
       "evidence": [
-        "primera (May–Aug): mean 23.6 °C, average daily max 31.8 °C, coldest-month daily min 16.3 °C, 203 mm/month (NASA POWER monthly normals)",
-        "Common bean in primera: ~601 mm over its 90-day cycle (optimal 500 to 2000 mm)",
-        "postrera (Sep–Nov): mean 22.7 °C, average daily max 29.9 °C, coldest-month daily min 16.1 °C, 248 mm/month (NASA POWER monthly normals)",
-        "Maize in postrera: ~978 mm over its 120-day cycle (optimal 600 to 1200 mm)",
-        "Soil: pH 5.9, moisture 0.26 m³/m³ (mock data)"
+        {
+          "en": "primera (May–Aug): average 23.6 °C, hottest hours ~31.8 °C, coolest nights ~16.3 °C, ~203 mm of rain per month (NASA POWER, long-term averages)",
+          "es": "primera (may–ago): promedio 23,6 °C, máximas ~31,8 °C, mínimas ~16,3 °C, ~203 mm de lluvia al mes (NASA POWER, promedios de largo plazo)"
+        },
+        {
+          "en": "Common bean in primera: ~601 mm of rain over its 90-day cycle (best 500 to 2000 mm)",
+          "es": "Frijol en primera: ~601 mm de lluvia en su ciclo de 90 días (lo ideal es 500 a 2000 mm)"
+        },
+        {
+          "en": "postrera (Sep–Nov): average 22.7 °C, hottest hours ~29.9 °C, coolest nights ~16.1 °C, ~248 mm of rain per month (NASA POWER, long-term averages)",
+          "es": "postrera (set–nov): promedio 22,7 °C, máximas ~29,9 °C, mínimas ~16,1 °C, ~248 mm de lluvia al mes (NASA POWER, promedios de largo plazo)"
+        },
+        {
+          "en": "Maize in postrera: ~978 mm of rain over its 120-day cycle (best 600 to 1200 mm)",
+          "es": "Maíz en postrera: ~978 mm de lluvia en su ciclo de 120 días (lo ideal es 600 a 1200 mm)"
+        },
+        {
+          "en": "Soil: pH 6.4 (OpenLandMap soil map, 250 m); root zone saturation in primera (88%) and postrera (94%) (NASA SMAP, ~9 km)",
+          "es": "Suelo: pH 6,4 (mapa de suelos OpenLandMap, 250 m); saturación del suelo en primera (88 %) y postrera (94 %) (NASA SMAP, ~9 km)"
+        }
       ],
       "notes": [
-        "Maize (Poaceae) → Common bean (Fabaceae): family change helps break pest and disease cycles",
-        "Common bean (legume) after Maize, a heavy feeder: it takes most of its nitrogen from the air instead of the soil, and its residues leave a little for the next crop",
-        "Common bean (Fabaceae) → Maize (Poaceae): family change helps break pest and disease cycles",
-        "Strong climate fit across the year (1.00)",
-        "Strong water fit across the year (1.00)",
-        "Strong soil fit across the year (1.00)",
-        "Maize cycle (120 d) is longer than postrera (~91 d)",
-        "Local review: check sowing dates and varieties for Common bean in primera, Maize in postrera; the seasons here are fixed calendar months, not the local planting calendar",
-        "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field"
+        {
+          "en": "Common bean after maize: changing from the grass family to the bean family helps cut pest and disease cycles",
+          "es": "Frijol después de maíz: pasar de la familia de las gramíneas a la familia de las leguminosas ayuda a cortar el ciclo de plagas y enfermedades"
+        },
+        {
+          "en": "Common bean after maize, which needs a lot of nitrogen: common bean (bean family) takes part of its nitrogen from the air, so it draws less from the soil; its crop residues add a little for the next crop",
+          "es": "Frijol después de maíz, que pide mucho nitrógeno: el frijol (leguminosa) toma parte de su nitrógeno del aire y gasta menos del suelo; los rastrojos dejan un poco para el siguiente cultivo"
+        },
+        {
+          "en": "Maize after common bean: changing from the bean family to the grass family helps cut pest and disease cycles",
+          "es": "Maíz después de frijol: pasar de la familia de las leguminosas a la familia de las gramíneas ayuda a cortar el ciclo de plagas y enfermedades"
+        },
+        {
+          "en": "The climate suits these crops in every season",
+          "es": "El clima les sirve a estos cultivos en todas las épocas"
+        },
+        {
+          "en": "There is enough rain for these crops, but watch drainage in the wettest months",
+          "es": "Hay lluvia suficiente para estos cultivos, pero vigile el drenaje en los meses más lluviosos"
+        },
+        {
+          "en": "The soil pH suits these crops",
+          "es": "El pH del suelo les sirve a estos cultivos"
+        },
+        {
+          "en": "Common bean in primera: risk of waterlogged soil. Satellite data for the area (~9 km) shows the soil near saturation (88% on average), and common bean doesn't tolerate standing water. Check how your field drains; raised beds help.",
+          "es": "Frijol en primera: riesgo de encharcamiento. Los datos satelitales de la zona (~9 km) muestran el suelo casi saturado (88 % en promedio) y el frijol no aguanta el agua empozada. Revise cómo drena su terreno; sembrar en lomillos o camas levantadas ayuda."
+        },
+        {
+          "en": "Maize in postrera: risk of waterlogged soil. Satellite data for the area (~9 km) shows the soil near saturation (94% on average), and maize doesn't tolerate standing water. Check how your field drains; raised beds help.",
+          "es": "Maíz en postrera: riesgo de encharcamiento. Los datos satelitales de la zona (~9 km) muestran el suelo casi saturado (94 % en promedio) y el maíz no aguanta el agua empozada. Revise cómo drena su terreno; sembrar en lomillos o camas levantadas ayuda."
+        },
+        {
+          "en": "Maize needs about 120 days but postrera lasts about 91: the harvest falls in the dry months, or use a shorter-cycle variety",
+          "es": "El maíz necesita unos 120 días y la postrera dura unos 91: la cosecha caería en verano, o use una variedad más precoz"
+        },
+        {
+          "en": "Local review: check sowing dates and varieties for common bean in primera, maize in postrera; the seasons here are fixed calendar months, not the local planting calendar",
+          "es": "Revisión local: confirme fechas de siembra y variedades para frijol en primera, maíz en postrera; las épocas aquí son meses fijos del calendario, no el calendario de siembra de su zona"
+        },
+        {
+          "en": "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field",
+          "es": "Revisión local: no se evaluaron la presión real de plagas y enfermedades (aquí solo se estima por familia), la pendiente y erosión, el riego, la mano de obra ni los precios; consúltelos con un técnico del MAG o un agrónomo de la zona"
+        }
       ]
     },
     {
@@ -252,7 +387,7 @@
           ],
           "crop_id": "maize",
           "crop_name": "Maize",
-          "score": 1.0,
+          "score": 0.916,
           "variable_scores": {
             "temperature": 1.0,
             "rainfall": 1.0,
@@ -271,7 +406,7 @@
           ],
           "crop_id": "beans",
           "crop_name": "Common bean",
-          "score": 1.0,
+          "score": 0.8594,
           "variable_scores": {
             "temperature": 1.0,
             "rainfall": 1.0,
@@ -282,52 +417,152 @@
           }
         }
       ],
-      "score": 1.0,
+      "score": 0.9127,
       "viable": true,
       "breakdown": {
         "climate": 1.0,
         "water": 1.0,
         "soil": 1.0
       },
-      "explanation": "Maize (primera) → Common bean (postrera): balanced fit across climate, water, soil (score 1.00).",
+      "explanation": {
+        "en": "Maize (primera) → Common bean (postrera): changing crop family cuts pest cycles, the bean-family crop adds a little nitrogen; watch: risk of waterlogging. Score 0.91 of 1.",
+        "es": "Maíz (primera) → Frijol (postrera): cambiar de familia corta plagas, la leguminosa aporta un poco de nitrógeno; ojo: riesgo de encharcamiento. Puntaje 0,91 de 1."
+      },
       "is_current": false,
-      "score_delta_vs_current": 0.1,
+      "score_delta_vs_current": 0.125,
       "benefits": [
-        "Common bean (Fabaceae) → Maize (Poaceae): family change helps break pest and disease cycles",
-        "Maize (Poaceae) → Common bean (Fabaceae): family change helps break pest and disease cycles",
-        "Common bean (legume) after Maize, a heavy feeder: it takes most of its nitrogen from the air instead of the soil, and its residues leave a little for the next crop",
-        "Strong climate fit across the year (1.00)",
-        "Strong water fit across the year (1.00)",
-        "Strong soil fit across the year (1.00)"
+        {
+          "en": "Maize after common bean: changing from the bean family to the grass family helps cut pest and disease cycles",
+          "es": "Maíz después de frijol: pasar de la familia de las leguminosas a la familia de las gramíneas ayuda a cortar el ciclo de plagas y enfermedades"
+        },
+        {
+          "en": "Common bean after maize: changing from the grass family to the bean family helps cut pest and disease cycles",
+          "es": "Frijol después de maíz: pasar de la familia de las gramíneas a la familia de las leguminosas ayuda a cortar el ciclo de plagas y enfermedades"
+        },
+        {
+          "en": "Common bean after maize, which needs a lot of nitrogen: common bean (bean family) takes part of its nitrogen from the air, so it draws less from the soil; its crop residues add a little for the next crop",
+          "es": "Frijol después de maíz, que pide mucho nitrógeno: el frijol (leguminosa) toma parte de su nitrógeno del aire y gasta menos del suelo; los rastrojos dejan un poco para el siguiente cultivo"
+        },
+        {
+          "en": "The climate suits these crops in every season",
+          "es": "El clima les sirve a estos cultivos en todas las épocas"
+        },
+        {
+          "en": "There is enough rain for these crops, but watch drainage in the wettest months",
+          "es": "Hay lluvia suficiente para estos cultivos, pero vigile el drenaje en los meses más lluviosos"
+        },
+        {
+          "en": "The soil pH suits these crops",
+          "es": "El pH del suelo les sirve a estos cultivos"
+        }
       ],
       "risks": [
-        "Local review: check sowing dates and varieties for Maize in primera, Common bean in postrera; the seasons here are fixed calendar months, not the local planting calendar",
-        "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field"
+        {
+          "en": "Maize in primera: risk of waterlogged soil. Satellite data for the area (~9 km) shows the soil near saturation (88% on average), and maize doesn't tolerate standing water. Check how your field drains; raised beds help.",
+          "es": "Maíz en primera: riesgo de encharcamiento. Los datos satelitales de la zona (~9 km) muestran el suelo casi saturado (88 % en promedio) y el maíz no aguanta el agua empozada. Revise cómo drena su terreno; sembrar en lomillos o camas levantadas ayuda."
+        },
+        {
+          "en": "Common bean in postrera: risk of waterlogged soil. Satellite data for the area (~9 km) shows the soil near saturation (94% on average), and common bean doesn't tolerate standing water. Check how your field drains; raised beds help.",
+          "es": "Frijol en postrera: riesgo de encharcamiento. Los datos satelitales de la zona (~9 km) muestran el suelo casi saturado (94 % en promedio) y el frijol no aguanta el agua empozada. Revise cómo drena su terreno; sembrar en lomillos o camas levantadas ayuda."
+        },
+        {
+          "en": "Local review: check sowing dates and varieties for maize in primera, common bean in postrera; the seasons here are fixed calendar months, not the local planting calendar",
+          "es": "Revisión local: confirme fechas de siembra y variedades para maíz en primera, frijol en postrera; las épocas aquí son meses fijos del calendario, no el calendario de siembra de su zona"
+        },
+        {
+          "en": "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field",
+          "es": "Revisión local: no se evaluaron la presión real de plagas y enfermedades (aquí solo se estima por familia), la pendiente y erosión, el riego, la mano de obra ni los precios; consúltelos con un técnico del MAG o un agrónomo de la zona"
+        }
       ],
       "data_gaps": [
-        "Soil pH and moisture are mock values, not measured for this location",
-        "Soil moisture uses one generic range for all crops",
-        "Frost risk uses one generic threshold for all crops",
-        "Maize tolerance ranges are approximate (not yet verified)",
-        "Common bean tolerance ranges are approximate (not yet verified)",
-        "Scoring thresholds and rotation rule values are placeholders, not yet reviewed by an agronomist"
+        {
+          "en": "Soil pH comes from the OpenLandMap soil map (250 m, 0-30 cm), not a soil test of your field",
+          "es": "El pH sale del mapa de suelos OpenLandMap (250 m, 0-30 cm), no de un análisis de suelo de su finca"
+        },
+        {
+          "en": "Soil moisture comes from NASA SMAP (satellite + model), averaged over ~9 km and the years 2020-2024, not measured in your field",
+          "es": "La humedad del suelo viene de NASA SMAP (satélite + modelo), promedio de un área de ~9 km y de los años 2020-2024; no se midió en su finca"
+        },
+        {
+          "en": "The waterlogging warning uses how close to saturated the soil is over ~9 km; it can't see your field's own drainage (slope, ditches)",
+          "es": "El aviso de encharcamiento usa qué tan saturado está el suelo en un área de ~9 km; no ve el drenaje propio de su terreno (pendiente, zanjas)"
+        },
+        {
+          "en": "The dry-soil limit is the same for all crops",
+          "es": "El límite de suelo seco es el mismo para todos los cultivos"
+        },
+        {
+          "en": "Frost risk uses the same limit for all crops",
+          "es": "El riesgo de helada usa el mismo límite para todos los cultivos"
+        },
+        {
+          "en": "Scoring thresholds and rotation rule values are provisional, not yet reviewed by an agronomist",
+          "es": "Los límites de puntaje y las reglas de rotación son provisionales; aún no los revisa un agrónomo"
+        }
       ],
       "evidence": [
-        "primera (May–Aug): mean 23.6 °C, average daily max 31.8 °C, coldest-month daily min 16.3 °C, 203 mm/month (NASA POWER monthly normals)",
-        "Maize in primera: ~801 mm over its 120-day cycle (optimal 600 to 1200 mm)",
-        "postrera (Sep–Nov): mean 22.7 °C, average daily max 29.9 °C, coldest-month daily min 16.1 °C, 248 mm/month (NASA POWER monthly normals)",
-        "Common bean in postrera: ~734 mm over its 90-day cycle (optimal 500 to 2000 mm)",
-        "Soil: pH 5.9, moisture 0.26 m³/m³ (mock data)"
+        {
+          "en": "primera (May–Aug): average 23.6 °C, hottest hours ~31.8 °C, coolest nights ~16.3 °C, ~203 mm of rain per month (NASA POWER, long-term averages)",
+          "es": "primera (may–ago): promedio 23,6 °C, máximas ~31,8 °C, mínimas ~16,3 °C, ~203 mm de lluvia al mes (NASA POWER, promedios de largo plazo)"
+        },
+        {
+          "en": "Maize in primera: ~801 mm of rain over its 120-day cycle (best 600 to 1200 mm)",
+          "es": "Maíz en primera: ~801 mm de lluvia en su ciclo de 120 días (lo ideal es 600 a 1200 mm)"
+        },
+        {
+          "en": "postrera (Sep–Nov): average 22.7 °C, hottest hours ~29.9 °C, coolest nights ~16.1 °C, ~248 mm of rain per month (NASA POWER, long-term averages)",
+          "es": "postrera (set–nov): promedio 22,7 °C, máximas ~29,9 °C, mínimas ~16,1 °C, ~248 mm de lluvia al mes (NASA POWER, promedios de largo plazo)"
+        },
+        {
+          "en": "Common bean in postrera: ~734 mm of rain over its 90-day cycle (best 500 to 2000 mm)",
+          "es": "Frijol en postrera: ~734 mm de lluvia en su ciclo de 90 días (lo ideal es 500 a 2000 mm)"
+        },
+        {
+          "en": "Soil: pH 6.4 (OpenLandMap soil map, 250 m); root zone saturation in primera (88%) and postrera (94%) (NASA SMAP, ~9 km)",
+          "es": "Suelo: pH 6,4 (mapa de suelos OpenLandMap, 250 m); saturación del suelo en primera (88 %) y postrera (94 %) (NASA SMAP, ~9 km)"
+        }
       ],
       "notes": [
-        "Common bean (Fabaceae) → Maize (Poaceae): family change helps break pest and disease cycles",
-        "Maize (Poaceae) → Common bean (Fabaceae): family change helps break pest and disease cycles",
-        "Common bean (legume) after Maize, a heavy feeder: it takes most of its nitrogen from the air instead of the soil, and its residues leave a little for the next crop",
-        "Strong climate fit across the year (1.00)",
-        "Strong water fit across the year (1.00)",
-        "Strong soil fit across the year (1.00)",
-        "Local review: check sowing dates and varieties for Maize in primera, Common bean in postrera; the seasons here are fixed calendar months, not the local planting calendar",
-        "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field"
+        {
+          "en": "Maize after common bean: changing from the bean family to the grass family helps cut pest and disease cycles",
+          "es": "Maíz después de frijol: pasar de la familia de las leguminosas a la familia de las gramíneas ayuda a cortar el ciclo de plagas y enfermedades"
+        },
+        {
+          "en": "Common bean after maize: changing from the grass family to the bean family helps cut pest and disease cycles",
+          "es": "Frijol después de maíz: pasar de la familia de las gramíneas a la familia de las leguminosas ayuda a cortar el ciclo de plagas y enfermedades"
+        },
+        {
+          "en": "Common bean after maize, which needs a lot of nitrogen: common bean (bean family) takes part of its nitrogen from the air, so it draws less from the soil; its crop residues add a little for the next crop",
+          "es": "Frijol después de maíz, que pide mucho nitrógeno: el frijol (leguminosa) toma parte de su nitrógeno del aire y gasta menos del suelo; los rastrojos dejan un poco para el siguiente cultivo"
+        },
+        {
+          "en": "The climate suits these crops in every season",
+          "es": "El clima les sirve a estos cultivos en todas las épocas"
+        },
+        {
+          "en": "There is enough rain for these crops, but watch drainage in the wettest months",
+          "es": "Hay lluvia suficiente para estos cultivos, pero vigile el drenaje en los meses más lluviosos"
+        },
+        {
+          "en": "The soil pH suits these crops",
+          "es": "El pH del suelo les sirve a estos cultivos"
+        },
+        {
+          "en": "Maize in primera: risk of waterlogged soil. Satellite data for the area (~9 km) shows the soil near saturation (88% on average), and maize doesn't tolerate standing water. Check how your field drains; raised beds help.",
+          "es": "Maíz en primera: riesgo de encharcamiento. Los datos satelitales de la zona (~9 km) muestran el suelo casi saturado (88 % en promedio) y el maíz no aguanta el agua empozada. Revise cómo drena su terreno; sembrar en lomillos o camas levantadas ayuda."
+        },
+        {
+          "en": "Common bean in postrera: risk of waterlogged soil. Satellite data for the area (~9 km) shows the soil near saturation (94% on average), and common bean doesn't tolerate standing water. Check how your field drains; raised beds help.",
+          "es": "Frijol en postrera: riesgo de encharcamiento. Los datos satelitales de la zona (~9 km) muestran el suelo casi saturado (94 % en promedio) y el frijol no aguanta el agua empozada. Revise cómo drena su terreno; sembrar en lomillos o camas levantadas ayuda."
+        },
+        {
+          "en": "Local review: check sowing dates and varieties for maize in primera, common bean in postrera; the seasons here are fixed calendar months, not the local planting calendar",
+          "es": "Revisión local: confirme fechas de siembra y variedades para maíz en primera, frijol en postrera; las épocas aquí son meses fijos del calendario, no el calendario de siembra de su zona"
+        },
+        {
+          "en": "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field",
+          "es": "Revisión local: no se evaluaron la presión real de plagas y enfermedades (aquí solo se estima por familia), la pendiente y erosión, el riego, la mano de obra ni los precios; consúltelos con un técnico del MAG o un agrónomo de la zona"
+        }
       ]
     },
     {
@@ -343,7 +578,7 @@
           ],
           "crop_id": "beans",
           "crop_name": "Common bean",
-          "score": 1.0,
+          "score": 0.916,
           "variable_scores": {
             "temperature": 1.0,
             "rainfall": 1.0,
@@ -362,7 +597,7 @@
           ],
           "crop_id": "beans",
           "crop_name": "Common bean",
-          "score": 1.0,
+          "score": 0.8594,
           "variable_scores": {
             "temperature": 1.0,
             "rainfall": 1.0,
@@ -373,47 +608,136 @@
           }
         }
       ],
-      "score": 0.9,
+      "score": 0.7877,
       "viable": true,
       "breakdown": {
         "climate": 1.0,
         "water": 1.0,
         "soil": 1.0
       },
-      "explanation": "Common bean (primera) → Common bean (postrera): balanced fit across climate, water, soil (score 0.90).",
+      "explanation": {
+        "en": "Common bean (primera) → Common bean (postrera): no rotation benefit; watch: repeating the same crop builds up pests, risk of waterlogging. Score 0.79 of 1.",
+        "es": "Frijol (primera) → Frijol (postrera): sin ventajas de rotación; ojo: repetir el mismo cultivo acumula plagas, riesgo de encharcamiento. Puntaje 0,79 de 1."
+      },
       "is_current": false,
       "score_delta_vs_current": 0.0,
       "benefits": [
-        "Strong climate fit across the year (1.00)",
-        "Strong water fit across the year (1.00)",
-        "Strong soil fit across the year (1.00)"
+        {
+          "en": "The climate suits these crops in every season",
+          "es": "El clima les sirve a estos cultivos en todas las épocas"
+        },
+        {
+          "en": "There is enough rain for these crops, but watch drainage in the wettest months",
+          "es": "Hay lluvia suficiente para estos cultivos, pero vigile el drenaje en los meses más lluviosos"
+        },
+        {
+          "en": "The soil pH suits these crops",
+          "es": "El pH del suelo les sirve a estos cultivos"
+        }
       ],
       "risks": [
-        "Common bean follows itself (monoculture): pests and diseases of Common bean build up season after season",
-        "Local review: check sowing dates and varieties for Common bean in primera, Common bean in postrera; the seasons here are fixed calendar months, not the local planting calendar",
-        "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field"
+        {
+          "en": "Common bean after common bean (monoculture): pests and diseases of common bean build up season after season",
+          "es": "Frijol después de frijol (monocultivo): las plagas y enfermedades del frijol se acumulan época tras época"
+        },
+        {
+          "en": "Common bean in primera: risk of waterlogged soil. Satellite data for the area (~9 km) shows the soil near saturation (88% on average), and common bean doesn't tolerate standing water. Check how your field drains; raised beds help.",
+          "es": "Frijol en primera: riesgo de encharcamiento. Los datos satelitales de la zona (~9 km) muestran el suelo casi saturado (88 % en promedio) y el frijol no aguanta el agua empozada. Revise cómo drena su terreno; sembrar en lomillos o camas levantadas ayuda."
+        },
+        {
+          "en": "Common bean in postrera: risk of waterlogged soil. Satellite data for the area (~9 km) shows the soil near saturation (94% on average), and common bean doesn't tolerate standing water. Check how your field drains; raised beds help.",
+          "es": "Frijol en postrera: riesgo de encharcamiento. Los datos satelitales de la zona (~9 km) muestran el suelo casi saturado (94 % en promedio) y el frijol no aguanta el agua empozada. Revise cómo drena su terreno; sembrar en lomillos o camas levantadas ayuda."
+        },
+        {
+          "en": "Local review: check sowing dates and varieties for common bean in primera, common bean in postrera; the seasons here are fixed calendar months, not the local planting calendar",
+          "es": "Revisión local: confirme fechas de siembra y variedades para frijol en primera, frijol en postrera; las épocas aquí son meses fijos del calendario, no el calendario de siembra de su zona"
+        },
+        {
+          "en": "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field",
+          "es": "Revisión local: no se evaluaron la presión real de plagas y enfermedades (aquí solo se estima por familia), la pendiente y erosión, el riego, la mano de obra ni los precios; consúltelos con un técnico del MAG o un agrónomo de la zona"
+        }
       ],
       "data_gaps": [
-        "Soil pH and moisture are mock values, not measured for this location",
-        "Soil moisture uses one generic range for all crops",
-        "Frost risk uses one generic threshold for all crops",
-        "Common bean tolerance ranges are approximate (not yet verified)",
-        "Scoring thresholds and rotation rule values are placeholders, not yet reviewed by an agronomist"
+        {
+          "en": "Soil pH comes from the OpenLandMap soil map (250 m, 0-30 cm), not a soil test of your field",
+          "es": "El pH sale del mapa de suelos OpenLandMap (250 m, 0-30 cm), no de un análisis de suelo de su finca"
+        },
+        {
+          "en": "Soil moisture comes from NASA SMAP (satellite + model), averaged over ~9 km and the years 2020-2024, not measured in your field",
+          "es": "La humedad del suelo viene de NASA SMAP (satélite + modelo), promedio de un área de ~9 km y de los años 2020-2024; no se midió en su finca"
+        },
+        {
+          "en": "The waterlogging warning uses how close to saturated the soil is over ~9 km; it can't see your field's own drainage (slope, ditches)",
+          "es": "El aviso de encharcamiento usa qué tan saturado está el suelo en un área de ~9 km; no ve el drenaje propio de su terreno (pendiente, zanjas)"
+        },
+        {
+          "en": "The dry-soil limit is the same for all crops",
+          "es": "El límite de suelo seco es el mismo para todos los cultivos"
+        },
+        {
+          "en": "Frost risk uses the same limit for all crops",
+          "es": "El riesgo de helada usa el mismo límite para todos los cultivos"
+        },
+        {
+          "en": "Scoring thresholds and rotation rule values are provisional, not yet reviewed by an agronomist",
+          "es": "Los límites de puntaje y las reglas de rotación son provisionales; aún no los revisa un agrónomo"
+        }
       ],
       "evidence": [
-        "primera (May–Aug): mean 23.6 °C, average daily max 31.8 °C, coldest-month daily min 16.3 °C, 203 mm/month (NASA POWER monthly normals)",
-        "Common bean in primera: ~601 mm over its 90-day cycle (optimal 500 to 2000 mm)",
-        "postrera (Sep–Nov): mean 22.7 °C, average daily max 29.9 °C, coldest-month daily min 16.1 °C, 248 mm/month (NASA POWER monthly normals)",
-        "Common bean in postrera: ~734 mm over its 90-day cycle (optimal 500 to 2000 mm)",
-        "Soil: pH 5.9, moisture 0.26 m³/m³ (mock data)"
+        {
+          "en": "primera (May–Aug): average 23.6 °C, hottest hours ~31.8 °C, coolest nights ~16.3 °C, ~203 mm of rain per month (NASA POWER, long-term averages)",
+          "es": "primera (may–ago): promedio 23,6 °C, máximas ~31,8 °C, mínimas ~16,3 °C, ~203 mm de lluvia al mes (NASA POWER, promedios de largo plazo)"
+        },
+        {
+          "en": "Common bean in primera: ~601 mm of rain over its 90-day cycle (best 500 to 2000 mm)",
+          "es": "Frijol en primera: ~601 mm de lluvia en su ciclo de 90 días (lo ideal es 500 a 2000 mm)"
+        },
+        {
+          "en": "postrera (Sep–Nov): average 22.7 °C, hottest hours ~29.9 °C, coolest nights ~16.1 °C, ~248 mm of rain per month (NASA POWER, long-term averages)",
+          "es": "postrera (set–nov): promedio 22,7 °C, máximas ~29,9 °C, mínimas ~16,1 °C, ~248 mm de lluvia al mes (NASA POWER, promedios de largo plazo)"
+        },
+        {
+          "en": "Common bean in postrera: ~734 mm of rain over its 90-day cycle (best 500 to 2000 mm)",
+          "es": "Frijol en postrera: ~734 mm de lluvia en su ciclo de 90 días (lo ideal es 500 a 2000 mm)"
+        },
+        {
+          "en": "Soil: pH 6.4 (OpenLandMap soil map, 250 m); root zone saturation in primera (88%) and postrera (94%) (NASA SMAP, ~9 km)",
+          "es": "Suelo: pH 6,4 (mapa de suelos OpenLandMap, 250 m); saturación del suelo en primera (88 %) y postrera (94 %) (NASA SMAP, ~9 km)"
+        }
       ],
       "notes": [
-        "Strong climate fit across the year (1.00)",
-        "Strong water fit across the year (1.00)",
-        "Strong soil fit across the year (1.00)",
-        "Common bean follows itself (monoculture): pests and diseases of Common bean build up season after season",
-        "Local review: check sowing dates and varieties for Common bean in primera, Common bean in postrera; the seasons here are fixed calendar months, not the local planting calendar",
-        "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field"
+        {
+          "en": "The climate suits these crops in every season",
+          "es": "El clima les sirve a estos cultivos en todas las épocas"
+        },
+        {
+          "en": "There is enough rain for these crops, but watch drainage in the wettest months",
+          "es": "Hay lluvia suficiente para estos cultivos, pero vigile el drenaje en los meses más lluviosos"
+        },
+        {
+          "en": "The soil pH suits these crops",
+          "es": "El pH del suelo les sirve a estos cultivos"
+        },
+        {
+          "en": "Common bean after common bean (monoculture): pests and diseases of common bean build up season after season",
+          "es": "Frijol después de frijol (monocultivo): las plagas y enfermedades del frijol se acumulan época tras época"
+        },
+        {
+          "en": "Common bean in primera: risk of waterlogged soil. Satellite data for the area (~9 km) shows the soil near saturation (88% on average), and common bean doesn't tolerate standing water. Check how your field drains; raised beds help.",
+          "es": "Frijol en primera: riesgo de encharcamiento. Los datos satelitales de la zona (~9 km) muestran el suelo casi saturado (88 % en promedio) y el frijol no aguanta el agua empozada. Revise cómo drena su terreno; sembrar en lomillos o camas levantadas ayuda."
+        },
+        {
+          "en": "Common bean in postrera: risk of waterlogged soil. Satellite data for the area (~9 km) shows the soil near saturation (94% on average), and common bean doesn't tolerate standing water. Check how your field drains; raised beds help.",
+          "es": "Frijol en postrera: riesgo de encharcamiento. Los datos satelitales de la zona (~9 km) muestran el suelo casi saturado (94 % en promedio) y el frijol no aguanta el agua empozada. Revise cómo drena su terreno; sembrar en lomillos o camas levantadas ayuda."
+        },
+        {
+          "en": "Local review: check sowing dates and varieties for common bean in primera, common bean in postrera; the seasons here are fixed calendar months, not the local planting calendar",
+          "es": "Revisión local: confirme fechas de siembra y variedades para frijol en primera, frijol en postrera; las épocas aquí son meses fijos del calendario, no el calendario de siembra de su zona"
+        },
+        {
+          "en": "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field",
+          "es": "Revisión local: no se evaluaron la presión real de plagas y enfermedades (aquí solo se estima por familia), la pendiente y erosión, el riego, la mano de obra ni los precios; consúltelos con un técnico del MAG o un agrónomo de la zona"
+        }
       ]
     }
   ],
@@ -430,7 +754,7 @@
         ],
         "crop_id": "maize",
         "crop_name": "Maize",
-        "score": 1.0,
+        "score": 0.916,
         "variable_scores": {
           "temperature": 1.0,
           "rainfall": 1.0,
@@ -449,7 +773,7 @@
         ],
         "crop_id": "maize",
         "crop_name": "Maize",
-        "score": 1.0,
+        "score": 0.8594,
         "variable_scores": {
           "temperature": 1.0,
           "rainfall": 1.0,
@@ -460,49 +784,144 @@
         }
       }
     ],
-    "score": 0.9,
+    "score": 0.7877,
     "viable": true,
     "breakdown": {
       "climate": 1.0,
       "water": 1.0,
       "soil": 1.0
     },
-    "explanation": "Maize (primera) → Maize (postrera): balanced fit across climate, water, soil (score 0.90).",
+    "explanation": {
+      "en": "Maize (primera) → Maize (postrera): no rotation benefit; watch: repeating the same crop builds up pests, risk of waterlogging. Score 0.79 of 1.",
+      "es": "Maíz (primera) → Maíz (postrera): sin ventajas de rotación; ojo: repetir el mismo cultivo acumula plagas, riesgo de encharcamiento. Puntaje 0,79 de 1."
+    },
     "is_current": true,
     "score_delta_vs_current": 0.0,
     "benefits": [
-      "Strong climate fit across the year (1.00)",
-      "Strong water fit across the year (1.00)",
-      "Strong soil fit across the year (1.00)"
+      {
+        "en": "The climate suits these crops in every season",
+        "es": "El clima les sirve a estos cultivos en todas las épocas"
+      },
+      {
+        "en": "There is enough rain for these crops, but watch drainage in the wettest months",
+        "es": "Hay lluvia suficiente para estos cultivos, pero vigile el drenaje en los meses más lluviosos"
+      },
+      {
+        "en": "The soil pH suits these crops",
+        "es": "El pH del suelo les sirve a estos cultivos"
+      }
     ],
     "risks": [
-      "Maize follows itself (monoculture): pests and diseases of Maize build up season after season",
-      "Maize cycle (120 d) is longer than postrera (~91 d)",
-      "Local review: check sowing dates and varieties for Maize in primera, Maize in postrera; the seasons here are fixed calendar months, not the local planting calendar",
-      "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field"
+      {
+        "en": "Maize after maize (monoculture): pests and diseases of maize build up season after season",
+        "es": "Maíz después de maíz (monocultivo): las plagas y enfermedades del maíz se acumulan época tras época"
+      },
+      {
+        "en": "Maize in primera: risk of waterlogged soil. Satellite data for the area (~9 km) shows the soil near saturation (88% on average), and maize doesn't tolerate standing water. Check how your field drains; raised beds help.",
+        "es": "Maíz en primera: riesgo de encharcamiento. Los datos satelitales de la zona (~9 km) muestran el suelo casi saturado (88 % en promedio) y el maíz no aguanta el agua empozada. Revise cómo drena su terreno; sembrar en lomillos o camas levantadas ayuda."
+      },
+      {
+        "en": "Maize in postrera: risk of waterlogged soil. Satellite data for the area (~9 km) shows the soil near saturation (94% on average), and maize doesn't tolerate standing water. Check how your field drains; raised beds help.",
+        "es": "Maíz en postrera: riesgo de encharcamiento. Los datos satelitales de la zona (~9 km) muestran el suelo casi saturado (94 % en promedio) y el maíz no aguanta el agua empozada. Revise cómo drena su terreno; sembrar en lomillos o camas levantadas ayuda."
+      },
+      {
+        "en": "Maize needs about 120 days but postrera lasts about 91: the harvest falls in the dry months, or use a shorter-cycle variety",
+        "es": "El maíz necesita unos 120 días y la postrera dura unos 91: la cosecha caería en verano, o use una variedad más precoz"
+      },
+      {
+        "en": "Local review: check sowing dates and varieties for maize in primera, maize in postrera; the seasons here are fixed calendar months, not the local planting calendar",
+        "es": "Revisión local: confirme fechas de siembra y variedades para maíz en primera, maíz en postrera; las épocas aquí son meses fijos del calendario, no el calendario de siembra de su zona"
+      },
+      {
+        "en": "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field",
+        "es": "Revisión local: no se evaluaron la presión real de plagas y enfermedades (aquí solo se estima por familia), la pendiente y erosión, el riego, la mano de obra ni los precios; consúltelos con un técnico del MAG o un agrónomo de la zona"
+      }
     ],
     "data_gaps": [
-      "Soil pH and moisture are mock values, not measured for this location",
-      "Soil moisture uses one generic range for all crops",
-      "Frost risk uses one generic threshold for all crops",
-      "Maize tolerance ranges are approximate (not yet verified)",
-      "Scoring thresholds and rotation rule values are placeholders, not yet reviewed by an agronomist"
+      {
+        "en": "Soil pH comes from the OpenLandMap soil map (250 m, 0-30 cm), not a soil test of your field",
+        "es": "El pH sale del mapa de suelos OpenLandMap (250 m, 0-30 cm), no de un análisis de suelo de su finca"
+      },
+      {
+        "en": "Soil moisture comes from NASA SMAP (satellite + model), averaged over ~9 km and the years 2020-2024, not measured in your field",
+        "es": "La humedad del suelo viene de NASA SMAP (satélite + modelo), promedio de un área de ~9 km y de los años 2020-2024; no se midió en su finca"
+      },
+      {
+        "en": "The waterlogging warning uses how close to saturated the soil is over ~9 km; it can't see your field's own drainage (slope, ditches)",
+        "es": "El aviso de encharcamiento usa qué tan saturado está el suelo en un área de ~9 km; no ve el drenaje propio de su terreno (pendiente, zanjas)"
+      },
+      {
+        "en": "The dry-soil limit is the same for all crops",
+        "es": "El límite de suelo seco es el mismo para todos los cultivos"
+      },
+      {
+        "en": "Frost risk uses the same limit for all crops",
+        "es": "El riesgo de helada usa el mismo límite para todos los cultivos"
+      },
+      {
+        "en": "Scoring thresholds and rotation rule values are provisional, not yet reviewed by an agronomist",
+        "es": "Los límites de puntaje y las reglas de rotación son provisionales; aún no los revisa un agrónomo"
+      }
     ],
     "evidence": [
-      "primera (May–Aug): mean 23.6 °C, average daily max 31.8 °C, coldest-month daily min 16.3 °C, 203 mm/month (NASA POWER monthly normals)",
-      "Maize in primera: ~801 mm over its 120-day cycle (optimal 600 to 1200 mm)",
-      "postrera (Sep–Nov): mean 22.7 °C, average daily max 29.9 °C, coldest-month daily min 16.1 °C, 248 mm/month (NASA POWER monthly normals)",
-      "Maize in postrera: ~978 mm over its 120-day cycle (optimal 600 to 1200 mm)",
-      "Soil: pH 5.9, moisture 0.26 m³/m³ (mock data)"
+      {
+        "en": "primera (May–Aug): average 23.6 °C, hottest hours ~31.8 °C, coolest nights ~16.3 °C, ~203 mm of rain per month (NASA POWER, long-term averages)",
+        "es": "primera (may–ago): promedio 23,6 °C, máximas ~31,8 °C, mínimas ~16,3 °C, ~203 mm de lluvia al mes (NASA POWER, promedios de largo plazo)"
+      },
+      {
+        "en": "Maize in primera: ~801 mm of rain over its 120-day cycle (best 600 to 1200 mm)",
+        "es": "Maíz en primera: ~801 mm de lluvia en su ciclo de 120 días (lo ideal es 600 a 1200 mm)"
+      },
+      {
+        "en": "postrera (Sep–Nov): average 22.7 °C, hottest hours ~29.9 °C, coolest nights ~16.1 °C, ~248 mm of rain per month (NASA POWER, long-term averages)",
+        "es": "postrera (set–nov): promedio 22,7 °C, máximas ~29,9 °C, mínimas ~16,1 °C, ~248 mm de lluvia al mes (NASA POWER, promedios de largo plazo)"
+      },
+      {
+        "en": "Maize in postrera: ~978 mm of rain over its 120-day cycle (best 600 to 1200 mm)",
+        "es": "Maíz en postrera: ~978 mm de lluvia en su ciclo de 120 días (lo ideal es 600 a 1200 mm)"
+      },
+      {
+        "en": "Soil: pH 6.4 (OpenLandMap soil map, 250 m); root zone saturation in primera (88%) and postrera (94%) (NASA SMAP, ~9 km)",
+        "es": "Suelo: pH 6,4 (mapa de suelos OpenLandMap, 250 m); saturación del suelo en primera (88 %) y postrera (94 %) (NASA SMAP, ~9 km)"
+      }
     ],
     "notes": [
-      "Strong climate fit across the year (1.00)",
-      "Strong water fit across the year (1.00)",
-      "Strong soil fit across the year (1.00)",
-      "Maize follows itself (monoculture): pests and diseases of Maize build up season after season",
-      "Maize cycle (120 d) is longer than postrera (~91 d)",
-      "Local review: check sowing dates and varieties for Maize in primera, Maize in postrera; the seasons here are fixed calendar months, not the local planting calendar",
-      "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field"
+      {
+        "en": "The climate suits these crops in every season",
+        "es": "El clima les sirve a estos cultivos en todas las épocas"
+      },
+      {
+        "en": "There is enough rain for these crops, but watch drainage in the wettest months",
+        "es": "Hay lluvia suficiente para estos cultivos, pero vigile el drenaje en los meses más lluviosos"
+      },
+      {
+        "en": "The soil pH suits these crops",
+        "es": "El pH del suelo les sirve a estos cultivos"
+      },
+      {
+        "en": "Maize after maize (monoculture): pests and diseases of maize build up season after season",
+        "es": "Maíz después de maíz (monocultivo): las plagas y enfermedades del maíz se acumulan época tras época"
+      },
+      {
+        "en": "Maize in primera: risk of waterlogged soil. Satellite data for the area (~9 km) shows the soil near saturation (88% on average), and maize doesn't tolerate standing water. Check how your field drains; raised beds help.",
+        "es": "Maíz en primera: riesgo de encharcamiento. Los datos satelitales de la zona (~9 km) muestran el suelo casi saturado (88 % en promedio) y el maíz no aguanta el agua empozada. Revise cómo drena su terreno; sembrar en lomillos o camas levantadas ayuda."
+      },
+      {
+        "en": "Maize in postrera: risk of waterlogged soil. Satellite data for the area (~9 km) shows the soil near saturation (94% on average), and maize doesn't tolerate standing water. Check how your field drains; raised beds help.",
+        "es": "Maíz en postrera: riesgo de encharcamiento. Los datos satelitales de la zona (~9 km) muestran el suelo casi saturado (94 % en promedio) y el maíz no aguanta el agua empozada. Revise cómo drena su terreno; sembrar en lomillos o camas levantadas ayuda."
+      },
+      {
+        "en": "Maize needs about 120 days but postrera lasts about 91: the harvest falls in the dry months, or use a shorter-cycle variety",
+        "es": "El maíz necesita unos 120 días y la postrera dura unos 91: la cosecha caería en verano, o use una variedad más precoz"
+      },
+      {
+        "en": "Local review: check sowing dates and varieties for maize in primera, maize in postrera; the seasons here are fixed calendar months, not the local planting calendar",
+        "es": "Revisión local: confirme fechas de siembra y variedades para maíz en primera, maíz en postrera; las épocas aquí son meses fijos del calendario, no el calendario de siembra de su zona"
+      },
+      {
+        "en": "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field",
+        "es": "Revisión local: no se evaluaron la presión real de plagas y enfermedades (aquí solo se estima por familia), la pendiente y erosión, el riego, la mano de obra ni los precios; consúltelos con un técnico del MAG o un agrónomo de la zona"
+      }
     ]
   },
   "method_version": "suitability-v1",

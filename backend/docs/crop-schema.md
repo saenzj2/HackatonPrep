@@ -1,6 +1,6 @@
 # Crop schema (T3.1, #23)
 
-> **Status: IMPLEMENTED for the 5 current crops, values not yet verified.** The CSV, loader,
+> **Status: IMPLEMENTED for the 5 current crops, tolerance ranges from FAO EcoCrop.** The CSV, loader,
 > `CropProfile`, `/crops` and the `Crop` schema in `api-contract.yaml` carry every field below.
 > Design questions: answered (see the end). Trait values: team estimates until #24 cites them.
 
@@ -13,6 +13,7 @@ explanations need lives here, so nothing about a crop is hardcoded in Python.
 
 | Issue attribute | Column(s) | Type / unit | Used by |
 |---|---|---|---|
+| — | `name_es`, `gender_es` | Spanish (Costa Rica) name, and its grammatical gender (`m` = el maíz, `f` = la yuca) so sentences get the right article | `Text` labels, `CropProfile.the_es` |
 | — | `id`, `name`, `scientific_name` | string; `id` is lowercase snake_case, unique | everything |
 | Plant family | `family` | botanical family, Latin (`Fabaceae`) | rotation rules #25 (family succession, pest breaks) |
 | Nitrogen fixing | `is_legume` | bool | rotation rules #25, legume bonus |
@@ -20,13 +21,14 @@ explanations need lives here, so nothing about a crop is hardcoded in Python.
 | Temperature range | `temp_{abs_min,opt_min,opt_max,abs_max}` | °C | suitability scoring |
 | Water need | `rain_{abs_min,opt_min,opt_max,abs_max}` | mm **over the crop cycle** | suitability scoring; `water_need` badge derived from `rain_opt_min` (no extra column) |
 | — | `ph_{abs_min,opt_min,opt_max,abs_max}` | pH | suitability scoring, soil-test adjustment #32 |
-| — | `verified` | bool; `true` only once every value was checked against `sources` | `data_gaps` in responses |
+| — | `verified` | bool; `true` once the tolerance ranges come from a cited source (EcoCrop import). Traits are labelled separately in `sources` | `data_gaps` in responses |
 
 **New columns.**
 
 | Issue attribute | Column | Type / allowed values | Meaning | Used by |
 |---|---|---|---|---|
 | Root depth | `root_depth_m` | float, metres | Typical maximum effective rooting depth (FAO-56 Table 22, upper value) | soil-health benefit ("deep roots open the subsoil"), rotation rules |
+| *(EcoCrop)* Drainage | `needs_good_drainage` | bool | The crop doesn't tolerate poorly drained soil (EcoCrop `drar`); rice `false`, the rest `true` | waterlogging check in scoring |
 | Cover-crop use | `is_cover_crop` | bool | Commonly grown to cover and protect the soil between cash crops | soil-health score, badges #38 |
 | Forage value | `forage_value` | score 0..1 → API `{level, score}` | Value of the crop or its residue as animal feed | income/benefit text #29 |
 | Nutrition density | `nutrition_density` | score 0..1 → API `{level, score}` | Nutrient density of the edible part (protein, micronutrients). 0 for non-food cover crops | nutrition badge #38 |
@@ -66,7 +68,8 @@ Any violation stops startup with a `ConfigError` that names the file and line.
 - `sources`: at least one citation, separated by `;`. Quote the cell if a citation contains a comma.
 
 ## Current data (5 crops)
-See `data/ecocrop_subset.csv`. Every row is `verified=false`:
+See `data/ecocrop_subset.csv`. Every row is `verified=true`: the **temperature, rainfall and pH
+ranges come from FAO EcoCrop** (`scripts/import_ecocrop.py`, see `docs/sources/ecocrop.md`). Also:
 - **Root depth** comes from FAO-56 (Allen et al. 1998), Table 22, upper value of the range:
   rice 1.0, beans 0.9, maize 1.7, sorghum 2.0, cowpea 1.0 m.
 - **Cover crop, forage, nutrition, mycorrhizal and nitrogen demand** are a **team estimate**, and each

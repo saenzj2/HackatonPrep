@@ -35,6 +35,9 @@ class EnvSettings(BaseSettings):
     data_mode: DataMode | None = None  # overrides mvp.yaml when set
     mvp_config: Path = BACKEND_DIR / "config" / "mvp.yaml"
     cache_dir: Path = BACKEND_DIR / ".cache"
+    # Committed, read-only snapshot of real responses for the demo points (app/cache/snapshots/).
+    # Lets a fresh clone run in `cached` mode with real data. None disables it (tests do).
+    cache_snapshot_dir: Path | None = BACKEND_DIR / "app" / "cache" / "snapshots"
     crop_catalog: Path = BACKEND_DIR / "data" / "ecocrop_subset.csv"
     cors_origins: str = "http://localhost:3000,http://localhost:5173"
     # OpenTopography API key (OPEN_TOPOGRAPHY_KEY). Only needed to fetch new elevation data in live

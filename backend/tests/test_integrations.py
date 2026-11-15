@@ -1,5 +1,6 @@
 import csv
 import io
+import json
 from datetime import date
 
 import httpx
@@ -35,12 +36,14 @@ from app.integrations.nasa_power import (
     parse_climatology,
     parse_daily,
 )
+from app.integrations.openlandmap import EarthEngineSoil
 from app.integrations.opentopography import BASE_URL as OT_URL
 from app.integrations.opentopography import (
     OpenTopographyElevation,
     parse_elevation,
     snap_to_srtm_grid,
 )
+from app.integrations.smap import SmapSoilMoisture
 from app.settings import BACKEND_DIR, DataMode, EnvSettings
 from tests.conftest import load_fixture
 
@@ -650,3 +653,41 @@ def test_adapters_implement_protocols(tmp_path):
     assert isinstance(ot_source(tmp_path, key=None), TerrainSource)
     assert isinstance(MockClimate(), DailyWeatherSource)
     assert isinstance(MockTerrain(), TerrainSource)
+
+
+# ---------------------------------------------------------------- committed cache snapshot
+SNAPSHOT_DIR = BACKEND_DIR / "app" / "cache" / "snapshots"
+
+
+def test_cached_mode_falls_back_to_the_snapshot(tmp_path):
+    snapshot = tmp_path / "snapshot"
+    params = NasaPowerClimate.request_params(10.0, -84.2)
+    JsonCache(snapshot, DataMode.LIVE).get_or_fetch(
+        "nasa_power", params, lambda: load_fixture("nasa_power/climatology_alajuela.json")
+    )
+    src = NasaPowerClimate(JsonCache(tmp_path / "runtime", DataMode.CACHED, snapshot=snapshot))
+    assert src.monthly_climate(10.0, -84.2).temperature_c[0] == 22.66
+    assert not (tmp_path / "runtime").exists()  # read only: nothing copied or written
+
+
+def test_committed_snapshot_never_holds_secrets():
+    files = list(SNAPSHOT_DIR.rglob("*.json"))
+    assert files, "the demo snapshot should not be empty"
+    for f in files:
+        params = json.loads(f.read_text(encoding="utf-8"))["params"]
+        assert not any("key" in k.lower() for k in params), f
+
+
+# The demo points the committed snapshot must serve in `cached` mode (the default).
+DEMO_POINTS = {"San Carlos": (11.0, -84.6), "Alajuela": (10.0, -84.2)}
+
+
+@pytest.mark.parametrize("point", sorted(DEMO_POINTS))
+def test_snapshot_has_every_data_set_for_each_demo_point(point, tmp_path):
+    """Fails if a demo point loses its climate, soil profile or SMAP entry (e.g. after a request
+    or cache-key change): the default cached mode would answer 503 for it."""
+    lat, lon = DEMO_POINTS[point]
+    cache = JsonCache(tmp_path, DataMode.CACHED, snapshot=SNAPSHOT_DIR)
+    assert cache.peek("nasa_power", NasaPowerClimate.request_params(lat, lon)) is not None
+    assert cache.peek("openlandmap", EarthEngineSoil.point_params(lat, lon)) is not None
+    assert cache.peek("nasa_smap", SmapSoilMoisture.point_params(lat, lon)) is not None

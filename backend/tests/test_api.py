@@ -66,8 +66,9 @@ def test_conditions_include_daily_extremes(client):
 def test_rotations_explain_benefits_risks_gaps_and_evidence(client):
     rot = client.post("/recommendations", json=CR).json()["rotations"][0]
     assert {"heat", "frost"} <= set(rot["sequence"][0]["variable_scores"])
-    assert any("mock" in g for g in rot["data_gaps"])
-    assert any("mm/month" in e for e in rot["evidence"])
+    assert any("simulated" in g["en"] for g in rot["data_gaps"])
+    assert any("simulados" in g["es"] for g in rot["data_gaps"])
+    assert any("mm of rain per month" in e["en"] for e in rot["evidence"])
     assert rot["notes"] == rot["benefits"] + rot["risks"]
 
 
@@ -83,7 +84,8 @@ def test_every_strategy_carries_all_five_explanation_parts(client, current):
         assert rot["explanation"], ids
         for part in ("evidence", "benefits", "data_gaps", "risks"):
             assert rot[part], f"{part} empty for {ids}"
-        assert any(r.startswith("Local review") for r in rot["risks"]), ids
+        assert any(r["en"].startswith("Local review") for r in rot["risks"]), ids
+        assert any(r["es"].startswith("Revisión local") for r in rot["risks"]), ids
 
 
 def test_without_current_rotation_there_is_no_baseline(client):
@@ -172,3 +174,56 @@ def test_limiting_factor_is_the_weakest_variable_or_none_when_ideal(client):
         else:
             assert m["limiting_factor"] is None
     assert any(m["limiting_factor"] for m in months)  # the check above ran on real cases
+
+
+def test_conditions_include_monthly_soil_moisture(client):
+    soil = client.get("/conditions", params=CR).json()["soil"]
+    assert len(soil["moisture_monthly_m3m3"]) == 12
+    assert soil["moisture_m3m3"] == pytest.approx(sum(soil["moisture_monthly_m3m3"]) / 12, abs=1e-3)
+
+
+def _texts(node):
+    """Every {en, es} object anywhere in a response."""
+    if isinstance(node, dict):
+        if set(node) == {"en", "es"}:
+            yield node
+        else:
+            for v in node.values():
+                yield from _texts(v)
+    elif isinstance(node, list):
+        for v in node:
+            yield from _texts(v)
+
+
+def test_every_farmer_text_comes_in_english_and_spanish(client):
+    rec = client.post(
+        "/recommendations", json={**CR, "current_rotation": ["maize", "maize"]}
+    ).json()
+    windows = client.get("/planting-windows", params=CR).json()
+    texts = list(_texts(rec)) + list(_texts(windows))
+    assert len(texts) > 20
+    for t in texts:
+        assert t["en"].strip()
+        assert t["es"].strip()
+        assert t["es"] != t["en"], t  # really translated, not copied
+
+
+def test_spanish_texts_read_right(client):
+    """Exact Spanish sentences: decimal comma, `%`/`°C` spacing, 'setiembre' for September."""
+    rec = client.post(
+        "/recommendations", json={**CR, "current_rotation": ["maize", "maize"]}
+    ).json()
+    windows = client.get("/planting-windows", params=CR).json()
+    es = {t["es"] for t in list(_texts(rec)) + list(_texts(windows))}
+    assert (
+        "Maíz (primera) → Frijol (postrera): cambiar de familia corta plagas, la leguminosa "
+        "aporta un poco de nitrógeno. Puntaje 1,00 de 1."
+    ) in es
+    assert (
+        "Frijol en primera: calor fuerte, la máxima promedio (32,6 °C) supera lo que aguanta "
+        "el cultivo (32 °C)"
+    ) in es
+    assert (
+        "Muy seco para establecer maíz sembrado en febrero: febrero suele tener solo 18 mm de "
+        "lluvia, y el maíz necesita unos 100 mm al mes para establecerse y crecer (mínimo 80)"
+    ) in es

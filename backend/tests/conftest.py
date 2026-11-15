@@ -36,14 +36,21 @@ def isolated_config() -> MvpConfig:
 
 def isolated_app() -> FastAPI:
     """An app that ignores the developer's .env and never touches the network or the real cache."""
-    env = EnvSettings(_env_file=None, data_mode=None, cache_dir=Path(tempfile.mkdtemp()))
+    env = EnvSettings(
+        _env_file=None,
+        data_mode=None,
+        cache_dir=Path(tempfile.mkdtemp()),
+        cache_snapshot_dir=None,
+    )
     return create_app(config=isolated_config(), env=env)
 
 
 @pytest.fixture
 def env(tmp_path: Path) -> EnvSettings:
     """Isolated env: never reads the developer's .env, cache goes to a temp dir."""
-    return EnvSettings(_env_file=None, data_mode=None, cache_dir=tmp_path / "cache")
+    return EnvSettings(
+        _env_file=None, data_mode=None, cache_dir=tmp_path / "cache", cache_snapshot_dir=None
+    )
 
 
 @pytest.fixture

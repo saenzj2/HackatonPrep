@@ -3,6 +3,7 @@
     {
       "id": "rice",
       "name": "Rice",
+      "name_es": "Arroz",
       "scientific_name": "Oryza sativa",
       "family": "Poaceae",
       "is_legume": false,
@@ -22,11 +23,12 @@
       "soil_ph": {
         "abs_min": 4.5,
         "opt_min": 5.5,
-        "opt_max": 7.5,
-        "abs_max": 8.0
+        "opt_max": 7.0,
+        "abs_max": 9.0
       },
       "root_depth_m": 1.0,
       "is_cover_crop": false,
+      "needs_good_drainage": false,
       "forage_value": {
         "level": "low",
         "score": 0.33
@@ -45,15 +47,17 @@
       },
       "market_note": "Staple grain with steady local demand",
       "sources": [
-        "FAO EcoCrop (tolerance ranges, approximate)",
+        "FAO EcoCrop ecoportcode 1574 via Adaptation Atlas parquet (tolerance ranges, 2026-11-14)",
         "FAO-56 Table 22 (root depth)",
-        "team estimate (cover crop, forage, nutrition, mycorrhizal, nitrogen demand)"
+        "team estimate (cover crop, forage, nutrition, nitrogen demand)",
+        "Vallino et al. 2014, doi:10.1111/pce.12177 (mycorrhizal: low in flooded rice)"
       ],
-      "verified": false
+      "verified": true
     },
     {
       "id": "beans",
       "name": "Common bean",
+      "name_es": "Frijol",
       "scientific_name": "Phaseolus vulgaris",
       "family": "Fabaceae",
       "is_legume": true,
@@ -71,13 +75,14 @@
         "abs_max": 4300.0
       },
       "soil_ph": {
-        "abs_min": 4.2,
+        "abs_min": 4.0,
         "opt_min": 5.5,
-        "opt_max": 6.8,
-        "abs_max": 8.2
+        "opt_max": 7.5,
+        "abs_max": 9.0
       },
       "root_depth_m": 0.9,
       "is_cover_crop": false,
+      "needs_good_drainage": true,
       "forage_value": {
         "level": "low",
         "score": 0.33
@@ -96,15 +101,16 @@
       },
       "market_note": "Staple food legume with strong local demand",
       "sources": [
-        "FAO EcoCrop (tolerance ranges, approximate)",
+        "FAO EcoCrop ecoportcode 1668 via Adaptation Atlas parquet (tolerance ranges, 2026-11-14)",
         "FAO-56 Table 22 (root depth)",
         "team estimate (cover crop, forage, nutrition, mycorrhizal, nitrogen demand)"
       ],
-      "verified": false
+      "verified": true
     },
     {
       "id": "maize",
       "name": "Maize",
+      "name_es": "Maíz",
       "scientific_name": "Zea mays",
       "family": "Poaceae",
       "is_legume": false,
@@ -129,9 +135,10 @@
       },
       "root_depth_m": 1.7,
       "is_cover_crop": false,
+      "needs_good_drainage": true,
       "forage_value": {
-        "level": "high",
-        "score": 1.0
+        "level": "medium",
+        "score": 0.67
       },
       "nutrition_density": {
         "level": "medium",
@@ -145,13 +152,14 @@
         "level": "high",
         "score": 1.0
       },
-      "market_note": "Staple grain and its stover is valued as cattle feed",
+      "market_note": "Staple grain and its fibrous low-protein stover is still valued as cattle feed",
       "sources": [
-        "FAO EcoCrop (tolerance ranges, approximate)",
+        "FAO EcoCrop ecoportcode 238663 via Adaptation Atlas parquet (tolerance ranges, 2026-11-14)",
         "FAO-56 Table 22 (root depth)",
-        "team estimate (cover crop, forage, nutrition, mycorrhizal, nitrogen demand)"
+        "team estimate (cover crop, nutrition, mycorrhizal, nitrogen demand)",
+        "Feedipedia, maize stover (forage: fibrous, low digestibility)"
       ],
-      "verified": false
+      "verified": true
     }
   ]
 }

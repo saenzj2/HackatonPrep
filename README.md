@@ -42,7 +42,7 @@ pass the interpreter explicitly: `make setup PYTHON=py` (Windows launcher) or th
 |------|-------|--------|
 | Backend API | `make dev` → http://localhost:8000/docs | Works with mock data out of the box |
 | Local MVP preview | `python tools/local-mvp-preview/serve.py` → http://127.0.0.1:8765 | Independent offline explorer, not the team frontend |
-| Team frontend | — | Not in this repo yet; tracked in issue #14 |
+| Team frontend | — | Not in this repo yet; tracked in issue #14. Start with [`backend/docs/frontend-guide.md`](backend/docs/frontend-guide.md) |
 
 ### Try it
 
@@ -53,8 +53,10 @@ curl -s -X POST localhost:8000/recommendations \
        "priorities": {"water": 0.4, "soil": 0.3, "climate": 0.3}}'
 ```
 
-Out of the box the API answers with **realistic mock data** (`data_mode: mock`), so the frontend can
-build against it from day 1. Real sources are plugged in one at a time.
+Out of the box the API answers with **real data from the cache** (`data_mode: cached`): NASA POWER
+climate, OpenLandMap soil pH, NASA SMAP soil moisture and FAO EcoCrop crop ranges. A committed
+snapshot (`backend/app/cache/snapshots/`) covers the demo points (San Carlos 11.0, −84.6 and
+Alajuela 10.0, −84.2); other points answer `503 cache_miss` until fetched once in `live` mode.
 
 ## How it works
 
@@ -86,11 +88,12 @@ When the team decides them, edit that file (and log why in
 
 | mode     | what it does                                                         |
 |----------|----------------------------------------------------------------------|
-| `mock`   | deterministic fake data, no network (default)                        |
+| `cached` | serves only from the cache (then the committed snapshot), never touches the network (**default, use for the demo**) |
 | `live`   | fetches on every request, saves valid responses; falls back to cache on source errors |
-| `cached` | serves only from the cache, never touches the network (**use for the demo**) |
+| `mock`   | deterministic fake data, no network (tests only)                     |
 
-Soil pH and moisture remain **mocked in every mode**. NASA POWER monthly normals feed
+Soil uses real data in `cached` and `live`: pH from OpenLandMap, monthly moisture from NASA SMAP
+(`backend/docs/sources/smap.md`). `make cache-snapshot` copies newly fetched points into the snapshot. NASA POWER monthly normals feed
 conditions and ranking; the daily-weather adapter exists but is not connected to those services.
 The optional `current_rotation` request now enables comparison with a farmer-supplied baseline,
 including score deltas, benefits, risks, evidence and data gaps (contract `0.2.0-draft`).
@@ -126,6 +129,7 @@ External Sentinel-2, WorldCover, SoilGrids and FTW research images are not backe
 | `backend/app/cache/` | On-disk cache so the demo doesn't depend on the internet |
 | `backend/config/mvp.yaml` | MVP scope (region, crops, variables, weights) |
 | `backend/docs/api-contract.yaml` | **API contract** (OpenAPI), the agreement with the frontend |
+| `backend/docs/frontend-guide.md` | **Frontend guide**: every endpoint and field, real examples, errors, how to display each piece, TS types |
 | `backend/docs/errors.md` | **Error guide** (mandatory): codes, envelope, rules, frontend handling |
 | `backend/docs/decisions.md` | Log of technical decisions |
 | `backend/docs/sources/` | One page per dataset: variables, units, coverage, license |

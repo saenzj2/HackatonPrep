@@ -117,12 +117,41 @@
     }
   ],
   "soil": {
-    "ph": 5.87,
-    "moisture_m3m3": 0.256
+    "ph": 6.43,
+    "moisture_m3m3": 0.4638,
+    "moisture_monthly_m3m3": [
+      0.4487,
+      0.4132,
+      0.3835,
+      0.3828,
+      0.4256,
+      0.485,
+      0.5045,
+      0.5077,
+      0.5098,
+      0.5151,
+      0.5096,
+      0.4797
+    ],
+    "texture_class": "clay loam",
+    "wetness_monthly": [
+      0.825,
+      0.7597,
+      0.7051,
+      0.7037,
+      0.7825,
+      0.8919,
+      0.9278,
+      0.9337,
+      0.9374,
+      0.9473,
+      0.937,
+      0.8821
+    ]
   },
   "data_sources": {
     "climate": "nasa_power",
-    "soil": "mock",
+    "soil": "openlandmap+nasa_smap",
     "crops": "ecocrop_subset"
   }
 }

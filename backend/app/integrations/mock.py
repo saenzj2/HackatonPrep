@@ -76,9 +76,15 @@ class MockSoil:
 
     def soil(self, lat: float, lon: float) -> SoilConditions:
         rng = _rng("soil", lat, lon)
+        base = rng.uniform(0.18, 0.38)
+        # Moisture follows the rains about a month later, like SMAP in Costa Rica.
+        peak = max(_RAIN_SHAPE)
+        monthly = tuple(round(base * (0.7 + 0.3 * _RAIN_SHAPE[m - 1] / peak), 3) for m in range(12))
         return SoilConditions(
             ph=round(rng.uniform(5.0, 6.8), 2),
-            moisture_m3m3=round(rng.uniform(0.18, 0.38), 3),
+            moisture_m3m3=round(sum(monthly) / len(monthly), 3),
+            moisture_monthly_m3m3=monthly,
+            wetness_monthly=tuple(round(min(1.0, m / 0.45), 3) for m in monthly),
         )
 
 

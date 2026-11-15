@@ -30,6 +30,10 @@ dev = [
     "types-PyYAML",
     "pandas-stubs",
 ]
+# Only for scripts/import_ecocrop.py (reads EcoCrop Parquet). Not needed to run the app or tests.
+data = [
+    "pyarrow>=15",
+]
 
 [tool.setuptools.packages.find]
 include = ["app*"]

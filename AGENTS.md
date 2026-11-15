@@ -48,7 +48,8 @@ User: location + crops + priorities
 2. **Branch per feature** (`feat/…`, `fix/…`, `docs/…`). Never commit to `main` (pre-commit blocks it).
 3. **Small PRs**, CI green, at least one reviewer.
 4. **Log decisions** in `backend/docs/decisions.md`, including any `mvp.yaml` change.
-5. **Demo data** is always cached or mocked (see `data_mode`).
+5. **Demo data** is always real and cached (`data_mode: cached`, the default; committed snapshot in
+   `backend/app/cache/snapshots/`). `mock` is for tests only.
 
 ## Definition of Ready (before starting a task)
 - [ ] The endpoint or field exists in the contract, or the contract change is agreed.

@@ -6,25 +6,20 @@ rotation at all, and the whole crop catalog. Offline: the fixture is put in a te
 
 import pytest
 
-from app.cache import JsonCache
-from app.integrations.nasa_power import SOURCE, NasaPowerClimate
 from app.settings import DataMode
-from tests.conftest import contract_validator, isolated_config, load_fixture
+from scripts.make_examples import LAT, LON, seed_demo_cache
+from tests.conftest import contract_validator, isolated_config
 
-# Representative point of the saved NASA POWER fixture (Alajuela, Costa Rica).
-POINT = {"lat": 10.0, "lon": -84.2}
+# Representative point of the saved real fixtures (Alajuela, Costa Rica).
+POINT = {"lat": LAT, "lon": LON}
 CATALOG = ["rice", "beans", "maize", "sorghum", "cowpea"]  # data/ecocrop_subset.csv
 RESPONSE_SCHEMA = contract_validator("RecommendationResponse")
 
 
 @pytest.fixture
 def cached_client(make_client, env):
-    """A `cached`-mode client whose cache holds only the real Alajuela climatology."""
-    JsonCache(env.cache_dir, DataMode.LIVE).get_or_fetch(
-        SOURCE,
-        NasaPowerClimate.request_params(POINT["lat"], POINT["lon"]),
-        lambda: load_fixture("nasa_power/climatology_alajuela.json"),
-    )
+    """A `cached`-mode client whose cache holds the real Alajuela climate, soil and moisture."""
+    seed_demo_cache(env.cache_dir)
     return make_client(data_mode=DataMode.CACHED)
 
 

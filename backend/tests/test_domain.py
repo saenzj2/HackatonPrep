@@ -31,6 +31,8 @@ from app.domain.ranking import (
     LOCAL_REVIEW_UNSCORED,
     NO_BENEFIT,
     STRONG_CATEGORY,
+    STRONG_CATEGORY_TEXT,
+    WATER_ENOUGH_WATCH_DRAINAGE,
     explain,
     rank_rotations,
 )
@@ -38,9 +40,11 @@ from app.domain.rotation_rules import MONOCULTURE_PENALTY, SAME_FAMILY_PENALTY
 from app.domain.soil import silt_pct
 from app.domain.suitability import (
     HEAT_MARGIN_C,
+    WATERLOGGING_MIN_FACTOR,
     crop_season_fit,
     season_climate,
     trapezoid,
+    waterlogging_factor,
 )
 from app.errors import DomainInvariantError
 
@@ -225,7 +229,7 @@ def test_heat_stress_is_reported_as_risk():
     fit = crop_season_fit(
         crop("maize"), sc_with(temperature_max_c=42.0), GOOD_SOIL, EQUAL, ["heat"]
     )
-    assert any("heat stress" in r for r in fit.risks)
+    assert any("strong heat" in r.en for r in fit.risks)
 
 
 @pytest.mark.parametrize(("tmin", "expected"), [(-2.0, 0.0), (0.0, 0.0), (2.5, 0.5), (5.0, 1.0)])
@@ -240,7 +244,7 @@ def test_frost_risk_is_reported():
     fit = crop_season_fit(
         crop("maize"), sc_with(temperature_min_c=2.0), GOOD_SOIL, EQUAL, ["frost"]
     )
-    assert any("frost risk" in r for r in fit.risks)
+    assert any("frost risk" in r.en for r in fit.risks)
 
 
 def test_no_risks_in_good_conditions():
@@ -254,14 +258,14 @@ def test_marginal_variable_is_reported_as_risk():
         crop("maize"), sc_with(rainfall_mm_per_month=70.0), GOOD_SOIL, EQUAL, ["rainfall"]
     )
     assert 0 < fit.variable_scores["rainfall"] < 0.5
-    assert any("rainfall" in r for r in fit.risks)
+    assert any("rain over the crop cycle" in r.en for r in fit.risks)
 
 
 def test_fit_is_zero_when_any_variable_outside_absolute_limits():
     sc = sc_with(temperature_c=45.0)
     fit = crop_season_fit(crop("maize"), sc, GOOD_SOIL, EQUAL.normalized(), ALL_VARS)
     assert fit.score == 0.0
-    assert any("temperature" in n and "above" in n for n in fit.risks)
+    assert any("average temperature too high" in n.en for n in fit.risks)
 
 
 def test_tiny_scores_are_not_rounded_to_zero():
@@ -296,7 +300,7 @@ def test_legume_after_cereal_beats_monoculture():
     assert set(ids[:2]) == {("maize", "beans"), ("beans", "maize")}
     assert results[-1].score < results[0].score
     mono = next(r for r in results if ids[results.index(r)] == ("maize", "maize"))
-    assert any("monoculture" in n for n in mono.risks)
+    assert any("monoculture" in n.en for n in mono.risks)
 
 
 def scores_by_ids(crops):
@@ -316,14 +320,14 @@ def test_same_family_is_a_risk_and_family_change_a_benefit():
         tuple(f.crop.id for f in r.sequence): r
         for r in rank([crop("maize"), crop("rice"), crop("beans", legume=True)], top_n=None)
     }
-    assert any("same family (Poaceae)" in x for x in results[("maize", "rice")].risks)
-    assert any("family change" in x for x in results[("maize", "beans")].benefits)
-    assert any("nitrogen from the air" in x for x in results[("maize", "beans")].benefits)
+    assert any("same grass family" in x.en for x in results[("maize", "rice")].risks)
+    assert any("changing from the" in x.en for x in results[("maize", "beans")].benefits)
+    assert any("nitrogen from the air" in x.en for x in results[("maize", "beans")].benefits)
 
 
 def test_strong_categories_are_benefits():
     (best,) = rank([crop("maize"), crop("beans", legume=True)], top_n=1)
-    assert any("Strong water fit" in b for b in best.benefits)
+    assert any("suit these crops" in b.en for b in best.benefits)
 
 
 def test_rank_without_top_n_returns_every_combination():
@@ -336,7 +340,7 @@ def test_non_viable_rotations_rank_last():
     results = rank(crops, top_n=10)
     assert results[0].viable
     assert not results[-1].viable
-    assert "not recommended" in explain(results[-1])
+    assert "not recommended" in explain(results[-1]).en
 
 
 def test_rank_requires_two_seasons():
@@ -496,19 +500,19 @@ def test_assess_erosion_end_to_end():
 def test_every_rotation_ends_with_local_review_items():
     for r in rank([crop("maize"), crop("beans", legume=True)], top_n=None):
         assert r.risks[-1] == LOCAL_REVIEW_UNSCORED
-        assert r.risks[-2].startswith("Local review: check sowing dates")
+        assert r.risks[-2].en.startswith("Local review: check sowing dates")
 
 
 def test_local_review_names_each_crop_and_season():
     (r,) = rank([crop("maize"), crop("beans", legume=True)], top_n=1)
-    names = [f"{f.crop.name} in {f.season.name}" for f in r.sequence]
-    assert ", ".join(names) in r.risks[-2]
+    names = [f"{f.crop.name.lower()} in {f.season.name}" for f in r.sequence]
+    assert ", ".join(names) in r.risks[-2].en
 
 
 def test_rotation_with_good_fit_and_family_change_still_has_local_review_risks():
     """maize -> beans has no rule risk; without local review its risks would be empty."""
     (r,) = rank([crop("maize"), crop("beans", legume=True)], top_n=1)
-    assert [x for x in r.risks if not x.startswith("Local review")] == []
+    assert [x for x in r.risks if not x.en.startswith("Local review")] == []
     assert len(r.risks) == 2
 
 
@@ -559,3 +563,111 @@ def _layer(depth_cm):
 def test_soil_profile_needs_unique_sorted_depths(depths):
     with pytest.raises(DomainInvariantError, match="unique depths"):
         SoilProfile(lat=0, lon=0, layers=tuple(_layer(d) for d in depths))
+
+
+# ---------------------------------------------------------------- soil water (NASA SMAP)
+@pytest.mark.parametrize(
+    ("wetness", "factor"), [(0.5, 1.0), (0.8, 1.0), (0.875, 0.925), (0.95, 0.85), (1.0, 0.85)]
+)
+def test_waterlogging_factor_ramps_down_and_never_vetoes(wetness, factor):
+    assert waterlogging_factor(wetness) == pytest.approx(factor)
+
+
+def _fit_with_wetness(wetness: float, *, needs_drainage: bool):
+    soil = SoilConditions(ph=6.0, moisture_m3m3=0.3, wetness_monthly=(wetness,) * 12)
+    c = replace(crop("maize"), needs_good_drainage=needs_drainage)
+    return crop_season_fit(c, sc_with(), soil, EQUAL.normalized(), ALL_VARS)
+
+
+def test_saturated_soil_lowers_score_of_crops_that_need_drainage():
+    fit = _fit_with_wetness(0.95, needs_drainage=True)
+    assert fit.waterlogging_factor == pytest.approx(WATERLOGGING_MIN_FACTOR)
+    assert fit.score == pytest.approx(WATERLOGGING_MIN_FACTOR)  # 1.0 x 0.85
+    assert any("waterlogged" in r.en for r in fit.risks)
+
+
+def test_crops_that_tolerate_poor_drainage_are_not_penalised():
+    fit = _fit_with_wetness(0.95, needs_drainage=False)  # e.g. rice
+    assert fit.score == pytest.approx(1.0)
+    assert not any("waterlogged" in r.en for r in fit.risks)
+
+
+def test_wet_soil_alone_is_no_longer_penalised_only_dry_soil():
+    wet = SoilConditions(ph=6.0, moisture_m3m3=0.52)
+    dry = SoilConditions(ph=6.0, moisture_m3m3=0.08)
+    fits = {
+        name: crop_season_fit(crop("maize"), sc_with(), soil, EQUAL.normalized(), ALL_VARS)
+        for name, soil in (("wet", wet), ("dry", dry))
+    }
+    assert fits["wet"].variable_scores["soil_moisture"] == 1.0
+    assert fits["dry"].variable_scores["soil_moisture"] == 0.0
+    assert any("very dry" in r.en for r in fits["dry"].risks)
+
+
+@pytest.mark.parametrize(
+    ("texture", "mentions_clay"),
+    [("clay", True), ("clay loam", False), ("sandy loam", False), (None, False)],
+)
+def test_waterlogging_warning_mentions_clay_soil(texture, mentions_clay):
+    soil = SoilConditions(
+        ph=6.0, moisture_m3m3=0.3, wetness_monthly=(0.95,) * 12, texture_class=texture
+    )
+    c = replace(crop("maize"), needs_good_drainage=True)
+    fit = crop_season_fit(c, sc_with(), soil, EQUAL.normalized(), ALL_VARS)
+    (warning,) = [r for r in fit.risks if "waterlogged" in r.en]
+    assert ("can drain slowly" in warning.en) is mentions_clay
+    assert ("puede drenar lento" in warning.es) is mentions_clay
+
+
+# ------------------------------------- water benefit vs waterlogging warning
+def _rank_with_wetness(wetness: float | None, *, needs_drainage: bool):
+    soil = SoilConditions(
+        ph=6.0,
+        moisture_m3m3=0.3,
+        wetness_monthly=None if wetness is None else (wetness,) * 12,
+    )
+    c = replace(crop("maize"), needs_good_drainage=needs_drainage)
+    (r,) = rank_rotations(
+        crops=[c],
+        seasons=SEASONS,
+        climate=GOOD_CLIMATE,
+        soil=soil,
+        weights=EQUAL,
+        variables=ALL_VARS,
+        top_n=None,
+    )
+    return r
+
+
+def test_strong_water_without_warning_says_water_suits():
+    r = _rank_with_wetness(0.3, needs_drainage=True)
+    assert r.breakdown.water is not None
+    assert r.breakdown.water >= STRONG_CATEGORY
+    assert STRONG_CATEGORY_TEXT["water"] in r.benefits
+    assert WATER_ENOUGH_WATCH_DRAINAGE not in r.benefits
+
+
+def test_strong_water_with_waterlogging_warning_says_watch_drainage():
+    r = _rank_with_wetness(0.95, needs_drainage=True)
+    assert r.breakdown.water is not None
+    assert r.breakdown.water >= STRONG_CATEGORY
+    assert STRONG_CATEGORY_TEXT["water"] not in r.benefits
+    assert WATER_ENOUGH_WATCH_DRAINAGE in r.benefits
+    assert NO_BENEFIT not in r.benefits
+
+
+def test_mixed_rotation_one_wet_season_is_enough_to_drop_water_suits():
+    soil = SoilConditions(ph=6.0, moisture_m3m3=0.3, wetness_monthly=(0.95,) * 12)
+    tolerant = replace(crop("rice"), needs_good_drainage=False)
+    needy = replace(crop("beans", legume=True), needs_good_drainage=True)
+    (r,) = rank_rotations(
+        crops=[tolerant, needy],
+        seasons=SEASONS,
+        climate=GOOD_CLIMATE,
+        soil=soil,
+        weights=EQUAL,
+        variables=ALL_VARS,
+        top_n=1,
+    )
+    assert any(f.waterlogging_warning for f in r.sequence)
+    assert STRONG_CATEGORY_TEXT["water"] not in r.benefits

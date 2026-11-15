@@ -1,0 +1,114 @@
+{
+  "source": "https://digital-atlas.s3.amazonaws.com/cdh/data/ecocrop/ecocrop.parquet",
+  "fetched": "2026-11-14",
+  "records": [
+    {
+      "ecoportcode": 1574,
+      "scientificname": "Oryza sativa",
+      "tmin": 10,
+      "topmn": 20,
+      "topmx": 30,
+      "tmax": 36,
+      "rmin": 1000,
+      "ropmn": 1500,
+      "ropmx": 2000,
+      "rmax": 4000,
+      "phmin": 4.5,
+      "phopmn": 5.5,
+      "phopmx": 7.0,
+      "phmax": 9.0,
+      "gmin": 80,
+      "gmax": 180,
+      "drar": [
+        "poorly (saturated >50% of year)"
+      ]
+    },
+    {
+      "ecoportcode": 1668,
+      "scientificname": "Phaseolus vulgaris",
+      "tmin": 7,
+      "topmn": 16,
+      "topmx": 25,
+      "tmax": 32,
+      "rmin": 300,
+      "ropmn": 500,
+      "ropmx": 2000,
+      "rmax": 4300,
+      "phmin": 4.0,
+      "phopmn": 5.5,
+      "phopmx": 7.5,
+      "phmax": 9.0,
+      "gmin": 50,
+      "gmax": 270,
+      "drar": [
+        "well (dry spells)"
+      ]
+    },
+    {
+      "ecoportcode": 2153,
+      "scientificname": "Vigna unguiculata",
+      "tmin": 15,
+      "topmn": 25,
+      "topmx": 35,
+      "tmax": 40,
+      "rmin": 300,
+      "ropmn": 500,
+      "ropmx": 1500,
+      "rmax": 4100,
+      "phmin": 4.0,
+      "phopmn": 5.5,
+      "phopmx": 7.5,
+      "phmax": 8.8,
+      "gmin": 30,
+      "gmax": 240,
+      "drar": [
+        "well (dry spells)",
+        "excessive (dry/moderately dry)"
+      ]
+    },
+    {
+      "ecoportcode": 48747,
+      "scientificname": "Sorghum bicolor",
+      "tmin": 8,
+      "topmn": 22,
+      "topmx": 35,
+      "tmax": 40,
+      "rmin": 300,
+      "ropmn": 400,
+      "ropmx": 600,
+      "rmax": 700,
+      "phmin": 5.0,
+      "phopmn": 5.5,
+      "phopmx": 7.5,
+      "phmax": 8.0,
+      "gmin": 90,
+      "gmax": 300,
+      "drar": [
+        "well (dry spells)",
+        "excessive (dry/moderately dry)"
+      ]
+    },
+    {
+      "ecoportcode": 238663,
+      "scientificname": "Zea mays ssp. mays",
+      "tmin": 10,
+      "topmn": 18,
+      "topmx": 33,
+      "tmax": 47,
+      "rmin": 400,
+      "ropmn": 600,
+      "ropmx": 1200,
+      "rmax": 1800,
+      "phmin": 4.5,
+      "phopmn": 5.0,
+      "phopmx": 7.0,
+      "phmax": 8.5,
+      "gmin": 65,
+      "gmax": 365,
+      "drar": [
+        "well (dry spells)",
+        "excessive (dry/moderately dry)"
+      ]
+    }
+  ]
+}

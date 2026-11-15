@@ -57,6 +57,8 @@ class EcoCropCatalog:
                 crop = CropProfile(
                     id=row["id"].strip(),
                     name=row["name"].strip(),
+                    name_es=row["name_es"].strip() or None,
+                    gender_es=row["gender_es"].strip(),
                     scientific_name=row["scientific_name"].strip(),
                     family=row["family"].strip(),
                     is_legume=_bool(row["is_legume"]),
@@ -66,6 +68,7 @@ class EcoCropCatalog:
                     soil_ph=_range(row, "ph"),
                     root_depth_m=float(row["root_depth_m"]),
                     is_cover_crop=_bool(row["is_cover_crop"]),
+                    needs_good_drainage=_bool(row["needs_good_drainage"]),
                     forage_value=float(row["forage_value"]),
                     nutrition_density=float(row["nutrition_density"]),
                     mycorrhizal_affinity=float(row["mycorrhizal_affinity"]),

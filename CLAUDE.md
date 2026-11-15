@@ -18,6 +18,8 @@ Folder rules load automatically when you work in a folder: each `CLAUDE.md` ther
 - `nasa-data`: questions about NASA datasets, variables, units, resolution, coverage. Read-only plus web.
 - `agro-logic`: review agronomic soundness of `backend/app/domain/` or of `mvp.yaml` choices.
 - `reviewer`: review the branch diff against AGENTS.md / Definition of Done before opening a PR.
+- `fact-checker`: verify claims marked "from memory", "unverified" or "team estimate" against published sources.
+- `farmer-language`: review every farmer-facing text (risks, benefits, data gaps) for clarity, accuracy and Spanish.
 
 ## Hooks and permissions (`.claude/settings.json`)
 - After every Edit/Write of a `backend/**/*.py` file, ruff formats and fixes it automatically.

@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
+from app.domain.text import Text
 from app.errors import DomainInvariantError
 
 MONTHS = 12
@@ -69,9 +70,35 @@ class CropProfile:
     nitrogen_demand: float  # 1 = heavy feeder
     market_note: str  # one line of local market context, may be empty
     sources: tuple[str, ...]  # citations for this crop's values
-    verified: bool = False  # True once every value was checked against `sources`
+    # EcoCrop: the crop doesn't tolerate poorly drained soil (all but rice here). Enables the
+    # waterlogging check; False = no check.
+    needs_good_drainage: bool = False
+    name_es: str | None = None  # Spanish (Costa Rica) name; None = same as `name`
+    gender_es: str = "m"  # grammatical gender of `name_es`: "m" (el maíz) or "f" (la yuca)
+    verified: bool = False  # True once the tolerance ranges come from a cited source (EcoCrop)
+
+    @property
+    def label(self) -> Text:
+        """The crop's name in both languages, for farmer-facing text."""
+        return Text(self.name, self.name_es or self.name)
+
+    @property
+    def the_es(self) -> str:
+        """'el maíz' / 'la yuca': the crop name with its article, lower case, mid-sentence."""
+        name = (self.name_es or self.name).lower()
+        return f"{'la' if self.gender_es == 'f' else 'el'} {name}"
+
+    @property
+    def of_the_es(self) -> str:
+        """'del maíz' / 'de la yuca'."""
+        name = (self.name_es or self.name).lower()
+        return f"de la {name}" if self.gender_es == "f" else f"del {name}"
 
     def __post_init__(self) -> None:
+        if self.gender_es not in ("m", "f"):
+            raise DomainInvariantError(
+                f"{self.id}: gender_es must be 'm' or 'f', got {self.gender_es!r}"
+            )
         if not 0 < self.root_depth_m <= MAX_ROOT_DEPTH_M:
             raise DomainInvariantError(
                 f"{self.id}: root_depth_m must be in (0, {MAX_ROOT_DEPTH_M}], "
@@ -104,9 +131,48 @@ class MonthlyClimate:
 
 
 @dataclass(frozen=True)
+class MonthlySoilWater:
+    """Root-zone soil water per calendar month, January first (NASA SMAP L4)."""
+
+    moisture_m3m3: tuple[float, ...]  # volumetric water content
+    wetness: tuple[float, ...]  # relative saturation, 0 = dry, 1 = saturated
+
+
+@dataclass(frozen=True)
 class SoilConditions:
     ph: float
-    moisture_m3m3: float  # volumetric water content of the surface layer
+    moisture_m3m3: float  # volumetric water content (m³/m³); the yearly mean when monthly is given
+    # Mean moisture per calendar month (m³/m³), January first. When present, each season or
+    # sowing month is scored on the mean of its own months instead of moisture_m3m3.
+    moisture_monthly_m3m3: tuple[float, ...] | None = None
+
+    def __post_init__(self) -> None:
+        monthly = self.moisture_monthly_m3m3
+        if monthly is not None and len(monthly) != MONTHS:
+            raise DomainInvariantError("SoilConditions needs 12 monthly moisture values")
+        wetness = self.wetness_monthly
+        if wetness is not None and (
+            len(wetness) != MONTHS or not all(0 <= w <= 1 for w in wetness)
+        ):
+            raise DomainInvariantError("SoilConditions needs 12 monthly wetness values in 0..1")
+
+    # Mean relative saturation of the root zone per month (0 = dry, 1 = saturated), January first.
+    # From the same model as the moisture, so it's comparable across soils. Drives waterlogging.
+    wetness_monthly: tuple[float, ...] | None = None
+    # USDA texture class of the topsoil (e.g. "clay"); only used to word the waterlogging warning.
+    texture_class: str | None = None
+
+    def wetness_for(self, months: tuple[int, ...]) -> float | None:
+        """Mean relative saturation over the given months, or None without wetness data."""
+        if self.wetness_monthly is None:
+            return None
+        return sum(self.wetness_monthly[m - 1] for m in months) / len(months)
+
+    def moisture_for(self, months: tuple[int, ...]) -> float:
+        """Mean moisture over the given months (1..12); the single value when there's no series."""
+        if self.moisture_monthly_m3m3 is None:
+            return self.moisture_m3m3
+        return sum(self.moisture_monthly_m3m3[m - 1] for m in months) / len(months)
 
 
 @dataclass(frozen=True)
@@ -182,7 +248,9 @@ class CropSeasonFit:
     variable_scores: dict[str, float]
     categories: CategoryScores
     score: float  # 0..1
-    risks: tuple[str, ...] = ()  # limits exceeded, partial stress, cycle too long
+    risks: tuple[Text, ...] = ()  # limits exceeded, partial stress, cycle too long
+    waterlogging_factor: float = 1.0  # already applied to score; < 1 = some waterlogging risk
+    waterlogging_warning: bool = False  # wet enough to warn the farmer (WATERLOGGING_NOTE)
 
 
 @dataclass(frozen=True)
@@ -191,8 +259,9 @@ class RotationResult:
     score: float  # 0..1 after rotation adjustments
     breakdown: CategoryScores
     viable: bool
-    benefits: tuple[str, ...] = field(default_factory=tuple)
-    risks: tuple[str, ...] = field(default_factory=tuple)
+    benefits: tuple[Text, ...] = field(default_factory=tuple)
+    risks: tuple[Text, ...] = field(default_factory=tuple)
+    rules_fired: tuple[str, ...] = ()  # rotation rule ids that fired, in order (explanations)
 
 
 @dataclass(frozen=True)
