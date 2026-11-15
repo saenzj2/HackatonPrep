@@ -139,3 +139,36 @@ def test_same_input_same_output(client):
 
 
 # Error responses are tested in tests/test_errors.py (one place for the error envelope).
+
+
+def test_planting_windows_for_mvp_crops(client, config):
+    body = client.get("/planting-windows", params=CR).json()
+    assert [c["crop_id"] for c in body["crops"]] == config.crops
+    first = body["crops"][0]
+    assert [m["sowing_month"] for m in first["sowing_months"]] == list(range(1, 13))
+    assert first["sowing_months"][10]["months_in_field"][:2] == [11, 12]  # sown in Nov, wraps
+    assert body["data_sources"]["climate"] == "mock"
+
+
+def test_planting_windows_only_requested_crops(client):
+    body = client.get("/planting-windows", params={**CR, "crops": ["maize", "beans"]}).json()
+    assert [c["crop_id"] for c in body["crops"]] == ["maize", "beans"]
+
+
+def test_planting_window_months_are_good_sowing_months(client):
+    crop = client.get("/planting-windows", params={**CR, "crops": ["maize"]}).json()["crops"][0]
+    good = {m["sowing_month"] for m in crop["sowing_months"] if m["is_good"]}
+    for w in crop["windows"]:
+        assert {w["first_month"], w["last_month"], w["best_month"]} <= good
+
+
+def test_limiting_factor_is_the_weakest_variable_or_none_when_ideal(client):
+    body = client.get("/planting-windows", params=CR).json()
+    months = [m for c in body["crops"] for m in c["sowing_months"]]
+    for m in months:
+        weakest = min(m["variable_scores"], key=m["variable_scores"].get)
+        if m["variable_scores"][weakest] < 1:
+            assert m["limiting_factor"] == weakest
+        else:
+            assert m["limiting_factor"] is None
+    assert any(m["limiting_factor"] for m in months)  # the check above ran on real cases

@@ -117,6 +117,77 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /planting-windows:
+    get:
+      tags:
+      - planting
+      summary: Get Planting Windows
+      description: 'Best sowing months per crop at a point: each month scored over the crop''s cycle.'
+      operationId: get_planting_windows_planting_windows_get
+      parameters:
+      - name: lat
+        in: query
+        required: true
+        schema:
+          type: number
+          maximum: 90
+          minimum: -90
+          examples:
+          - 11.0
+          title: Lat
+      - name: lon
+        in: query
+        required: true
+        schema:
+          type: number
+          maximum: 180
+          minimum: -180
+          examples:
+          - -84.6
+          title: Lon
+      - name: crops
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+          - type: 'null'
+          description: Crop ids from GET /crops, repeatable. Omit for the MVP crops.
+          title: Crops
+        description: Crop ids from GET /crops, repeatable. Omit for the MVP crops.
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlantingWindowsResponse'
+        '422':
+          description: '`validation_failed`, `out_of_region`, `unknown_crop`, `invalid_priorities`, `invalid_rotation`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: '`internal_error`, `config_invalid`, `domain_invariant`: a backend bug'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: '`source_unavailable`, `source_bad_data`: an external data source failed'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: '`cache_miss`: data_mode=cached and this location was never fetched'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /recommendations:
     post:
       tags:
@@ -810,6 +881,132 @@ components:
       - score
       title: TraitValue
       description: A crop trait as a word for display plus its 0..1 score (e.g. for a hover).
+    CropPlanting:
+      properties:
+        crop_id:
+          type: string
+          title: Crop Id
+        crop_name:
+          type: string
+          title: Crop Name
+        cycle_days:
+          type: integer
+          title: Cycle Days
+        sowing_months:
+          items:
+            $ref: '#/components/schemas/SowingMonth'
+          type: array
+          title: Sowing Months
+          description: Always 12, January first
+        windows:
+          items:
+            $ref: '#/components/schemas/PlantingWindow'
+          type: array
+          title: Windows
+          description: Consecutive good sowing months; may be empty
+      additionalProperties: false
+      type: object
+      required:
+      - crop_id
+      - crop_name
+      - cycle_days
+      - sowing_months
+      - windows
+      title: CropPlanting
+    PlantingWindow:
+      properties:
+        first_month:
+          type: integer
+          maximum: 12.0
+          minimum: 1.0
+          title: First Month
+          description: 'Can wrap: first 11, last 1 = Nov to Jan'
+        last_month:
+          type: integer
+          maximum: 12.0
+          minimum: 1.0
+          title: Last Month
+        best_month:
+          type: integer
+          maximum: 12.0
+          minimum: 1.0
+          title: Best Month
+        best_score:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Best Score
+      additionalProperties: false
+      type: object
+      required:
+      - first_month
+      - last_month
+      - best_month
+      - best_score
+      title: PlantingWindow
+    PlantingWindowsResponse:
+      properties:
+        location:
+          $ref: '#/components/schemas/Location'
+        crops:
+          items:
+            $ref: '#/components/schemas/CropPlanting'
+          type: array
+          title: Crops
+          description: One per requested crop id (duplicates ignored), in request order
+        data_sources:
+          $ref: '#/components/schemas/DataSources'
+      additionalProperties: false
+      type: object
+      required:
+      - location
+      - crops
+      - data_sources
+      title: PlantingWindowsResponse
+    SowingMonth:
+      properties:
+        sowing_month:
+          type: integer
+          maximum: 12.0
+          minimum: 1.0
+          title: Sowing Month
+        months_in_field:
+          items:
+            type: integer
+          type: array
+          title: Months In Field
+          description: Months the crop spends in the field when sown this month (wraps the year)
+        score:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Score
+          description: Same scoring as rotations, 1 = ideal
+        is_good:
+          type: boolean
+          title: Is Good
+          description: score >= 0.8 and no variable below 0.5
+        limiting_factor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Limiting Factor
+          description: Lowest-scoring variable (e.g. rainfall) when it is below 1, else null
+        variable_scores:
+          additionalProperties:
+            type: number
+          type: object
+          title: Variable Scores
+      additionalProperties: false
+      type: object
+      required:
+      - sowing_month
+      - months_in_field
+      - score
+      - is_good
+      - limiting_factor
+      - variable_scores
+      title: SowingMonth
 servers:
 - url: http://localhost:8000
   description: Local dev (make dev)

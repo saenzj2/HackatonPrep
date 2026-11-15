@@ -4,7 +4,7 @@
 |---|---|
 | **Used for** | Temperature and rainfall (`ClimateSource`) |
 | **Adapter** | `app/integrations/nasa_power.py` |
-| **Fixtures** | `tests/fixtures/nasa_power/climatology_alajuela.json` (lat 10.0, lon −84.2, fetched 2026-11-06)<br>`tests/fixtures/nasa_power/daily_san_jose_202601.json` (lat 9.93, lon −84.08, 2026-01-01 to 2026-01-31, `T2M,T2M_MAX,T2M_MIN,PRECTOTCORR`, refetched 2026-11-14) |
+| **Fixtures** | `tests/fixtures/nasa_power/climatology_alajuela.json` (lat 10.0, lon −84.2, fetched 2026-11-06)<br>`tests/fixtures/nasa_power/daily_san_jose_202601.json` (lat 9.93, lon −84.08, 2026-01-01 to 2026-01-31, fetched 2026-11-14) |
 | **Status** | ✅ Integrated (`live` / `cached` modes) |
 
 ## Access
@@ -48,29 +48,18 @@ Response shape: `properties.parameter.<PARAM>.{JAN..DEC, ANN}`. Missing data = `
 ## Daily API (`NasaPowerClimate.daily_weather`)
 - Endpoint: `GET https://power.larc.nasa.gov/api/temporal/daily/point`, same auth (none) and license.
 - Docs: https://power.larc.nasa.gov/docs/services/api/temporal/daily/
-- Request: `parameters=T2M,T2M_MAX,T2M_MIN,PRECTOTCORR`, `community=AG`, `start` / `end` as `YYYYMMDD` (inclusive).
-- Daily variables (units as declared in the response's `parameters.<P>.units`):
-
-  | Parameter | Meaning | Unit | Column |
-  |---|---|---|---|
-  | `T2M` | Daily **mean** air temperature at 2 m | `C` | `temperature_c` |
-  | `T2M_MAX` | That day's **maximum** air temperature at 2 m | `C` | `temperature_max_c` |
-  | `T2M_MIN` | That day's **minimum** air temperature at 2 m | `C` | `temperature_min_c` |
-  | `PRECTOTCORR` | Bias-corrected precipitation | `mm/day` | `rainfall_mm` (the day's total) |
-
-  A response declaring other units is rejected (`source_bad_data`); nothing is converted.
+- Request: `parameters=T2M,PRECTOTCORR`, `community=AG`, `start` / `end` as `YYYYMMDD` (inclusive).
 - Response shape: `properties.parameter.<PARAM>.{YYYYMMDD: value}`, `header.time_standard` = LST (local solar time).
-- Returned as a pandas DataFrame: `date`, `temperature_c`, `temperature_max_c`, `temperature_min_c`,
-  `rainfall_mm` (see the table above). Fixture sanity check: max ≥ mean ≥ min on every day.
+- Returned as a pandas DataFrame: `date`, `temperature_c` (T2M daily mean, °C), `rainfall_mm`
+  (PRECTOTCORR, **mm/day = that day's total**, no conversion).
 - Fill values (−999) become NaN per day instead of failing the whole request; only an all-missing
   series raises `source_bad_data`. Callers must handle NaN (e.g. `skipna` in pandas aggregations).
 - Recent days may be missing: MERRA-2 data arrives with a lag of a few weeks.
-- Cache namespace `nasa_power_daily`, keyed by the full query (parameters, lat/lon to 2 decimals,
-  start/end). Entries cached before `T2M_MAX` / `T2M_MIN` were added sit under a different key and
-  are not served; refetch once in `live` mode.
+- Cache namespace `nasa_power_daily`, keyed by lat/lon (2 decimals) and start/end.
 - Used by `services.erosion_risk()` and `services.field_indicators()` (monthly indicators,
-  `docs/indicators.md`). Heat-stress and frost days use `T2M_MAX` / `T2M_MIN`, never the mean `T2M`.
+  `docs/indicators.md`). `T2M` is a daily **mean**: heat-stress and frost days stay `None` until
+  `T2M_MAX` / `T2M_MIN` are requested.
 
 ## Next steps
-- `T2M_MAX`/`T2M_MIN` now feed `heat` and `frost`. Daily dry spells and extreme-rain days are done (`docs/indicators.md`). Daily `T2M_MAX` / `T2M_MIN` feed heat-stress and frost-day counts.
+- `T2M_MAX`/`T2M_MIN` now feed `heat` and `frost`. Daily dry spells and extreme-rain days are done (`docs/indicators.md`). Next: daily `T2M_MAX` / `T2M_MIN` for heat-stress and frost-day counts.
 - Consider the `climatology` vs. recent-years trend to show climate shift (the "Field Shift" angle).

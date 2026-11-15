@@ -88,6 +88,73 @@
       ]
     },
     {
+      "name": "Planting windows",
+      "item": [
+        {
+          "name": "Planting windows - San Carlos (MVP crops)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Best sowing months per crop: each month scored over the crop's cycle.",
+            "url": {
+              "raw": "{{baseUrl}}/planting-windows?lat=11.0&lon=-84.6",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "planting-windows"
+              ],
+              "query": [
+                {
+                  "key": "lat",
+                  "value": "11.0"
+                },
+                {
+                  "key": "lon",
+                  "value": "-84.6"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Planting windows - San Carlos, beans and maize",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Only the requested crops (repeat the crops parameter).",
+            "url": {
+              "raw": "{{baseUrl}}/planting-windows?lat=11.0&lon=-84.6&crops=beans&crops=maize",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "planting-windows"
+              ],
+              "query": [
+                {
+                  "key": "lat",
+                  "value": "11.0"
+                },
+                {
+                  "key": "lon",
+                  "value": "-84.6"
+                },
+                {
+                  "key": "crops",
+                  "value": "beans"
+                },
+                {
+                  "key": "crops",
+                  "value": "maize"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Recommendations",
       "item": [
         {

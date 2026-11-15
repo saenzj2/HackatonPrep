@@ -44,6 +44,25 @@ def get_conditions(
     return conditions
 
 
+@router.get(
+    "/planting-windows",
+    response_model=s.PlantingWindowsResponse,
+    responses=DATA_ERRORS,
+    tags=["planting"],
+)
+def get_planting_windows(
+    ctx: Ctx,
+    lat: Annotated[float, Query(ge=-90, le=90, examples=[11.0])],
+    lon: Annotated[float, Query(ge=-180, le=180, examples=[-84.6])],
+    crops: Annotated[
+        list[str] | None,
+        Query(description="Crop ids from GET /crops, repeatable. Omit for the MVP crops."),
+    ] = None,
+) -> s.PlantingWindowsResponse:
+    """Best sowing months per crop at a point: each month scored over the crop's cycle."""
+    return services.planting_windows(ctx, lat, lon, crops)
+
+
 @router.post(
     "/recommendations",
     response_model=s.RecommendationResponse,

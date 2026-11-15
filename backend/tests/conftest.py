@@ -5,27 +5,17 @@ import tempfile
 from pathlib import Path
 
 import pytest
-import yaml
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from jsonschema import Draft202012Validator, FormatChecker
 
 from app.main import create_app
 from app.settings import BACKEND_DIR, DataMode, EnvSettings, MvpConfig, load_mvp_config
 
 FIXTURES = Path(__file__).parent / "fixtures"
-CONTRACT_PATH = BACKEND_DIR / "docs" / "api-contract.yaml"
 
 
 def load_fixture(rel: str) -> dict:
     return json.loads((FIXTURES / rel).read_text(encoding="utf-8"))
-
-
-def contract_validator(schema_name: str) -> Draft202012Validator:
-    """JSON Schema validator for one schema of docs/api-contract.yaml (the frontend agreement)."""
-    contract = yaml.safe_load(CONTRACT_PATH.read_text(encoding="utf-8"))
-    schema = {"$ref": f"#/components/schemas/{schema_name}", "components": contract["components"]}
-    return Draft202012Validator(schema, format_checker=FormatChecker())
 
 
 def isolated_config() -> MvpConfig:

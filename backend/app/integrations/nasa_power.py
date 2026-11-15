@@ -32,19 +32,7 @@ DAYS_IN_MONTH = (31, 28.25, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 
 DAILY_SOURCE = "nasa_power_daily"  # own cache namespace: daily requests never mix with climatology
 DAILY_URL = "https://power.larc.nasa.gov/api/temporal/daily/point"
-# T2M is the daily MEAN; T2M_MAX / T2M_MIN are that day's true max / min (needed for heat-stress
-# and frost-day counts, docs/indicators.md). Changing this tuple changes the daily cache key.
-DAILY_PARAMETERS = ("T2M", "T2M_MAX", "T2M_MIN", "PRECTOTCORR")
-# POWER parameter → DataFrame column, both in the units below.
-DAILY_COLUMNS = {
-    "T2M": "temperature_c",
-    "T2M_MAX": "temperature_max_c",
-    "T2M_MIN": "temperature_min_c",
-    "PRECTOTCORR": "rainfall_mm",
-}
-# Units POWER declares in the response's `parameters.<PARAM>.units` with community=AG.
-# The parser does no conversion, so any other unit is rejected instead of silently mislabeled.
-DAILY_UNITS = {"T2M": "C", "T2M_MAX": "C", "T2M_MIN": "C", "PRECTOTCORR": "mm/day"}
+DAILY_PARAMETERS = ("T2M", "PRECTOTCORR")
 POWER_DATE_FORMAT = "%Y%m%d"  # POWER keys and start/end are YYYYMMDD
 
 
@@ -76,47 +64,22 @@ def parse_climatology(raw: dict[str, Any]) -> MonthlyClimate:
     )
 
 
-def _check_daily_units(raw: dict[str, Any]) -> None:
-    """Reject a response whose declared units differ from DAILY_UNITS (no conversion is done).
-
-    POWER lists units under the top-level `parameters` key. A payload without that metadata is
-    accepted as is: the request always asks for community=AG, whose units are DAILY_UNITS.
-    """
-    declared = raw.get("parameters")
-    if not isinstance(declared, dict):
-        return
-    for param, expected in DAILY_UNITS.items():
-        meta = declared.get(param)
-        unit = meta.get("units") if isinstance(meta, dict) else None
-        if unit is not None and unit != expected:
-            raise SourceDataError(
-                f"NASA POWER daily {param} is in {unit!r}, expected {expected!r}",
-                details={"source": DAILY_SOURCE, "parameter": param},
-            )
-
-
 def parse_daily(raw: dict[str, Any]) -> pd.DataFrame:
-    """POWER daily JSON → DataFrame, one row per day, columns:
-    date, temperature_c, temperature_max_c, temperature_min_c, rainfall_mm.
+    """POWER daily JSON → DataFrame with columns date, temperature_c, rainfall_mm (one row per day).
 
     temperature_c: daily mean air temperature at 2 m (T2M, native °C).
-    temperature_max_c / temperature_min_c: that day's maximum / minimum air temperature at 2 m
-    (T2M_MAX / T2M_MIN, native °C). True daily extrema, not derived from the mean.
     rainfall_mm: that day's total precipitation (PRECTOTCORR, native mm/day, so no conversion).
-    Days the source has no data for (fill value, normally -999) become NaN per variable instead of
-    fake numbers; only a series with no data at all is rejected.
+    Days the source has no data for (fill value, normally -999) become NaN instead of fake numbers;
+    only a series with no data at all is rejected.
 
     Example input (trimmed):
         {"properties": {"parameter": {"T2M": {"20260101": 22.43, ...},
-                                      "T2M_MAX": {"20260101": 27.06, ...},
-                                      "T2M_MIN": {"20260101": 19.48, ...},
                                       "PRECTOTCORR": {"20260101": 1.38, ...}}},
          "header": {"fill_value": -999.0, ...}}
     Example output:
-              date  temperature_c  temperature_max_c  temperature_min_c  rainfall_mm
-        2026-01-01          22.43              27.06              19.48         1.38
+              date  temperature_c  rainfall_mm
+        2026-01-01          22.43         1.38
     """
-    _check_daily_units(raw)
     try:
         # The values live under properties.parameter, one {YYYYMMDD: value} dict per variable.
         params = raw["properties"]["parameter"]
@@ -126,7 +89,7 @@ def parse_daily(raw: dict[str, Any]) -> pd.DataFrame:
         # .keys() / .values() lists) makes pandas match rows by date, so a day missing from one
         # variable can't shift the other column. dtype=float fails fast on non-numeric values.
         df = pd.DataFrame(
-            {column: params[param] for param, column in DAILY_COLUMNS.items()}, dtype=float
+            {"temperature_c": params["T2M"], "rainfall_mm": params["PRECTOTCORR"]}, dtype=float
         )
         # The index is still the "20260101" strings; turn them into real dates.
         df.index = pd.to_datetime(df.index, format=POWER_DATE_FORMAT)
@@ -232,10 +195,9 @@ class NasaPowerClimate:
         return raw
 
     def daily_weather(self, *, lat: float, lon: float, start: date, end: date) -> pd.DataFrame:
-        """Daily mean, max and min temperature (°C) and rainfall (mm/day), start to end inclusive.
+        """Daily mean temperature (°C) and rainfall (mm/day) from start to end, both inclusive.
 
-        Returns one row per day with columns date, temperature_c, temperature_max_c,
-        temperature_min_c, rainfall_mm (see parse_daily). Missing values are NaN per variable.
+        Returns one row per day with columns date, temperature_c, rainfall_mm. Missing days are NaN.
         Arguments are keyword-only: daily_weather(lat=9.93, lon=-84.08, start=..., end=...).
 
         Raises SourceUnavailableError (API down or error status), SourceDataError (unusable
