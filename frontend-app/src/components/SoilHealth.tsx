@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, type CropDetails, type Rotation, type Season, type SoilProfile } from "../api/client";
+import { useI18n } from "../i18n";
 import { fieldFacts, matchPractices, nitrogenInsight, PRACTICES_DISCLAIMER } from "../practices";
 
 interface Props {
@@ -14,7 +15,9 @@ type Loaded = { soil: SoilProfile | null; crops: Map<string, CropDetails> };
 
 /** Soil health for the recommended rotation: organic carbon, nitrogen and practice cards that fit. */
 export function SoilHealth({ lat, lon, seasons, recommended, current }: Props) {
+  const { tr, pick, lang } = useI18n();
   const [loaded, setLoaded] = useState<Loaded | null>(null);
+  const list = (l: { en: string[]; es?: string[] }) => (lang === "es" && l.es ? l.es : l.en);
 
   useEffect(() => {
     let active = true;
@@ -28,7 +31,7 @@ export function SoilHealth({ lat, lon, seasons, recommended, current }: Props) {
     };
   }, [lat, lon]);
 
-  if (!loaded) return <div className="skeleton" role="status" aria-label="Loading soil health" />;
+  if (!loaded) return <div className="skeleton" role="status" aria-label={tr("Loading soil health", "Cargando la salud del suelo")} />;
 
   const facts = fieldFacts(loaded.soil, seasons);
   const recIds = recommended.sequence.map((s) => s.crop_id);
@@ -43,37 +46,37 @@ export function SoilHealth({ lat, lon, seasons, recommended, current }: Props) {
   return (
     <section className="panel soil stack fade-in" aria-labelledby="soil-title">
       <div>
-        <span className="eyebrow">Soil health</span>
-        <h2 id="soil-title">Organic matter and nitrogen</h2>
-        {insight && <p>{insight}</p>}
+        <span className="eyebrow">{tr("Soil health", "Salud del suelo")}</span>
+        <h2 id="soil-title">{tr("Organic matter and nitrogen", "Materia orgánica y nitrógeno")}</h2>
+        <p>{pick(insight)}</p>
       </div>
 
       {practices.length > 0 && (
         <div className="stack">
-          <h3>Practices that could help this field</h3>
+          <h3>{tr("Practices that could help this field", "Prácticas que podrían ayudar a este campo")}</h3>
           <div className="grid grid--3">
             {practices.map(({ card, reasons }) => (
               <article key={card.practice_id} className="practice">
-                <h4>{card.name.en}</h4>
-                <p className="small">{card.summary.en}</p>
+                <h4>{pick(card.name)}</h4>
+                <p className="small">{pick(card.summary)}</p>
                 <p className="small">
-                  <strong>Why here:</strong> {reasons.join("; ")}.
+                  <strong>{tr("Why here:", "Por qué aquí:")}</strong> {reasons.map(pick).join("; ")}.
                 </p>
                 <details className="more">
-                  <summary>How to start</summary>
+                  <summary>{tr("How to start", "Cómo empezar")}</summary>
                   <div className="more__body stack">
                     <ul className="list small">
-                      {card.how_to_start.en.map((s) => (
+                      {list(card.how_to_start).map((s) => (
                         <li key={s}>{s}</li>
                       ))}
                     </ul>
                     <p className="small">
-                      <strong>Benefits:</strong> {card.benefits.en.join("; ")}.
+                      <strong>{tr("Benefits:", "Beneficios:")}</strong> {list(card.benefits).join("; ")}.
                     </p>
                     <p className="small">
-                      <strong>Check locally:</strong> {card.cautions_local_review.en.join(" ")}
+                      <strong>{tr("Check locally:", "Revise localmente:")}</strong> {list(card.cautions_local_review).join(" ")}
                     </p>
-                    <p className="muted small">{card.evidence_note.en}</p>
+                    <p className="muted small">{pick(card.evidence_note)}</p>
                   </div>
                 </details>
               </article>
@@ -83,7 +86,11 @@ export function SoilHealth({ lat, lon, seasons, recommended, current }: Props) {
       )}
 
       <p className="muted small">
-        {PRACTICES_DISCLAIMER} Organic carbon is a soil-map estimate (OpenLandMap, 250 m), not a soil test.
+        {pick(PRACTICES_DISCLAIMER)}{" "}
+        {tr(
+          "Card texts drafted with AI (Claude) and reviewed by the team. Organic carbon is a soil-map estimate (OpenLandMap, 250 m), not a soil test.",
+          "Textos de las tarjetas redactados con IA (Claude) y revisados por el equipo. El carbono orgánico es una estimación del mapa de suelos (OpenLandMap, 250 m), no un análisis de suelo.",
+        )}
       </p>
     </section>
   );

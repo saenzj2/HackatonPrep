@@ -2,6 +2,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useEffect, useRef } from "react";
 import { DEMO_FIELDS, type DemoField } from "../demoFields";
+import { useI18n } from "../i18n";
 
 // Brand colors (styles.css): selected point in space navy, demo fields in agricultural green.
 const NAVY = "#072c4a";
@@ -21,6 +22,7 @@ interface Props {
  * Keyboard and screen-reader users have the demo buttons and the coordinate inputs instead.
  */
 export default function FieldMap({ bbox, selected, onPick, onPickDemo }: Props) {
+  const { tr } = useI18n();
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const marker = useRef<L.CircleMarker | null>(null);
@@ -104,7 +106,10 @@ export default function FieldMap({ bbox, selected, onPick, onPickDemo }: Props) 
       ref={container}
       className="field-map"
       role="application"
-      aria-label="Map of the pilot region. Click to choose your field; green markers are demo fields (hover for the name)."
+      aria-label={tr(
+        "Map of the pilot region. Click to choose your field; green markers are demo fields (hover for the name).",
+        "Mapa de la región piloto. Haga clic para elegir su campo; los marcadores verdes son campos de demostración (pase el cursor para ver el nombre).",
+      )}
     />
   );
 }

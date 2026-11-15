@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router";
+import { useI18n } from "../i18n";
 import { BACKGROUND_VIDEOS } from "../videos";
 
 const PAUSE_KEY = "terracosmos-bg-video-paused";
@@ -24,6 +25,7 @@ function loadPaused(): boolean {
  * data saver; a button pauses it (WCAG 2.2.2). Marked "AI generated video".
  */
 export function BackgroundVideo() {
+  const { tr } = useI18n();
   const { pathname } = useLocation();
   const video = BACKGROUND_VIDEOS[pathname];
   const frame = useRef<HTMLIFrameElement>(null);
@@ -72,14 +74,14 @@ export function BackgroundVideo() {
           key={video.id}
           ref={frame}
           src={`https://www.youtube-nocookie.com/embed/${video.id}?${params}`}
-          title={`Background video: ${video.title}`}
+          title={`${tr("Background video", "Video de fondo")}: ${video.title}`}
           allow="autoplay; encrypted-media"
           tabIndex={-1}
           referrerPolicy="strict-origin-when-cross-origin"
         />
         <div className="bg-video__overlay" />
       </div>
-      <span className="ai-mark ai-mark--video">AI generated video</span>
+      <span className="ai-mark ai-mark--video">{tr("AI generated video", "Video hecho con IA")}</span>
       <button
         type="button"
         className="bg-video__toggle"
@@ -89,7 +91,7 @@ export function BackgroundVideo() {
           setPaused(!paused);
         }}
       >
-        {paused ? "Play background video" : "Pause background video"}
+        {paused ? tr("Play background video", "Reproducir video de fondo") : tr("Pause background video", "Pausar video de fondo")}
       </button>
     </>
   );

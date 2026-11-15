@@ -22,6 +22,7 @@ export interface HealthResponse {
 export interface Crop {
   id: string;
   name: string;
+  name_es?: string;
   family: string;
   is_legume: boolean;
   is_cover_crop: boolean;
@@ -108,6 +109,8 @@ export interface RotationStep {
   crop_id: string;
   crop_name: string;
   score: number;
+  /** 0..1 fit per scored variable (temperature, rainfall, soil_ph, soil_moisture, heat, frost). */
+  variable_scores?: Record<string, number>;
 }
 
 export interface Rotation {
