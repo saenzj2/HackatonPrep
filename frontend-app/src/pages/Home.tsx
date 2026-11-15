@@ -5,7 +5,7 @@ export function Home() {
     <div className="stack">
       <section className="hero">
         <p className="tagline">Earth insights from space for more productive, resilient, and sustainable agriculture.</p>
-        <h1>Compare crop rotations for your field</h1>
+        <h1>Identify the best crops for your field</h1>
         <p className="lead">
           See how each rotation fits your field's climate, water and soil, using NASA Earth
           observation data, crop requirements and the priorities you choose.
