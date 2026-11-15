@@ -5,7 +5,7 @@
 | **Used for** | Temperature and rainfall (`ClimateSource`) |
 | **Adapter** | `app/integrations/nasa_power.py` |
 | **Fixtures** | `tests/fixtures/nasa_power/climatology_alajuela.json` (lat 10.0, lon −84.2, fetched 2026-11-06)<br>`tests/fixtures/nasa_power/daily_san_jose_202601.json` (lat 9.93, lon −84.08, 2026-01-01 to 2026-01-31, `T2M,T2M_MAX,T2M_MIN,PRECTOTCORR`, refetched 2026-11-14) |
-| **Status** | ✅ Integrated (`live` / `cached` modes) |
+| **Status** | ✅ Integrated (`live` / `cached` modes). Daily series served by `GET /weather/daily` |
 
 ## Access
 - Endpoint: `GET https://power.larc.nasa.gov/api/temporal/climatology/point`
@@ -64,7 +64,10 @@ Response shape: `properties.parameter.<PARAM>.{JAN..DEC, ANN}`. Missing data = `
   `rainfall_mm` (see the table above). Fixture sanity check: max ≥ mean ≥ min on every day.
 - Fill values (−999) become NaN per day instead of failing the whole request; only an all-missing
   series raises `source_bad_data`. Callers must handle NaN (e.g. `skipna` in pandas aggregations).
-- Recent days may be missing: MERRA-2 data arrives with a lag of a few weeks.
+- Recent days are missing: POWER publishes daily data with a delay. Measured 2026-11-15: data up to
+  2026-11-12 (3 days) for all four parameters; it can be longer. `GET /weather/daily` and
+  `GET /erosion` therefore require `end` to be at least 30 days before today (`POWER_DAILY_DELAY_DAYS`
+  in `app/api/schemas.py`), so a period inside the delay is a clear `422`, not an empty `502`.
 - Cache namespace `nasa_power_daily`, keyed by the full query (parameters, lat/lon to 2 decimals,
   start/end). Entries cached before `T2M_MAX` / `T2M_MIN` were added sit under a different key and
   are not served; refetch once in `live` mode.

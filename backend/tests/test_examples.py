@@ -20,6 +20,9 @@ EXAMPLES = {
     "recommendation_request_alajuela.json": "RecommendationRequest",
     "recommendation_alajuela.json": "RecommendationResponse",
     "crops.json": "CropsResponse",
+    "weather_daily_san_jose.json": "DailyWeatherResponse",
+    "erosion_san_jose.json": "ErosionRiskResponse",
+    "soil_san_jose.json": "SoilProfileResponse",
 }
 
 

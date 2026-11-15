@@ -1,4 +1,4 @@
-# One image = API + frontend. Used by Railway (railway.json) and runs anywhere with Docker:
+# One image = API + frontend. Used by Railway (service settings, see docs/deploy.md) and runs anywhere with Docker:
 #   docker build -t harvest . && docker run -p 8000:8000 harvest   ->  http://localhost:8000
 
 # Stage 1: build the React app (frontend-app/) into static files.

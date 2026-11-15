@@ -5,7 +5,7 @@
 | **Used for** | Soil properties by depth for suitability and rotation choices (`SoilProfileSource`) |
 | **Adapter** | `app/integrations/openlandmap.py` → `services.get_soil_data()` |
 | **Fixtures** | `tests/fixtures/openlandmap/soil_san_jose.json` (lat 9.93, lon −84.08) and `soil_pacific_ocean.json` (lat 9.5, lon −86.0, every pixel masked). Both fetched 2026-11-14 with the same request the adapter makes |
-| **Status** | ⚙️ Adapter + `services.get_soil_data()`, wired in `build_sources()` (`Sources.soil_profile`, `MockSoilProfile` in mock mode); no endpoint yet. Not used for scoring yet: `Sources.soil` (pH + moisture for suitability) is still `MockSoil` |
+| **Status** | ⚙️ Adapter + `services.get_soil_data()`, wired in `build_sources()` (`Sources.soil_profile`, `MockSoilProfile` in mock mode); served by `GET /soil`. Not used for scoring yet: `Sources.soil` (pH + moisture for suitability) is still `MockSoil` |
 
 ## Access
 - Google Earth Engine Python API (`earthengine-api`), Cloud project `advance-topic-243700` (default in `app/settings.py`; `GEE_PROJECT_ID` in `.env` overrides it).

@@ -1,4 +1,9 @@
 import pytest
+from fastapi.testclient import TestClient
+
+from app.main import create_app
+from app.settings import DataMode
+from scripts.make_examples import SAN_JOSE_QUERY, seed_san_jose_cache
 
 CR = {"lat": 10.0, "lon": -84.2}
 
@@ -227,3 +232,95 @@ def test_spanish_texts_read_right(client):
         "Muy seco para establecer maíz sembrado en febrero: febrero suele tener solo 18 mm de "
         "lluvia, y el maíz necesita unos 100 mm al mes para establecerse y crecer (mínimo 80)"
     ) in es
+
+
+# ---------------------------------------------------------------- weather, erosion, soil
+# San José: the point of the saved real responses (POWER daily Jan 2026, 5 SRTM points, soil).
+SAN_JOSE = {"lat": SAN_JOSE_QUERY["lat"], "lon": SAN_JOSE_QUERY["lon"]}
+JAN_2026 = SAN_JOSE_QUERY
+
+
+@pytest.fixture
+def real_client(config, env) -> TestClient:
+    """`cached` mode on real saved responses for San José: real values, no network."""
+    seed_san_jose_cache(env.cache_dir)
+    return TestClient(
+        create_app(config=config.model_copy(update={"data_mode": DataMode.CACHED}), env=env)
+    )
+
+
+def test_daily_weather_has_one_row_per_day(client):
+    body = client.get("/weather/daily", params=JAN_2026).json()
+    assert body["location"] == SAN_JOSE
+    assert (body["start"], body["end"]) == ("2026-01-01", "2026-01-31")
+    assert [d["date"] for d in body["days"]][:2] == ["2026-01-01", "2026-01-02"]
+    assert len(body["days"]) == 31
+    assert body["source"] == "mock"
+
+
+def test_daily_weather_mock_has_no_extremes(client):
+    day = client.get("/weather/daily", params=JAN_2026).json()["days"][0]
+    assert day["temperature_max_c"] is None
+    assert day["temperature_c"] is not None
+
+
+def test_daily_weather_real_power_values(real_client):
+    body = real_client.get("/weather/daily", params=JAN_2026).json()
+    assert body["source"] == "nasa_power"
+    assert body["days"][0] == {
+        "date": "2026-01-01",
+        "temperature_c": 22.43,
+        "temperature_max_c": 27.06,
+        "temperature_min_c": 19.48,
+        "rainfall_mm": 1.38,
+    }
+
+
+def test_erosion_levels_match_scores(client):
+    body = client.get("/erosion", params=JAN_2026).json()
+    words = ["low", "medium", "high"]
+    assert body["terrain_erosion_level"] == words[body["terrain_erosion_risk"]]
+    assert body["combined_erosion_level"] == words[body["combined_erosion_risk"]]
+    assert body["combined_erosion_risk"] >= body["terrain_erosion_risk"]
+    assert body["data_sources"] == {"terrain": "mock", "weather": "mock"}
+
+
+def test_erosion_real_san_jose(real_client):
+    body = real_client.get("/erosion", params=JAN_2026).json()
+    assert body["data_sources"] == {"terrain": "opentopography", "weather": "nasa_power"}
+    assert body["elevation_m"] == 1164
+    assert body["slope_pct"] == pytest.approx(2.3)
+    assert body["terrain_erosion_level"] == "low"  # flat: under 5 %
+    assert body["heavy_rain_days"] == 0  # January is dry season
+    assert body["combined_erosion_level"] == "low"
+
+
+def test_soil_has_three_layers_shallowest_first(client):
+    body = client.get("/soil", params=SAN_JOSE).json()
+    assert [layer["depth_cm"] for layer in body["layers"]] == [0, 10, 30]
+    assert body["source"] == "mock"
+    assert body["resolution_m"] == 250
+
+
+def test_soil_real_openlandmap_values(real_client):
+    body = real_client.get("/soil", params=SAN_JOSE).json()
+    assert body["source"] == "OpenLandMap"
+    assert "CC-BY-SA" in body["attribution"]
+    assert body["layers"][0] == {
+        "depth_cm": 0,
+        "ph": 6.6,
+        "organic_carbon_g_kg": 10.0,
+        "clay_pct": 38.0,
+        "sand_pct": 34.0,
+        "silt_pct": 28.0,
+        "bulk_density_kg_m3": 1270.0,
+        "field_capacity_m3m3": 0.34,
+        "texture_class": "clay loam",
+    }
+
+
+@pytest.mark.parametrize("path", ["/weather/daily", "/erosion", "/soil"])
+def test_field_data_endpoints_ignore_unknown_query_parameters(client, path):
+    """Like every GET endpoint: a cache-busting `_` or a shared `lang` must not fail."""
+    r = client.get(path, params={**JAN_2026, "lang": "es", "_": "1731700000"})
+    assert r.status_code == 200, r.text
