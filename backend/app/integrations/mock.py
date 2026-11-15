@@ -6,11 +6,14 @@ Lets the frontend build against real-looking responses before any real source is
 from __future__ import annotations
 
 import calendar
+import math
 import random
 from datetime import date
+from typing import Literal
 
 import pandas as pd
 
+from app.domain.enso import SEASONS, EnsoIndex, EnsoSeason
 from app.domain.models import MonthlyClimate, SoilConditions, SoilLayer, SoilProfile, TerrainSample
 from app.domain.soil import silt_pct
 
@@ -68,6 +71,34 @@ class MockClimate:
             temperature_c.append(round(monthly.temperature_c[m] + rng.gauss(0, 0.8), 2))
         return pd.DataFrame(
             {"date": days, "temperature_c": temperature_c, "rainfall_mm": rainfall_mm}
+        )
+
+    def daily_history(self, *, lat: float, lon: float, start: date, end: date) -> pd.DataFrame:
+        """Fake long daily history, same columns as NASA POWER daily_history. Wet days follow
+        the monthly rain shape, so dry-season sowings meet dry spells, as in the real data."""
+        monthly = self.monthly_climate(lat, lon)
+        rng = _rng(f"history:{start}:{end}", lat, lon)
+        days = pd.date_range(start, end, freq="D")
+        rain, tmax, tmin, wetness = [], [], [], []
+        for day in days:
+            m = day.month - 1
+            wet_share = min(0.9, _WET_DAY_PROBABILITY * _RAIN_SHAPE[m])
+            month_days = calendar.monthrange(day.year, day.month)[1]
+            wet_day_mean_mm = monthly.rainfall_mm[m] / (month_days * max(wet_share, 0.05))
+            is_wet = rng.random() < wet_share
+            rain.append(round(rng.expovariate(1 / wet_day_mean_mm), 2) if is_wet else 0.0)
+            tmax.append(round(monthly.temperature_max_c[m] + rng.gauss(0, 1.0), 2))
+            tmin.append(round(monthly.temperature_min_c[m] + rng.gauss(0, 0.8), 2))
+            wetness.append(round(min(1.0, 0.45 + 0.25 * _RAIN_SHAPE[m] + rng.gauss(0, 0.03)), 3))
+        return pd.DataFrame(
+            {
+                "date": days,
+                "rainfall_mm": rain,
+                "rainfall_merra2_mm": [round(r * 0.7, 2) for r in rain],
+                "temperature_max_c": tmax,
+                "temperature_min_c": tmin,
+                "root_wetness": wetness,
+            }
         )
 
 
@@ -136,3 +167,22 @@ class MockSoilProfile:
                 )
             )
         return SoilProfile(lat=lat, lon=lon, layers=tuple(layers))
+
+
+class MockEnso:
+    """Deterministic fake El Niño index: a ~4-year cycle, RONI slightly below ONI like the real
+    ones in recent decades. Ends with ASO 2026 so `enso_now` has a value."""
+
+    name = "mock"
+
+    def index(self, name: Literal["RONI", "ONI"]) -> EnsoIndex:
+        offset = 0.0 if name == "RONI" else 0.3
+        seasons = []
+        for year in range(1950, 2027):
+            for i, season in enumerate(SEASONS):
+                if year == 2026 and i > SEASONS.index("ASO"):
+                    break
+                t = (year - 1950) * 12 + i
+                anomaly = 1.3 * math.sin(2 * math.pi * t / 47) + offset
+                seasons.append(EnsoSeason(season=season, year=year, anomaly_c=round(anomaly, 2)))
+        return EnsoIndex(name=name, seasons=tuple(seasons))

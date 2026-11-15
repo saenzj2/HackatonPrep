@@ -227,3 +227,92 @@ def test_spanish_texts_read_right(client):
         "Muy seco para establecer maíz sembrado en febrero: febrero suele tener solo 18 mm de "
         "lluvia, y el maíz necesita unos 100 mm al mes para establecerse y crecer (mínimo 80)"
     ) in es
+
+
+PLAN = {
+    "lat": 11.0,
+    "lon": -84.6,
+    "plantings": [{"crop": "maize", "sowing_month": 5, "sowing_day": 15}],
+}
+
+
+def test_plan_risk_returns_one_result_per_planting(client):
+    body = {**PLAN, "plantings": [*PLAN["plantings"], {"crop": "beans", "sowing_month": 9}]}
+    r = client.post("/plan-risk", json=body)
+    assert r.status_code == 200, r.text
+    data = r.json()
+    assert [p["crop_id"] for p in data["plantings"]] == ["maize", "beans"]
+    assert data["plantings"][0]["sowing_date"] == "05-15"
+    assert data["plantings"][1]["sowing_date"] == "09-01"  # day defaults to 1
+
+
+def test_plan_risk_texts_come_in_english_and_spanish(client):
+    data = client.post("/plan-risk", json=PLAN).json()
+    texts = list(_texts(data))
+    assert len(texts) > 5
+    for t in texts:
+        assert t["en"].strip()
+        assert t["es"].strip()
+        assert t["es"] != t["en"], t
+
+
+def test_plan_risk_harvest_is_sowing_plus_the_crop_cycle(client):
+    body = {**PLAN, "plantings": [{"crop": "beans", "sowing_month": 9, "sowing_day": 1}]}
+    planting = client.post("/plan-risk", json=body).json()["plantings"][0]
+    assert planting["harvest_date"] == "11-30"  # beans: 90-day cycle
+
+
+def test_plan_risk_counts_agree_with_the_years(client):
+    data = client.post("/plan-risk", json=PLAN).json()
+    planting = data["plantings"][0]
+    outcomes = [y["outcome"] for y in planting["years"]]
+    assert len(outcomes) == data["years_evaluated"]["count"]
+    assert outcomes.count("fail") == planting["failed_years"]
+    assert planting["failure_rate"] == pytest.approx(
+        planting["failed_years"] / len(outcomes), abs=1e-3
+    )
+    for cause in planting["causes"]:
+        assert cause["count"] == len(cause["years"])
+        assert all(
+            cause["cause"] in y["causes"] for y in planting["years"] if y["year"] in cause["years"]
+        )
+
+
+def test_plan_risk_alternatives_fail_less_than_the_plan(client):
+    # A dry-season sowing in the mock climate fails often, so better options exist.
+    body = {**PLAN, "plantings": [{"crop": "beans", "sowing_month": 1, "sowing_day": 15}]}
+    planting = client.post("/plan-risk", json=body).json()["plantings"][0]
+    assert planting["failed_years"] > 0
+    assert planting["alternatives"]
+    for alt in planting["alternatives"]:
+        assert alt["failure_rate"] < planting["failure_rate"]
+
+
+def test_plan_risk_reports_its_sources_and_gaps(client):
+    data = client.post("/plan-risk", json=PLAN).json()
+    assert data["data_sources"] == ["mock"]  # tests run in mock mode
+    assert data["enso_now"]["season"] == "ASO 2026"  # the mock index ends there
+    gaps = " ".join(g["en"] for g in data["data_gaps"])
+    assert "not measured on your farm" in gaps
+    assert "assumes no irrigation" in gaps
+    assert "A 'failed' year means" in gaps  # defines the word once for the farmer
+
+
+def test_plan_risk_labels_years_and_splits_failures_by_enso_phase(client):
+    data = client.post("/plan-risk", json=PLAN).json()
+    planting = data["plantings"][0]
+    assert all(y["enso"] in ("el_nino", "la_nina", "neutral") for y in planting["years"])
+    split = planting["enso_split"]
+    phases = ("el_nino", "la_nina", "neutral")
+    assert sum(split[p]["years"] for p in phases) == len(planting["years"])
+    assert sum(split[p]["failed"] for p in phases) == planting["failed_years"]
+    for p in phases:  # each phase's count matches the per-year labels
+        assert split[p]["years"] == sum(y["enso"] == p for y in planting["years"])
+    assert split["note"]["en"]
+    assert split["note"]["es"]
+
+
+def test_plan_risk_enso_now_is_the_latest_season(client):
+    now = client.post("/plan-risk", json=PLAN).json()["enso_now"]
+    assert now["phase"] in ("el_nino", "la_nina", "neutral")
+    assert now["source"].startswith("NOAA CPC RONI")

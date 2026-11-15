@@ -15,6 +15,338 @@ Template:
 
 ---
 
+## 2026-11-15 — NOAA ENSO files: reuse a copy under one day old in live mode
+- **Decision:** `NoaaEnso.index()` first asks `JsonCache.peek_fresh(…, MAX_AGE=1 day)` and only
+  calls `get_or_fetch` (a download) when the copy is older. The cache key stays `{"index": …}`
+  with no date. `cached` mode is unchanged: it serves the saved copy whatever its age.
+- **Why:** before this, every live `POST /plan-risk` downloaded both RONI and ONI (two
+  synchronous requests, up to 30 s each on a slow CPC) for files NOAA rewrites once a month.
+- **Alternatives considered:** a year-month in the cache key (would make the committed snapshot
+  miss every new month); `peek` like SRTM (never refreshes); keeping `Last-Modified` /
+  conditional requests (more code for the same effect).
+- **Revisit if:** a demo needs the newest NOAA value within the hour (lower `MAX_AGE`), or the
+  snapshot's `fetched_at` has to be honoured differently.
+
+
+## 2026-11-15 — Plan-risk farmer texts after the `farmer-language` review (phase 7)
+- **Decision (engine owner):** apply the review's must-fix and should-fix items; leave the
+  nice-to-have ones (Costa Rican usage: "veranillos", "calurosas", "zanjas", when to do la dobla,
+  "En vez de…", "máximas", MERRA-2 gloss) for later. Changes to what a farmer reads:
+  - **"habría fallado en N de M años"** (missing "en"), and a new `data_gaps` line defining a
+    "failed" year as weather known to badly damage the crop (e.g. 20+ days without rain at
+    flowering), not a harvest measurement. The review's "probablemente se habría perdido" was
+    **not** adopted: it claims a crop loss we don't measure.
+  - **Dry-start action** no longer says "wait for the rains": on a late sowing the rains are
+    ending and the card's own alternative says to sow earlier. Now "Siembre solo con el suelo
+    húmedo… Si las lluvias ya se están yendo, siembre antes en vez de esperar".
+  - **"(vea las opciones abajo)" dropped**: alternatives only exist when something failed less.
+  - **Insurance:** "Pregunte al INS **si** el Seguro Agrícola cubre este riesgo en su cultivo"
+    (the old "para este riesgo" implied coverage).
+  - **El Niño split note:** conditional and with a subject ("Esta siembra habría fallado en…"),
+    "y" before the last item, "años normales" instead of "neutrales", and a small-sample warning
+    ("Son pocos años y puede ser casualidad"). The few-years branch fixes the agreement
+    ("Solo hubo 1 año de El Niño…: no alcanza para comparar").
+  - **EcoCrop limits attributed, not stated as facts:** "menos de los 300 mm que se suelen
+    indicar para el frijol (FAO)" and "El cultivo habría dependido de la humedad que quedaba en el
+    suelo" (a guess, said as one); the too-wet summary says "muy por encima del límite de 700 mm
+    que da la FAO" with the typical rain rounded to 100 mm. Sorghum's 700 mm kept as is (not an MVP
+    crop; the engine owner declined a fact-check).
+  - **Second rain source:** "tome las cifras de lluvia como aproximadas" instead of "algunos
+    años saldrían distintos", which was never computed.
+  - **Soil wetness** says its scale and origin: "se secó hasta 55 % (100 % = empapado;
+    estimación de modelo)", "el suelo casi empapado (89 %)".
+  - **Explanations** start with "El peor año, 2002: …" so the farmer knows it's the worst year.
+  - **Per-crop notes start with the crop name and sowing date** ("Frijol, siembra del 15 de
+    noviembre: …"), as the frontend guide requires; the warm-nights note is reworded in plain
+    words ("hacen que la planta pegue menos vainas", "no se cuenta como año malo") and the
+    too-few-seasons note follows the same prefix rule.
+  - **NOAA jargon:** "ASO 2026" → "ago–oct 2026"; the ONI comparison is one line for all sowing
+    months ("algunos años cambiarían de grupo (El Niño, La Niña o normal): 3 de 25 en noviembre,
+    5 de 26 en setiembre") instead of one near-identical line per month.
+  - Rain data gap: "es un promedio de un cuadro de unos 10 km de lado, no se midió en su finca".
+- **Revisit if:** the nice-to-have items are applied (same review, items 16–30).
+
+## 2026-11-15 — El Niño in plan-risk: NOAA CPC RONI, not the legacy ONI (phase 6)
+- **Decision (engine owner, after research):** label each sowing year, `enso_split` and
+  `enso_now` with NOAA CPC's **Relative Oceanic Niño Index (RONI)**, and report in `data_gaps` how
+  many sowing years the legacy **ONI** would label differently. The plan named `oni.ascii.txt`.
+- **Why RONI:** NOAA CPC switched official ENSO monitoring, prediction and classification to RONI
+  on 2026-02-01 (NWS Public Information Statement 26-05, 2026-01-13). Per NOAA it is "less
+  sensitive to the chosen base climatology period" (comparable across our 2000–2025 record, which
+  spans several ONI base periods) and "better aligned with the intensity of rainfall anomalies".
+  ONI's file is still updated "for continuity". No study found comparing the two for Central
+  American rainfall (the one Costa Rican study found, Quesada 2024, San Ramón, uses ONI).
+- **Effect:** labels differ for 3–5 of 25–26 sowing years depending on the month (Sep: 2016, 2017,
+  2018, 2024, 2025; Nov/Dec: 2016, 2019, 2024). `enso_now` = ASO 2026 RONI +1.97 (ONI: +2.46),
+  El Niño either way. The contract field stays `enso_now.oni`; only its description now
+  says RONI.
+- **Label rule (placeholder, `ENSO_THRESHOLD_C`):** a sowing year is `el_nino` if the index for
+  the 3-month season centred on the sowing month is ≥ +0.5 °C, `la_nina` if ≤ −0.5 °C, else
+  `neutral`. Simpler than NOAA's episode rule (5 consecutive overlapping seasons).
+- **Split:** failed / evaluated years per phase; if El Niño or La Niña has fewer than 4 years
+  (`MIN_YEARS_TO_COMPARE`), the note says there are too few to compare. The note never claims
+  significance and always says "a pattern in past years, not a forecast".
+- **Source and cache:** `app/integrations/noaa_enso.py`, namespace `noaa_enso`, key
+  `{"index": "RONI" | "ONI"}`. **Deviation from the plan:** no year-month in the key. In `live`
+  mode `JsonCache` always refetches (falling back to the last good copy), so new months arrive
+  anyway; a dated key would make the committed snapshot miss every new month in `cached` mode.
+- **NOAA unavailable:** the El Niño block is optional in the contract, so if both the fetch and
+  the cache fail, plan-risk still answers: `enso_now`, `enso_split` and `years[].enso` are `null`,
+  `data_gaps` says El Niño data isn't available, and a WARNING is logged (errors.md rule 9:
+  handled and continued). Every other source still fails the request as before.
+- **Real results (IMERG + RONI):** Los Chiles beans Nov 15 failed 2/25, **both in El Niño years**
+  (2002, 2018): 2 of 8 El Niño vs 0 of 12 La Niña and 0 of 5 neutral; 2020 (Eta/Iota) is La Niña.
+  Alajuela beans Sep 1 failed 1/26 (2015, El Niño). Maize May 15: only 1 El Niño year at that
+  date, so the note says too few to compare.
+- **Revisit if:** a study compares RONI and ONI for Central American rainfall, or NOAA changes the
+  official index again.
+
+## 2026-11-15 — Plan-risk fact-check: text corrections, sorghum 36 °C, night heat calibrated
+- **`fact-checker` review** of every source in `plan_advice.py` and `plan_risk.py`. Applied with the
+  engine owner's OK:
+  - **Insurance:** INS renamed "Seguro de Cosechas" to **"Seguro Agrícola"** in 2018 (El Mundo CR,
+    2018-03-13). The action now says "Pregunte al INS por el Seguro Agrícola para este riesgo".
+  - **La dobla:** the stalk is bent below the ear so the ear hangs down and sheds rain (Munguía
+    Ulloa 1995, Uniciencia, UNA). The old text said to fold the ear.
+  - **Timing:** lomillos are built at sowing → "En la próxima siembra, siembre en lomillos…" (UCR
+    bean trials, Agronomía Mesoamericana). Web blight starts at flowering → "Desde la floración,
+    vigile la mustia hilachosa…; cubrir el suelo con rastrojo reduce el salpique" (Galindo et al.
+    1983, Phytopathology 73:610-615).
+  - **Varieties:** no heat-tolerant bean is released in Costa Rica (CIAT lines only, Cruz et al.
+    2023); Nambí is short-cycle and drought-tolerant → "variedades de ciclo corto o tolerantes al
+    calor y la sequía", and "agencia de extensión del MAG".
+  - **Sorghum flowering heat limit 38 → 36 °C** (Prasad et al. 2006, Agric. For. Meteorol.
+    139:237-251). No demo result moves (sorghum is "too wet" at both points).
+  - **Comments:** sources now cited in place; Sivakumar 1988 described correctly (≥ 20 mm in 3 days,
+    no dry spell > 7 days in the next 30, Sahel), so our rule is "inspired by" it; rice 35 °C air ≈
+    33.7 °C panicle tissue (Jagadish et al. 2007); FAO-56 budget "roughly 1–2 weeks"; maize, bean,
+    rice and sorghum stage windows sourced (IITA, CIAT 1986, IRRI, K-State). Still unsourced:
+    cowpea's window (uses the beans one), a cowpea day-heat threshold, "keep seed to re-sow"
+    (common practice), "a palmo" (common-sense cue), and "maize never fails on harvest rain" (a
+    modelling choice).
+- **Night heat for beans and cowpea: calibrated, not added.** Hot nights (> 20 °C) are the main
+  heat driver for bean and cowpea pod set (Cruz et al. 2023; Hall's group for cowpea), and Porch &
+  Jahn 2001 used 32/27 °C day/night. On real MERRA-2 Tmin (23 flowering nights per season):
+  - Los Chiles: mean monthly minimum 21.4–23.8 °C all year; nights > 20 °C in a typical year: 23
+    of 23 (Sep 1, Oct 15, Nov 15), 21 (Dec 1); every year has ≥ 5. Only a > 23 °C threshold
+    varies from year to year, and no source supports it.
+  - Alajuela: nights > 20 °C, median 18 (Sep 1), 11 (Oct 15), 4 (Nov 15), 3 (Dec 1).
+  - Conclusion: at 20 °C a yearly check would flag every season at Los Chiles, the national bean
+    zone. Warm nights there are a property of the place, not a yearly risk. Not added as a yearly
+    check.
+  - **Decision (engine owner): a per-planting note, no score.** For beans and cowpea
+    (`WARM_NIGHT_CROPS`), when a typical season (median) has ≥ 5 (`WARM_NIGHT_NOTE_NIGHTS`)
+    flowering nights above 20 °C (`WARM_NIGHT_C`), `data_gaps` gets "Common bean: nights during
+    flowering are usually warmer than 20 °C here (23 of 23 nights in a typical season). Warm nights
+    can reduce pod set; it isn't counted as a failure because it happens almost every year". Shown
+    at Los Chiles (all bean/cowpea dates) and Alajuela Sep 1 (18 of 23); not at Alajuela Nov 15
+    (4). The 5-night count is a placeholder (same as the day-heat stress count).
+  - **Frontend guide** updated: real texts, the too-wet summary, crop-named notes in `data_gaps`.
+
+## 2026-11-15 — `POST /plan-risk` wired to real data (phase 5)
+- **Decision:** `services.plan_risk` validates the point and crops (422 before any fetch), reads
+  the daily history 2000-06-01 → 2025-12-31 (`PLAN_RISK_HISTORY_START/END`, fixed: see the rain
+  source entry) through a new `DailyHistorySource` protocol (`Sources.history`: NASA POWER in
+  live/cached, a deterministic mock in mock mode; `Sources.daily` and `daily_weather` untouched),
+  turns it into the domain's `DailyHistory`, runs `stress_test`, then actions, alternatives (MVP
+  crops only) and texts from `plan_advice`.
+- **Response details:**
+  - `summary`: "Would have failed N of M years, mostly because of X" (the cause behind the most
+    failed years), or "… watch for X (n of M years)" when nothing failed, or "not enough complete
+    seasons" under 10.
+  - `causes[].severity` is the worst year for that cause; the contract description now says
+    causes that failed a year come first (description-only change, agro-logic review).
+  - `years_evaluated` spans all plantings; each planting's own count is its `years` length.
+  - `data_gaps`: satellite rain ~10 km, MERRA-2 model ~50 km, years covered, weather only / no
+    irrigation, El Niño pending, and how far MERRA-2 rain differs from IMERG at the point (30 %
+    less at Los Chiles), plus one per planting with too little history.
+  - ENSO fields are `null` until phase 6.
+- **Demo data:** fetched live once for Los Chiles and Alajuela into the local runtime cache
+  (`.cache/`, gitignored), then **copied to the committed snapshot (engine owner's OK, phase 7)**:
+  `app/cache/snapshots/nasa_power_daily_history/` (2 files, 2.1 MB) and `noaa_enso/` (RONI + ONI,
+  40 KB). Copied by hand instead of `make cache-snapshot`, which would also have committed an
+  unrelated 1.2 MB `nasa_power_daily` file (Los Chiles 1991–2025, no endpoint uses it). Verified
+  as a fresh clone (empty runtime cache, `DATA_MODE=cached`): every endpoint 200 at both points.
+- **Crops that don't belong here (engine owner's OK, 2026-11-15):** when a typical season (median
+  cycle rain over the evaluated years) gets more rain than the crop's EcoCrop `rainfall_mm.abs_max`,
+  the summary says "Too wet for {crop} here: a typical season gets about X mm … tolerates at most
+  Y mm. Not recommended at this place.", even with 0 failed years, and that crop is never offered
+  as an alternative. No new contract field. Only sorghum triggers it at the demo points (Los Chiles
+  1,287 mm, Alajuela 1,363 mm vs 700 mm); maize, rice, beans and cowpea don't. Not a yearly
+  check, so it doesn't bring back `cycle_rain_high`.
+- **Real results, Los Chiles:** beans Nov 15 → 2/25 failed (dry spells at flowering; options: sow
+  Nov 1 or Oct 18, 0/25); maize May 15 → 0/25; beans Sep 1 → 0/26 (harvest rain stress 5/26).
+
+## 2026-11-15 — Plan-risk actions and alternatives (phase 4)
+- **Decision:** `app/domain/plan_advice.py`.
+  - **Actions:** 2–3 bilingual actions per cause (`ACTIONS`), crop-specific ones first
+    (`CROP_ACTIONS`: maize "doblar la mazorca" and beans "mustia hilachosa" at a wet harvest), and
+    "Ask INS about crop insurance for this risk" appended only to causes that failed a year. It
+    only asks: no claim about what INS covers. Each action's source is a comment next to it.
+  - **Alternatives:** the same stress test re-run with the sowing date shifted −28, −14, +14, +28
+    days (`SOWING_SHIFTS_DAYS`), and with every other MVP crop (`mvp.yaml` `crops`, never the
+    whole catalog) on the plan's date. Kept only if the **failure rate** is lower than the plan's
+    (rates, not counts: a shifted date can evaluate one season fewer) and the option has enough
+    history. Ranked: lowest rate, then **same crop on another date before another crop** (a
+    date change is easier for a farmer than a crop change; the plan said "then shift size",
+    which put another crop, a 0-day shift, ahead of a 2-week shift), then smaller shift, then
+    crop id. At most 3 (`MAX_ALTERNATIVES`).
+- **Example, Los Chiles, IMERG:** beans Nov 15 (fails 2/25) → "Sow 2 weeks earlier (November 1):
+  would not have failed in any of the 25 years", "Sow 4 weeks earlier (October 18): …". Beans
+  Dec 15 (13/25) → Nov 17 (2/25), Dec 1 (5/25).
+- **Sources to verify (`fact-checker`, phase 7):** most action sources are marked "from memory,
+  unverified" in the code: mulch (FAO Conservation Agriculture), early varieties (CIAT), onset
+  rule (Sivakumar 1988), weeds and water (FAO), post-harvest drying (FAO), raised beds, the
+  doubling practice, heat-tolerant bean availability in Costa Rica. Verified: flowering is the most
+  water-sensitive stage (FAO crop information, maize); web blight with wet harvests in Zona Norte
+  (farmer-texts fact-check 2026-11-15). All texts go to the `farmer-language` review in phase 7.
+- **Revisit if:** the fact-checker can't source an action (drop or reword it).
+
+## 2026-11-15 — Plan-risk thresholds after the agro-logic review; demo point relabeled Los Chiles
+- **Decision (engine owner, after an `agro-logic` review the same day):** the review's blockers
+  and should-fix items are applied in `app/domain/plan_risk.py`:
+  1. **`cycle_rain_high` dropped** (never produced; kept in the API enum). EcoCrop rainfall ranges
+     are annual figures (FAO) applied per cycle here, and excess rain hurts through waterlogging,
+     disease and harvest wetness, which have their own checks. It flagged maize in 19/25 years.
+  2. **`cycle_rain_low` reworked:** no "below optimum" stress. Below EcoCrop `abs_min` only: a fail
+     when the root zone also dries in the second half of the cycle (mean `GWETROOT` < 0.5,
+     `CYCLE_LOW_SOIL_WETNESS`), otherwise a stress worded "the crop relied on water stored in the
+     soil". Plan-risk assumes no irrigation (to be said in `data_gaps`, phase 5).
+  3. **Fail causes first** in `cause_summaries` (then frequency): a rare fail matters more than a
+     frequent stress.
+  4. **`harvest_wet`:** soil wetness never triggers on its own (only extra evidence with rain, for
+     crops needing drainage). Rain thresholds per crop (`HARVEST_RAIN_MM`): beans and cowpea 150 /
+     250 mm; maize, rice, sorghum stress from 250 mm and never fail (ears doubled in the field).
+  5. **Flowering windows per crop** (`FLOWERING_FRACTIONS`): maize 45–65 %, beans and cowpea
+     35–60 %, rice 65–85 % (the old 45–65 % caught panicle initiation, not flowering), sorghum
+     50–70 %.
+  6. **Flowering heat limit per crop** (`FLOWERING_HEAT_LIMIT_C`) instead of the survival limit:
+     maize, rice, cowpea 35 °C, sorghum 38 °C, **beans 32 °C**. The review suggested 30–32 °C for
+     beans "after checking real Tmax": at 30 °C, Sep 1 beans showed heat stress in 7/26 years
+     (Sep–Dec mean daily max is 28–29 °C, beans are grown there), Nov 15 beans failed 10/25 instead
+     of 6/25; 32 °C (= EcoCrop abs_max) keeps only real heat waves.
+- **Results, Los Chiles (11.0, −84.6), IMERG 2000-06 → 2025-12, before → after** (failed/evaluated):
+
+  | Plan | Before | After | Main causes after |
+  |---|---|---|---|
+  | maize May 15 | 1/25 (cycle_rain_high 19) | 0/25 | late_dry_start stress 2 |
+  | beans Sep 1 | 0/26 (harvest_wet stress 17) | 0/26 | harvest_wet stress 5 |
+  | beans Nov 15 | 12/25 | **6/25** | flowering_dry_spell fail 13, cycle_rain_low stress 11 |
+  | rice May 15 | 0/25 (cycle_rain_low stress 22) | 0/25 | late_dry_start stress 2 |
+  | sorghum May 15 | 25/25 (cycle_rain_high) | 0/25 | harvest_wet stress 4 |
+  | cowpea Sep 1 | 0/26 (harvest_wet 17) | 0/26 | harvest_wet stress 5 |
+
+- **Flowering dry spell judged on the soil during the run (applied after the table above, engine
+  owner's OK):** the 6 remaining Nov 15 bean failures were all 15+ day dry runs at flowering
+  (mid-Dec to early Jan; IMERG Dec 147 mm, Jan 53 mm on average). Now: stress if the run is ≥ 10
+  days and the minimum `GWETROOT` during the run is < 0.7; fail if ≥ 15 days with minimum < 0.6,
+  or ≥ 20 days whatever the soil; length alone when there is no wetness data. Replaces the old
+  "≥ 15 days, or ≥ 10 with mean flowering wetness < 0.5" rule. Result: **beans Nov 15 → 2/25**
+  (both long flowering dry spells; worst 2002, 23 dry days), Dec 1 → 5/25, Dec 15 → 13/25 (sowing too deep into the
+  dry season); every other plan in the table unchanged.
+- **Still open (review's "nice to have", not applied):** soil gate on the establishment dry run, "re-sow" wording, a 2020 "sources disagree" flag, an in-cycle heavy-rain
+  waterlogging check, and showing sorghum as "too wet for sorghum here" (suitability) instead of a
+  clean 0/25.
+- **Unverified values** for the `fact-checker` (phase 7): rice and bean stage timing, the maize,
+  rice, sorghum and cowpea heat limits, the Sivakumar onset rule, the maize-doubling practice.
+- **Demo point relabeled "Los Chiles (Zona Norte)":** (11.0, −84.6) is ~12 km from Los Chiles town
+  and ~75 km from Ciudad Quesada, the "San Carlos" most people picture. It sits in the national
+  bean zone (Upala, Los Chiles, Guatuso). Coordinates and cached data unchanged. Renamed in backend
+  docs, Bruno requests, code comments and test labels; earlier entries in this log keep "San
+  Carlos" as written. **Team files still saying San Carlos** (owners to decide): `README.md`,
+  `PROJECT_CONTEXT.md`, `docs/pilot-baseline/`, `docs/frontend-requirements-proposal.md`,
+  `docs/farmer-input-proposal.md`, `tools/local-mvp-preview/`, `odd/tasks/local-mvp-preview.md`,
+  `.claude/agents/fact-checker.md`. Which canton the point falls in is unverified.
+- **Revisit if:** the fact-checker or a Zona Norte extension agent disagrees with a value.
+
+## 2026-11-15 — Plan-risk stress-test engine and its placeholder thresholds (phase 3)
+- **Decision:** `app/domain/plan_risk.py` replays "sow crop X every year on day D" over the daily
+  history. Season year = sowing year; harvest = sowing + `cycle_days` (crossing the new year is
+  fine; Feb 29 → Feb 28 in non-leap years). A season counts only if all its days are in the history
+  and < 10 % of its rain days are missing (window totals are rescaled from the days present; a
+  missing day breaks a dry run). Fewer than 10 valid seasons → `not_enough_history` flag (the
+  service answers 200 + data gap). Outcome per year: `fail` if any check fails, else `stress` if
+  any is stressed, else `ok`. `failure_rate` = failed / evaluated.
+- **Stages (fractions of the cycle):** establishment days 0–19, flowering 45–65 %, harvest = last
+  15 days. **Checks** (dry day < 1 mm, ETCCDI):
+  - `late_dry_start`: establishment rain < 30 mm or a dry run ≥ 7 days → stress; < 10 mm → fail.
+  - `flowering_dry_spell`: longest dry run ≥ 10 days → stress; ≥ 15 days, or ≥ 10 with mean
+    `GWETROOT` < 0.5 → fail.
+  - `cycle_rain_low` / `cycle_rain_high`: cycle rain outside the crop's EcoCrop `rainfall_mm` opt
+    range → stress; outside abs → fail.
+  - `harvest_wet`: harvest-window rain ≥ 150 mm, or mean `GWETROOT` ≥ 0.85 for crops that need good
+    drainage → stress; rain ≥ 250 mm → fail.
+  - `flowering_heat`: days in flowering with max > the crop's `temperature_c.abs_max` (the limit
+    `suitability.heat_range` uses): ≥ 5 → stress, ≥ 10 → fail. `HEAT_MARGIN_C` doesn't apply: it
+    ramps a season mean, not a count of days.
+  All are **placeholders** pending the `agro-logic` review (phase 7); listed in `backend/AGENTS.md`.
+- **Sanity check, San Carlos (11.0, −84.6), IMERG 2000-06 → 2025-12** (failed / evaluated):
+  - maize May 15: **1/25** failed; `cycle_rain_high` in 19 years (IMERG gives ~1,300 mm over
+    May–Sep vs the EcoCrop optimum 600–1,200 mm), `harvest_wet` stress 11, `late_dry_start` 2.
+  - beans Sep 1: **0/26** failed, `harvest_wet` stress 17 (2020: 201 mm + soil 99 % wet; 2024: soil
+    100 % wet). The probe's "harvest rain/waterlogging in 2020 and 2024" **is reproduced, as stress**.
+  - beans Nov 15: **12/25** (cycle rain too low in 23, flowering dry spell in 9): sowing into the
+    dry season fails often, as expected.
+  - sorghum May 15: **25/25** (EcoCrop sorghum `abs_max` is 700 mm per cycle; San Carlos gets
+    ~1,300). Consistent with the suitability score; sorghum isn't grown in this wet zone.
+- **Gap vs the MERRA-2 probe, explained (not tuned):** the probe found late starts in 12 of 35
+  years from the rain *onset date*; this engine counts too little rain in the 20 days after a fixed
+  sowing date, and IMERG has more rain than MERRA-2 (24 of 26 years), so `late_dry_start` shows
+  in only 2 of 25 maize years. Run on MERRA-2 rain the same engine gives maize 4/25 and rice 21/25
+  failed (MERRA-2's lower totals push rice below its 1,000 mm minimum), which is why we don't mix sources.
+- **For the agro-logic review:** (1) `cycle_rain_high` flags maize in most years at San Carlos
+  although maize is grown there: EcoCrop's global `opt_max` may be too low for Zona Norte, or excess
+  rain should be judged by waterlogging/harvest rather than by cycle total. (2) `GWETROOT` ≥ 0.85
+  at harvest triggers often in this wet zone; compare with SMAP levels. (3) the stage fractions.
+- **Revisit if:** the review changes a threshold (new entry with before/after numbers).
+
+## 2026-11-15 — Plan-risk rain source: GPM IMERG via NASA POWER (phase 2)
+- **Decision:** the plan-risk stress test uses **IMERG** daily rain (`IMERG_PRECTOT`, ~0.1°) from
+  the NASA POWER daily API, with MERRA-2 `T2M_MAX`/`T2M_MIN` and `GWETROOT` (~0.5°). New adapter
+  method `NasaPowerClimate.daily_history`, own cache namespace `nasa_power_daily_history`, so
+  `daily_weather` and its cache keys are untouched. Only seasons IMERG fully covers are evaluated
+  (IMERG starts 2000-06-01, ~2-month latency). Sources are never mixed across years. MERRA-2
+  `PRECTOTCORR` is fetched in the same request only to report the gap in `data_gaps`.
+- **Why:** at San Carlos IMERG is higher than MERRA-2 in 24 of 26 years (14–126 %), consistent with
+  MERRA-2 underestimating tropical convective rain and spreading it into fewer dry days, which
+  would undercount dry spells. IMERG's ~10 km cell is also closer to a farm than MERRA-2's ~55 km.
+- **Verified live (2026-11-15):** IMERG needs `time-standard=UTC` (with LST it is all −999), so days
+  are UTC days; units `mm/day`, `GWETROOT` `1` (fraction); details in `docs/sources/nasa_power.md`.
+- **Caveat found:** the two sources disagree sharply on hurricane Eta: 2020-11-03 has 513 mm in
+  MERRA-2 and 4 mm in IMERG; November 2020 is 1,010 vs 328 mm. 2024 shows a similar MERRA-2 spike.
+  So the "beans harvest rain in 2020" result from the MERRA-2 probe may **not** reproduce with
+  IMERG. Phase 3 reports what IMERG shows and explains the gap; it does not tune to match. Which
+  source is closer to gauges is unverified (IMN station data would settle it).
+- **Fixed history range (engine owner, 2026-11-15):** the service requests **2000-06-01 →
+  2025-12-31**, a constant, not "up to last month". A moving end date would change the cache key
+  every month and the committed demo snapshot would stop matching (`cache_miss` in `cached` mode).
+  Cost: 2026 seasons aren't evaluated. Move the end date forward deliberately, together with a new
+  snapshot.
+- **Revisit if:** gauge data shows IMERG misses Eta/Iota-type events in Zona Norte (then consider
+  flagging years where the two sources disagree strongly instead of trusting either).
+
+## 2026-11-15 — `POST /plan-risk` contract: "when could this plan fail?" (phase 1)
+- **Decision (engine owner):** new endpoint `POST /plan-risk` (plan: `docs/follow-ups/plan-risk.md`).
+  The farmer sends a point and 1–4 plantings (crop + sowing month/day); each planting is replayed
+  against past years of daily weather and evaluated alone (no rotations). The response gives, per
+  planting, failed years and rate, causes with the years they hit, actions, per-year outcomes, an
+  El Niño split and up to 3 better alternatives, plus the current ENSO phase. Phase 1 ships the
+  contract, schemas and a fixed example response so the frontend can start.
+- **Answers to the open questions:**
+  - Every message (summary, explanations, actions, labels, notes, data gaps) is `LocalizedText`,
+    English and Spanish. Error messages stay English, as everywhere.
+  - Plantings: 1–4 per request, explicit date only. No season names (`primera`/`postrera`) yet;
+    they can be added later as an optional field. `sowing_day` defaults to 1 and is validated
+    against the month (Feb 29 allowed; non-leap years will use Feb 28).
+  - Fewer than 10 valid seasons: **200 with a `data_gaps` entry**, no new error code.
+  - Alternatives use only the `mvp.yaml` crops, never the rest of the catalog.
+  - ENSO is in the MVP. Cut order if time runs short: stretch → ENSO split → alternatives.
+    `enso_now` and `enso_split` are nullable so the response still works without NOAA data.
+  - `EnsoGroup.years` is a count of evaluated years in that phase (not a list); the per-year
+    phase is in `years[].enso`.
+- **Revisit if:** the frontend needs season names, or the stress-test thresholds (phase 3, logged
+  separately) change what a "failed" year means.
+
 ## 2026-11-15 — Production at terracosmos.space (Railway Trial + Cloudflare DNS)
 - **Decision:** production is live at https://terracosmos.space. The domain is registered at
   Cloudflare. The apex CNAME points to Railway as DNS only, so Railway issues the certificate. The
@@ -43,6 +375,7 @@ Template:
   Railway); Google Cloud Run (free credits but more setup; the same image runs there).
 - **Revisit if:** the frontend needs a Node build or server rendering, or Railway costs become a
   problem after the hackathon.
+
 
 ## 2026-11-15 — Farmer-facing texts in English and Spanish, reworded after review
 - **Decision (engine owner):** every text a farmer or judge reads is returned as

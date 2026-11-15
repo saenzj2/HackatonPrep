@@ -72,3 +72,14 @@ def get_planting_windows(
 def create_recommendation(ctx: Ctx, req: s.RecommendationRequest) -> s.RecommendationResponse:
     """Rank crop rotations for a location given the farmer's priorities."""
     return services.recommend(ctx, req)
+
+
+@router.post(
+    "/plan-risk",
+    response_model=s.PlanRiskResponse,
+    responses=DATA_ERRORS,
+    tags=["plan-risk"],
+)
+def create_plan_risk(ctx: Ctx, req: s.PlanRiskRequest) -> s.PlanRiskResponse:
+    """Replay a crop + sowing date plan against past years of weather: when could it fail?"""
+    return services.plan_risk(ctx, req)

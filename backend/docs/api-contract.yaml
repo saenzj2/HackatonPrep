@@ -232,6 +232,50 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /plan-risk:
+    post:
+      tags:
+      - plan-risk
+      summary: Create Plan Risk
+      description: 'Replay a crop + sowing date plan against past years of weather: when could it fail?'
+      operationId: create_plan_risk_plan_risk_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanRiskRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanRiskResponse'
+        '422':
+          description: '`validation_failed`, `out_of_region`, `unknown_crop`, `invalid_priorities`, `invalid_rotation`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: '`internal_error`, `config_invalid`, `domain_invariant`: a backend bug'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: '`source_unavailable`, `source_bad_data`: an external data source failed'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: '`cache_miss`: data_mode=cached and this location was never fetched'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
     CategoryBreakdown:
@@ -408,6 +452,71 @@ components:
       - soil
       - crops
       title: DataSources
+    EnsoGroup:
+      properties:
+        years:
+          type: integer
+          title: Years
+          description: Evaluated years in this phase
+        failed:
+          type: integer
+          title: Failed
+          description: Of those, years that failed
+      additionalProperties: false
+      type: object
+      required:
+      - years
+      - failed
+      title: EnsoGroup
+    EnsoNow:
+      properties:
+        oni:
+          type: number
+          title: Oni
+          description: Relative Oceanic Niño Index (RONI, NOAA CPC official index since 2026), °C anomaly, latest 3-month season
+        phase:
+          type: string
+          enum:
+          - el_nino
+          - la_nina
+          - neutral
+          title: Phase
+        season:
+          type: string
+          title: Season
+          description: 3-month ONI season
+          examples:
+          - ASO 2026
+        source:
+          type: string
+          title: Source
+      additionalProperties: false
+      type: object
+      required:
+      - oni
+      - phase
+      - season
+      - source
+      title: EnsoNow
+    EnsoSplit:
+      properties:
+        el_nino:
+          $ref: '#/components/schemas/EnsoGroup'
+        la_nina:
+          $ref: '#/components/schemas/EnsoGroup'
+        neutral:
+          $ref: '#/components/schemas/EnsoGroup'
+        note:
+          $ref: '#/components/schemas/LocalizedText'
+          description: Says when there are too few years to compare
+      additionalProperties: false
+      type: object
+      required:
+      - el_nino
+      - la_nina
+      - neutral
+      - note
+      title: EnsoSplit
     ErrorBody:
       properties:
         code:
@@ -537,6 +646,300 @@ components:
       - temperature_max_c
       - temperature_min_c
       title: MonthClimate
+    PlanAlternative:
+      properties:
+        kind:
+          type: string
+          enum:
+          - shift_sowing
+          - other_crop
+          title: Kind
+        crop_id:
+          type: string
+          title: Crop Id
+        sowing_date:
+          type: string
+          title: Sowing Date
+          description: MM-DD
+          examples:
+          - 08-18
+        failed_years:
+          type: integer
+          title: Failed Years
+        failure_rate:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Failure Rate
+        label:
+          $ref: '#/components/schemas/LocalizedText'
+      additionalProperties: false
+      type: object
+      required:
+      - kind
+      - crop_id
+      - sowing_date
+      - failed_years
+      - failure_rate
+      - label
+      title: PlanAlternative
+    PlanRiskCause:
+      properties:
+        cause:
+          type: string
+          enum:
+          - late_dry_start
+          - flowering_dry_spell
+          - cycle_rain_low
+          - cycle_rain_high
+          - harvest_wet
+          - flowering_heat
+          title: Cause
+        severity:
+          type: string
+          enum:
+          - fail
+          - stress
+          title: Severity
+          description: Worst severity seen for this cause
+        years:
+          items:
+            type: integer
+          type: array
+          title: Years
+          description: Sowing years in which this cause appeared
+        count:
+          type: integer
+          title: Count
+        explanation:
+          $ref: '#/components/schemas/LocalizedText'
+          description: What happened, with the worst year's numbers
+        actions:
+          items:
+            $ref: '#/components/schemas/LocalizedText'
+          type: array
+          title: Actions
+      additionalProperties: false
+      type: object
+      required:
+      - cause
+      - severity
+      - years
+      - count
+      - explanation
+      - actions
+      title: PlanRiskCause
+    PlanRiskPlanting:
+      properties:
+        crop_id:
+          type: string
+          title: Crop Id
+        crop_name:
+          $ref: '#/components/schemas/LocalizedText'
+        sowing_date:
+          type: string
+          title: Sowing Date
+          description: MM-DD
+          examples:
+          - 05-15
+        harvest_date:
+          type: string
+          title: Harvest Date
+          description: MM-DD, sowing + cycle_days
+          examples:
+          - 09-12
+        failed_years:
+          type: integer
+          title: Failed Years
+        failure_rate:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Failure Rate
+          description: failed years / evaluated years
+        summary:
+          $ref: '#/components/schemas/LocalizedText'
+        causes:
+          items:
+            $ref: '#/components/schemas/PlanRiskCause'
+          type: array
+          title: Causes
+          description: Causes that failed a year first, then by count; only causes seen at least once
+        years:
+          items:
+            $ref: '#/components/schemas/PlanRiskYear'
+          type: array
+          title: Years
+        enso_split:
+          anyOf:
+          - $ref: '#/components/schemas/EnsoSplit'
+          - type: 'null'
+          description: Null without ONI data
+        alternatives:
+          items:
+            $ref: '#/components/schemas/PlanAlternative'
+          type: array
+          title: Alternatives
+          description: At most 3, each failing in fewer years than the plan
+      additionalProperties: false
+      type: object
+      required:
+      - crop_id
+      - crop_name
+      - sowing_date
+      - harvest_date
+      - failed_years
+      - failure_rate
+      - summary
+      - causes
+      - years
+      - enso_split
+      - alternatives
+      title: PlanRiskPlanting
+    PlanRiskRequest:
+      properties:
+        lat:
+          type: number
+          maximum: 90.0
+          minimum: -90.0
+          title: Lat
+          description: Latitude of one representative point. For a selected area, send one explicitly chosen
+            point; results are for that point, never an area or polygon average.
+          examples:
+          - 11.0
+        lon:
+          type: number
+          maximum: 180.0
+          minimum: -180.0
+          title: Lon
+          description: Longitude of one representative point. For a selected area, send one explicitly chosen
+            point; results are for that point, never an area or polygon average.
+          examples:
+          - -84.6
+        plantings:
+          items:
+            $ref: '#/components/schemas/PlantingInput'
+          type: array
+          maxItems: 4
+          minItems: 1
+          title: Plantings
+          description: Each planting is evaluated alone; two plantings return two results.
+      additionalProperties: false
+      type: object
+      required:
+      - lat
+      - lon
+      - plantings
+      title: PlanRiskRequest
+    PlanRiskResponse:
+      properties:
+        location:
+          $ref: '#/components/schemas/Location'
+        years_evaluated:
+          $ref: '#/components/schemas/YearsEvaluated'
+        data_sources:
+          items:
+            type: string
+          type: array
+          title: Data Sources
+        enso_now:
+          anyOf:
+          - $ref: '#/components/schemas/EnsoNow'
+          - type: 'null'
+          description: Null when NOAA ONI data is unavailable
+        plantings:
+          items:
+            $ref: '#/components/schemas/PlanRiskPlanting'
+          type: array
+          title: Plantings
+        data_gaps:
+          items:
+            $ref: '#/components/schemas/LocalizedText'
+          type: array
+          title: Data Gaps
+      additionalProperties: false
+      type: object
+      required:
+      - location
+      - years_evaluated
+      - data_sources
+      - enso_now
+      - plantings
+      - data_gaps
+      title: PlanRiskResponse
+    PlanRiskYear:
+      properties:
+        year:
+          type: integer
+          title: Year
+          description: Sowing year
+        outcome:
+          type: string
+          enum:
+          - ok
+          - stress
+          - fail
+          title: Outcome
+        causes:
+          items:
+            type: string
+            enum:
+            - late_dry_start
+            - flowering_dry_spell
+            - cycle_rain_low
+            - cycle_rain_high
+            - harvest_wet
+            - flowering_heat
+          type: array
+          title: Causes
+        enso:
+          anyOf:
+          - type: string
+            enum:
+            - el_nino
+            - la_nina
+            - neutral
+          - type: 'null'
+          title: Enso
+          description: ENSO phase of that year; null without ONI data
+      additionalProperties: false
+      type: object
+      required:
+      - year
+      - outcome
+      - causes
+      - enso
+      title: PlanRiskYear
+    PlantingInput:
+      properties:
+        crop:
+          type: string
+          title: Crop
+          description: Crop id from GET /crops. Ids not in GET /crops fail with unknown_crop; they are never
+            substituted.
+        sowing_month:
+          type: integer
+          maximum: 12.0
+          minimum: 1.0
+          title: Sowing Month
+          examples:
+          - 5
+        sowing_day:
+          type: integer
+          maximum: 31.0
+          minimum: 1.0
+          title: Sowing Day
+          description: Validated against the month.
+          default: 1
+          examples:
+          - 15
+      additionalProperties: false
+      type: object
+      required:
+      - crop
+      - sowing_month
+      title: PlantingInput
+      description: 'One planting to stress-test: a crop and its sowing date (month and day, no year).'
     Priorities:
       properties:
         water:
@@ -1079,6 +1482,25 @@ components:
       - es
       title: LocalizedText
       description: Farmer-facing text in English and Spanish (Costa Rica). Show the one the user picked.
+    YearsEvaluated:
+      properties:
+        first:
+          type: integer
+          title: First
+        last:
+          type: integer
+          title: Last
+        count:
+          type: integer
+          title: Count
+          description: Complete seasons evaluated (sowing years with enough data)
+      additionalProperties: false
+      type: object
+      required:
+      - first
+      - last
+      - count
+      title: YearsEvaluated
 servers:
 - url: http://localhost:8000
   description: Local dev (make dev)

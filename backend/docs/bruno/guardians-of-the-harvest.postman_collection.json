@@ -91,7 +91,7 @@
       "name": "Planting windows",
       "item": [
         {
-          "name": "Planting windows - San Carlos (MVP crops)",
+          "name": "Planting windows - Los Chiles (MVP crops)",
           "request": {
             "method": "GET",
             "header": [],
@@ -118,7 +118,7 @@
           }
         },
         {
-          "name": "Planting windows - San Carlos, beans and maize",
+          "name": "Planting windows - Los Chiles, beans and maize",
           "request": {
             "method": "GET",
             "header": [],
@@ -248,6 +248,42 @@
                 }
               }
             }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Plan risk",
+      "item": [
+        {
+          "name": "Plan risk - Los Chiles, maize and beans",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/plan-risk",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "plan-risk"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lat\": 11.0,\n  \"lon\": -84.6,\n  \"plantings\": [\n    {\n      \"crop\": \"maize\",\n      \"sowing_month\": 5,\n      \"sowing_day\": 15\n    },\n    {\n      \"crop\": \"beans\",\n      \"sowing_month\": 9\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "When could this plan fail? Each planting replayed against 2000–2025 NASA daily weather (IMERG rain). El Niño fields are null for now."
           }
         }
       ]

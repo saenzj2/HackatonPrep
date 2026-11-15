@@ -55,7 +55,7 @@ GENERIC_SOIL_MOISTURE = Range(
 # linearly to MIN_FACTOR at FULL. A note from NOTE up. Never a veto: ~9 km monthly data can't see
 # a field's drainage. At most -15 %: a real waterlogging event costs more, but only in poorly
 # drained fields, which the data can't tell apart (agro-logic reviews 2026-11-15; real peaks:
-# San Carlos 0.87, Alajuela 0.95). Placeholders.
+# Los Chiles 0.87, Alajuela 0.95). Placeholders.
 WATERLOGGING_START = 0.80
 WATERLOGGING_FULL = 0.95
 WATERLOGGING_MIN_FACTOR = 0.85

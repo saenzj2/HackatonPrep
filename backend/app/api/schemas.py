@@ -6,6 +6,7 @@ Class names are the OpenAPI component names, so renaming a class is a contract c
 
 from __future__ import annotations
 
+import calendar
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
@@ -325,3 +326,125 @@ class ErrorResponse(Schema):
     """Envelope for EVERY error response (4xx and 5xx). See backend/docs/errors.md."""
 
     error: ErrorBody
+
+
+# --- POST /plan-risk: "when could this plan fail?" ---------------------------------------------
+
+PlanRiskCauseName = Literal[
+    "late_dry_start",
+    "flowering_dry_spell",
+    "cycle_rain_low",
+    "cycle_rain_high",
+    "harvest_wet",
+    "flowering_heat",
+]
+EnsoPhase = Literal["el_nino", "la_nina", "neutral"]
+
+
+class PlantingInput(Schema):
+    """One planting to stress-test: a crop and its sowing date (month and day, no year)."""
+
+    crop: str = Field(description="Crop id from GET /crops. " + UNSUPPORTED_CROP_NOTE)
+    sowing_month: int = Field(ge=1, le=12, examples=[5])
+    sowing_day: int = Field(
+        default=1, ge=1, le=31, examples=[15], description="Validated against the month."
+    )
+
+    @model_validator(mode="after")
+    def _day_exists_in_month(self) -> PlantingInput:
+        # Feb 29 is allowed: non-leap years use Feb 28 when the plan is replayed.
+        if self.sowing_day > calendar.monthrange(2000, self.sowing_month)[1]:
+            raise ValueError(f"Month {self.sowing_month} has no day {self.sowing_day}")
+        return self
+
+
+class PlanRiskRequest(Schema):
+    lat: float = Field(ge=-90, le=90, examples=[11.0], description=f"Latitude {POINT_NOTE}")
+    lon: float = Field(ge=-180, le=180, examples=[-84.6], description=f"Longitude {POINT_NOTE}")
+    plantings: list[PlantingInput] = Field(
+        min_length=1,
+        max_length=4,
+        description="Each planting is evaluated alone; two plantings return two results.",
+    )
+
+
+class YearsEvaluated(Schema):
+    first: int
+    last: int
+    count: int = Field(description="Complete seasons evaluated (sowing years with enough data)")
+
+
+class EnsoNow(Schema):
+    oni: float = Field(
+        description=(
+            "Relative Oceanic Niño Index (RONI, NOAA CPC official index since 2026), "
+            "°C anomaly, latest 3-month season"
+        )
+    )
+    phase: EnsoPhase
+    season: str = Field(examples=["ASO 2026"], description="3-month ONI season")
+    source: str
+
+
+class PlanRiskCause(Schema):
+    cause: PlanRiskCauseName
+    severity: Literal["fail", "stress"] = Field(description="Worst severity seen for this cause")
+    years: list[int] = Field(description="Sowing years in which this cause appeared")
+    count: int
+    explanation: LocalizedText = Field(description="What happened, with the worst year's numbers")
+    actions: list[LocalizedText]
+
+
+class PlanRiskYear(Schema):
+    year: int = Field(description="Sowing year")
+    outcome: Literal["ok", "stress", "fail"]
+    causes: list[PlanRiskCauseName]
+    enso: EnsoPhase | None = Field(description="ENSO phase of that year; null without ONI data")
+
+
+class EnsoGroup(Schema):
+    years: int = Field(description="Evaluated years in this phase")
+    failed: int = Field(description="Of those, years that failed")
+
+
+class EnsoSplit(Schema):
+    el_nino: EnsoGroup
+    la_nina: EnsoGroup
+    neutral: EnsoGroup
+    note: LocalizedText = Field(description="Says when there are too few years to compare")
+
+
+class PlanAlternative(Schema):
+    kind: Literal["shift_sowing", "other_crop"]
+    crop_id: str
+    sowing_date: str = Field(examples=["08-18"], description="MM-DD")
+    failed_years: int
+    failure_rate: float = Field(ge=0, le=1)
+    label: LocalizedText
+
+
+class PlanRiskPlanting(Schema):
+    crop_id: str
+    crop_name: LocalizedText
+    sowing_date: str = Field(examples=["05-15"], description="MM-DD")
+    harvest_date: str = Field(examples=["09-12"], description="MM-DD, sowing + cycle_days")
+    failed_years: int
+    failure_rate: float = Field(ge=0, le=1, description="failed years / evaluated years")
+    summary: LocalizedText
+    causes: list[PlanRiskCause] = Field(
+        description="Causes that failed a year first, then by count; only causes seen at least once"
+    )
+    years: list[PlanRiskYear]
+    enso_split: EnsoSplit | None = Field(description="Null without ONI data")
+    alternatives: list[PlanAlternative] = Field(
+        description="At most 3, each failing in fewer years than the plan"
+    )
+
+
+class PlanRiskResponse(Schema):
+    location: Location
+    years_evaluated: YearsEvaluated
+    data_sources: list[str]
+    enso_now: EnsoNow | None = Field(description="Null when NOAA ONI data is unavailable")
+    plantings: list[PlanRiskPlanting]
+    data_gaps: list[LocalizedText]

@@ -7,10 +7,11 @@ and raise only SourceUnavailableError / SourceDataError / ConfigError (see docs/
 from __future__ import annotations
 
 from datetime import date
-from typing import Protocol, runtime_checkable
+from typing import Literal, Protocol, runtime_checkable
 
 import pandas as pd
 
+from app.domain.enso import EnsoIndex
 from app.domain.models import (
     CropProfile,
     MonthlyClimate,
@@ -48,6 +49,26 @@ class DailyWeatherSource(Protocol):
     name: str
 
     def daily_weather(self, *, lat: float, lon: float, start: date, end: date) -> pd.DataFrame: ...
+
+
+@runtime_checkable
+class DailyHistorySource(Protocol):
+    """Long daily history for POST /plan-risk: DataFrame with date, rainfall_mm (IMERG),
+    rainfall_merra2_mm, temperature_max_c, temperature_min_c (°C), root_wetness (0..1).
+    NaN = missing value (see nasa_power.parse_daily_history)."""
+
+    name: str
+
+    def daily_history(self, *, lat: float, lon: float, start: date, end: date) -> pd.DataFrame: ...
+
+
+@runtime_checkable
+class EnsoIndexSource(Protocol):
+    """NOAA CPC El Niño index by name ("RONI" official, "ONI" legacy), 1950 → latest season."""
+
+    name: str
+
+    def index(self, name: Literal["RONI", "ONI"]) -> EnsoIndex: ...
 
 
 @runtime_checkable

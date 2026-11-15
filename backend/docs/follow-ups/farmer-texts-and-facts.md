@@ -66,7 +66,7 @@ added; the "apante beans avoid waterlogging" rationale replaced with what source
 harvest and disease).
 
 ## 6. For the `agro-logic` agent
-- Is primera/postrera the right calendar for San Carlos? Zona Norte beans are mostly sown late
+- Is primera/postrera the right calendar for Los Chiles? Zona Norte beans are mostly sown late
   (Upala/Los Chiles ~Dec–Feb), and every rotation there gets a waterlogging warning in postrera.
 - Residual soil moisture for late sowings (dry-month check counts rain only).
 - A primera disease / excess-rain-at-harvest rule for beans (web blight).

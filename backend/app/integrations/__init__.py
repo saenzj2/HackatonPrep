@@ -11,15 +11,18 @@ from app.cache import JsonCache
 from app.integrations.base import (
     ClimateSource,
     CropSource,
+    DailyHistorySource,
     DailyWeatherSource,
+    EnsoIndexSource,
     SoilProfileSource,
     SoilSource,
     TerrainSource,
 )
 from app.integrations.ecocrop import EcoCropCatalog
 from app.integrations.measured_soil import MeasuredSoil
-from app.integrations.mock import MockClimate, MockSoil, MockSoilProfile, MockTerrain
+from app.integrations.mock import MockClimate, MockEnso, MockSoil, MockSoilProfile, MockTerrain
 from app.integrations.nasa_power import NasaPowerClimate
+from app.integrations.noaa_enso import NoaaEnso
 from app.integrations.openlandmap import EarthEngineSoil
 from app.integrations.opentopography import OpenTopographyElevation
 from app.integrations.smap import SmapSoilMoisture
@@ -34,6 +37,8 @@ class Sources:
     daily: DailyWeatherSource  # erosion risk (services.erosion_risk); no endpoint yet
     terrain: TerrainSource
     soil_profile: SoilProfileSource  # services.get_soil_data; no endpoint yet
+    history: DailyHistorySource  # POST /plan-risk: ~25 years of daily IMERG rain + MERRA-2
+    enso: EnsoIndexSource  # POST /plan-risk: NOAA CPC RONI (official) and ONI (legacy)
 
     def names(self) -> dict[str, str]:
         # Only the sources the current API reports (DataSources in the contract).
@@ -51,6 +56,8 @@ def build_sources(config: MvpConfig, env: EnvSettings) -> Sources:
             daily=climate,
             terrain=MockTerrain(),
             soil_profile=MockSoilProfile(),
+            history=climate,
+            enso=MockEnso(),
         )
     cache = JsonCache(env.cache_dir, config.data_mode, snapshot=env.cache_snapshot_dir)
     power = NasaPowerClimate(cache)
@@ -67,4 +74,6 @@ def build_sources(config: MvpConfig, env: EnvSettings) -> Sources:
         # No key needed until a location isn't cached yet (then ConfigError names the variable).
         terrain=OpenTopographyElevation(cache, env.open_topography_key),
         soil_profile=soil_profile,
+        history=power,
+        enso=NoaaEnso(cache),
     )

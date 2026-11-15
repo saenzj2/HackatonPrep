@@ -7,7 +7,7 @@
 > [`docs/frontend-requirements-proposal.md`](../../docs/frontend-requirements-proposal.md); this guide
 > describes **what the backend does today**.
 >
-> Examples below are real responses for **San Carlos, Alajuela (lat 11.0, lon −84.6)** in `cached`
+> Examples below are real responses for **Los Chiles, Zona Norte (lat 11.0, lon −84.6)** in `cached`
 > mode, trimmed with `…` where long. Full, always-valid examples: [`docs/examples/`](examples/README.md).
 
 ---
@@ -17,7 +17,8 @@
 2. [Conventions you'll see everywhere](#2-conventions-youll-see-everywhere)
 3. [Endpoints](#3-endpoints)
    - [GET /health](#get-health) · [GET /crops](#get-crops) · [GET /conditions](#get-conditions) ·
-     [GET /planting-windows](#get-planting-windows) · [POST /recommendations](#post-recommendations)
+     [GET /planting-windows](#get-planting-windows) · [POST /recommendations](#post-recommendations) ·
+     [POST /plan-risk](#post-plan-risk)
 4. [Errors](#4-errors)
 5. [How to display it (UI recommendations)](#5-how-to-display-it-ui-recommendations)
 6. [Label maps (English / Spanish)](#6-label-maps-english--spanish)
@@ -48,7 +49,7 @@ calls the internet. A committed snapshot covers the **two demo points**:
 
 | Demo point | lat | lon |
 |---|---|---|
-| **San Carlos** (pilot) | `11.0` | `-84.6` |
+| **Los Chiles** (pilot, Zona Norte) | `11.0` | `-84.6` |
 | Alajuela (test point) | `10.0` | `-84.2` |
 
 Any other point inside the region answers **`503 cache_miss`** (see [Errors](#4-errors)), never fake
@@ -128,6 +129,7 @@ show a visible "demo data" banner.
 | GET | `/conditions?lat&lon` | Climate by month and season + soil at a point | 422, 500, 502, 503 |
 | GET | `/planting-windows?lat&lon[&crops]` | Best months to sow each crop | 422, 500, 502, 503 |
 | POST | `/recommendations` | Ranked crop rotations, explained, optionally vs the farmer's current one | 422, 500, 502, 503 |
+| POST | `/plan-risk` | "When could this plan fail?": a crop + sowing date replayed against past years, with El Niño context | 422, 500, 502, 503 |
 
 All responses are JSON. All errors share one envelope ([§4](#4-errors)). Every response carries an
 `X-Request-ID` header.
@@ -290,7 +292,7 @@ For each crop: in which months it's good to sow at this point, and why the other
 | `fixed_limits` | `LocalizedText[]`: things that are the same in every month (today: soil pH) and limit this crop. Show once per crop, above its calendar |
 | `windows[]` | Consecutive good months. `first_month`/`last_month` **can wrap** (first 11, last 1 = Nov→Jan). `best_month` = highest score. **Empty list = no good month** |
 
-Real San Carlos results: maize sow **May–Sep** (best May), beans **Jun–Oct** (best Jun); waterlogging
+Real Los Chiles results: maize sow **May–Sep** (best May), beans **Jun–Oct** (best Jun); waterlogging
 flagged when maize is sown in Aug and beans in Sep.
 
 ---
@@ -376,6 +378,158 @@ Unknown fields are rejected (`422 validation_failed`): don't send extra keys.
 
 ---
 
+### POST /plan-risk
+"Most tools help farmers decide what to plant next; this one shows **when their plan might fail**,
+and what they can do before it does." The farmer gives a point and a plan (crop + sowing date). The
+backend replays that plan against every past year of NASA daily weather at the point and says how
+often it would have failed, why, in which years (farmers remember 2020, Eta/Iota), what to do, and
+which alternatives failed less often. El Niño context included.
+
+> **Status: real data.** NASA history (IMERG rain 2000–2025, MERRA-2 temperature and soil
+> wetness) for the two demo points, and El Niño from NOAA CPC's official index, the **Relative
+> Oceanic Niño Index (RONI)** (official since Feb 2026; the field is still called `oni`). If NOAA
+> is unreachable and nothing is cached, `enso_now`, `enso_split` and `years[].enso` are `null`
+> and a `data_gaps` item says so: the rest of the response still works. The
+> thresholds behind ok / stress / fail are placeholders reviewed by our agronomy reviewer
+> (`decisions.md`, 2026-11-15) and may still change; the shape won't.
+
+**Request body:**
+
+| Field | Required | Meaning |
+|---|---|---|
+| `lat`, `lon` | **yes** | One representative point, same rules as `/recommendations` |
+| `plantings` | **yes** | 1 to 4 plantings. Each is evaluated **alone** (no rotation effects): two plantings → two results, same order |
+| `plantings[].crop` | **yes** | Crop id from `/crops`. Unknown → `422 unknown_crop` |
+| `plantings[].sowing_month` | **yes** | 1–12 |
+| `plantings[].sowing_day` | no | 1–31, default **1**. Must exist in the month (Apr 31 → `422 validation_failed`). Feb 29 is accepted |
+
+No year: the plan is "every year, sow on this date". Season names (`primera`/`postrera`) aren't
+accepted; turn them into a date on your side if the UI offers them (e.g. primera → May 15).
+
+```json
+{ "lat": 11.0, "lon": -84.6,
+  "plantings": [ { "crop": "maize", "sowing_month": 5, "sowing_day": 15 },
+                 { "crop": "beans", "sowing_month": 9 } ] }
+```
+
+**Response** (real, `cached` mode: beans sown Nov 15 at Los Chiles, the local late bean sowing;
+trimmed):
+
+```json
+{
+  "location": { "lat": 11.0, "lon": -84.6 },
+  "years_evaluated": { "first": 2000, "last": 2024, "count": 25 },
+  "data_sources": ["NASA GPM IMERG (rain)", "NASA POWER / MERRA-2 (temperature, soil wetness)",
+                   "NOAA CPC RONI (El Niño, ERSST v6)"],
+  "enso_now": { "oni": 1.97, "phase": "el_nino", "season": "ASO 2026",
+                "source": "NOAA CPC RONI (El Niño, ERSST v6)" },
+  "plantings": [ {
+    "crop_id": "beans",
+    "crop_name": { "en": "Common bean", "es": "Frijol" },
+    "sowing_date": "11-15",
+    "harvest_date": "02-13",
+    "failed_years": 2,
+    "failure_rate": 0.08,
+    "summary": { "en": "Would have failed in 2 of 25 years, mostly because of dry spells at flowering.",
+                 "es": "Habría fallado en 2 de 25 años, sobre todo por sequías en la floración." },
+    "causes": [
+      { "cause": "flowering_dry_spell", "severity": "fail",
+        "years": [2000, 2002, 2004, 2006, 2015, 2018, 2021, 2023], "count": 8,
+        "explanation": { "en": "Worst year, 2002: 23 days in a row without rain during flowering",
+                         "es": "El peor año, 2002: 23 días seguidos sin lluvia durante la floración" },
+        "actions": [
+          { "en": "Try a sowing date that puts flowering in wetter weeks", "es": "…" },
+          { "en": "Use an early (short-cycle) variety so the crop needs fewer weeks of good weather", "es": "…" },
+          { "en": "Keep the soil covered with crop residue (mulch) to hold moisture", "es": "…" },
+          { "en": "Ask INS whether its crop insurance (Seguro Agrícola) covers this risk for your crop",
+            "es": "Pregunte al INS si el Seguro Agrícola cubre este riesgo en su cultivo" } ] },
+      { "cause": "cycle_rain_low", "severity": "stress", "years": [2002, 2005, …], "count": 11,
+        "explanation": { "en": "Worst year, 2018: only 124 mm of rain over the whole cycle, below the 300 mm usually given for common bean (FAO). The crop would have depended on moisture left in the soil", "es": "…" },
+        "actions": [ … ] },
+      { "cause": "late_dry_start", "severity": "stress", "count": 8, … },
+      { "cause": "flowering_heat", "severity": "stress", "years": [2009], "count": 1,
+        "explanation": { "en": "2009: 5 days above 32 °C during flowering", "es": "…" }, … }
+    ],
+    "years": [
+      { "year": 2000, "outcome": "stress", "causes": ["late_dry_start", "flowering_dry_spell"], "enso": "la_nina" },
+      { "year": 2001, "outcome": "stress", "causes": ["late_dry_start"], "enso": "neutral" },
+      { "year": 2002, "outcome": "fail",   "causes": ["flowering_dry_spell", "cycle_rain_low"], "enso": "el_nino" },
+      … one per evaluated year (25) …
+    ],
+    "enso_split": {
+      "el_nino": { "years": 8, "failed": 2 },
+      "la_nina": { "years": 12, "failed": 0 },
+      "neutral": { "years": 5, "failed": 0 },
+      "note": { "en": "This planting would have failed in 2 of 8 El Niño years, 0 of 12 La Niña years and 0 of 5 normal years. Few years, so this may be chance: a pattern in past years, not a forecast",
+                "es": "Esta siembra habría fallado en 2 de 8 años de El Niño, 0 de 12 años de La Niña y 0 de 5 años normales. Son pocos años y puede ser casualidad: es un patrón de años pasados, no un pronóstico" } },
+    "alternatives": [
+      { "kind": "shift_sowing", "crop_id": "beans", "sowing_date": "11-01",
+        "failed_years": 0, "failure_rate": 0.0,
+        "label": { "en": "Sow 2 weeks earlier (November 1): would not have failed in any of the 25 years",
+                   "es": "Siembre 2 semanas antes (1 de noviembre): no habría fallado en ninguno de los 25 años" } },
+      { "kind": "shift_sowing", "crop_id": "beans", "sowing_date": "10-18", "failed_years": 0, … }
+    ]
+  } ],
+  "data_gaps": [
+    { "en": "Rain comes from NASA satellites (GPM IMERG): an average over a square about 10 km wide, not measured on your farm", "es": "…" },
+    { "en": "Temperature and soil wetness come from a NASA model (MERRA-2) over ~50 km", "es": "…" },
+    { "en": "Based on every year sown from 2000 to 2024 with complete data", "es": "…" },
+    { "en": "Weather patterns only: no yields, pests, diseases or prices, and it assumes no irrigation", "es": "…" },
+    { "en": "A 'failed' year means weather known to badly damage this crop (for example, 20 days or more without rain at flowering). It is not a harvest measurement", "es": "…" },
+    { "en": "El Niño and La Niña years are labelled with NOAA's official ocean index (RONI). The latest reading (Aug–Oct 2026) is preliminary and NOAA may adjust it for about two months. It describes now, not the coming season", "es": "…" },
+    { "en": "With NOAA's older index (ONI), a few years would change group (El Niño, La Niña or normal): 3 of 25 for November", "es": "…" },
+    { "en": "A second NASA rain estimate (MERRA-2 computer model, about 50 km) shows 30% less rain here than the satellite, so take the rain numbers as approximate", "es": "…" },
+    { "en": "Common bean, sown November 15: at flowering, nights here are almost always above 20 °C (23 of 23 nights in a typical year). Warm nights make the plant set fewer pods. This is normal for this place, so it is not counted as a bad year; ask the MAG extension office about varieties that cope with heat",
+      "es": "Frijol, siembra del 15 de noviembre: en la floración, aquí las noches casi siempre pasan de 20 °C (23 de 23 noches en un año típico). Las noches calientes hacen que la planta pegue menos vainas. Es normal en este lugar, así que no se cuenta como año malo; consulte en la agencia de extensión del MAG por variedades que aguanten el calor" }
+  ]
+}
+```
+
+Other real results at Los Chiles: maize May 15 → 0 of 25 years failed ("watch for a dry start
+after sowing, 2 of 25 years"); beans Sep 1 → 0 of 26 ("watch for rain at harvest, 5 of 26").
+
+**A crop that doesn't belong here says so in `summary`, even with 0 failed years.** Sorghum sown
+May 15 at Los Chiles: `failed_years: 0`, but
+
+```json
+"summary": { "en": "Too much rain for sorghum here: a typical season gets about 1300 mm over the cycle, far above the 700 mm upper limit FAO gives for sorghum. Not recommended here.",
+             "es": "Demasiada lluvia para el sorgo aquí: en un ciclo típico caen unos 1300 mm, muy por encima del límite de 700 mm que da la FAO para el sorgo. No se recomienda en este lugar." }
+```
+
+So never show "0 of 25 years" as good news without the `summary` next to it. Such a crop is
+also never offered in `alternatives`.
+
+**Read `causes[].severity` as the worst year, not every year.** Above, dry spells at flowering are
+`fail` with 8 years, but only 2 of those years failed (`failed_years: 2`); the other 6 were
+`stress`. To colour each year, use `years[].outcome`; to show which years a cause failed, cross
+`causes[].years` with `years[]` (`outcome == "fail"` and the cause in its `causes`).
+
+| Field | Meaning | How to use it |
+|---|---|---|
+| `years_evaluated` | Sowing years replayed: `first`..`last` and `count` complete seasons, over all plantings (each planting's own count is `len(years)`; a late sowing can have one season fewer) | Caption: "Based on 25 seasons, 2000–2024" (use the planting's `len(years)`) |
+| `data_sources` | Human-readable sources (strings, not the `DataSources` object of other endpoints) | Source caption |
+| `enso_now` | Latest season of NOAA's official El Niño index (RONI; field named `oni`), °C anomaly, its phase and `season` ("ASO 2026" = Aug–Oct); `null` if NOAA is unavailable. The latest value is an estimate NOAA may revise | Banner: "El Niño now (+1.97 °C, Aug–Oct 2026)", label from `phase`. Hide when `null`. Never present it as a forecast for the farm |
+| `plantings[]` | One result per requested planting, same order | One card each |
+| `crop_name` | Bilingual here (unlike other endpoints) | Card title |
+| `sowing_date` / `harvest_date` | `"MM-DD"`, no year. Harvest = sowing + crop cycle, can be in the **next year** (sow Dec 1 → `03-21`) | "Sow 1 Sep → harvest 30 Nov" |
+| `failed_years` / `failure_rate` | Years the plan **failed**, and that ÷ `years_evaluated.count` (0–1) | Headline number. Prefer "4 of 24 years" over a percent (see [§5.11](#511-plan-risk-when-could-this-plan-fail)) |
+| `summary` | One sentence: how often and the main reason; or "watch for X (n of N years)" when nothing failed; or "Too wet for {crop} here… Not recommended" when the crop doesn't suit the place (even with 0 failures); or "Not enough complete seasons" | Card headline. **Always show it next to the year count** |
+| `causes[]` | Each reason seen **at least once**: causes that failed a year first, then the most frequent. Empty = never failed nor stressed | "Why" list |
+| `causes[].cause` | Id: `late_dry_start`, `flowering_dry_spell`, `cycle_rain_low`, `harvest_wet`, `flowering_heat`. (`cycle_rain_high` exists in the enum but is no longer produced) | Icon + label ([§6](#6-label-maps-english--spanish)) |
+| `causes[].severity` | **Worst** year for that cause: `fail` (lost or badly hit) or `stress` (hurt, not lost). Not every listed year was that bad | Red vs amber |
+| `causes[].years` / `count` | Sowing years it happened, and how many | Chips "2008 · 2010 · 2020" |
+| `causes[].explanation` | What happened in the **worst** year, with numbers and units | Under the cause |
+| `causes[].actions` | 2–4 concrete things to do, sourced (fact-checked 2026-11-15); crop-specific ones first (maize: "la dobla"; beans: web blight from flowering); causes that failed a year end with "Ask INS about its crop insurance (Seguro Agrícola)…". Some are for **next season** ("En la próxima siembra, siembre en lomillos…") | ✅ "What you can do" |
+| `years[]` | Outcome per sowing year: `ok`, `stress`, `fail`, with its `causes` and El Niño phase (`enso`, `null` if unknown) | Timeline strip (one dot per year) |
+| `enso_split` | Evaluated (`years`, a **count**) and failed years per El Niño phase of the sowing season, plus a `note` (says when a phase has too few years to compare); `null` without El Niño data | Small 3-bar chart "failed X of N" + the note. **Always show the note** |
+| `alternatives[]` | At most 3 options that failed in **fewer** years: `shift_sowing` (same crop, other date) or `other_crop` (same date). Best first. Empty = nothing better found | "Better options" with `label` |
+| `data_gaps` | What's approximate: satellite rain (~10 km), modelled temperature and soil wetness (~50 km), years covered, no yields and no irrigation, how much a second rain source differs, El Niño pending. **Plus per-crop notes that start with the crop name** ("Common bean: nights during flowering are usually warmer than 20 °C here…"; "Only N complete seasons for …") | "About this data", always reachable. Show the crop-named notes on that crop's card (match the prefix with `crop_name`) |
+
+**What this endpoint is not:** no yields or money, no forecast for this season (`enso_now` is
+context, not a prediction), no irrigation advice, no rotation effects.
+
+---
+
 ## 4. Errors
 
 Every 4xx/5xx has the same shape. **Switch on `error.code`** (stable); `message` is English and may
@@ -395,7 +549,7 @@ change.
 | `unknown_crop` | 422 | A crop id isn't in the catalog | Re-fetch `/crops`; offer `available` | `unknown`, `available` |
 | `invalid_priorities` | 422 | All priority weights are 0 | "Give at least one priority some weight" | `priorities` |
 | `invalid_rotation` | 422 | `current_rotation` length ≠ number of seasons | "Pick one crop per season" | `expected_length`, `seasons`, `got` |
-| `cache_miss` | **503** | Point not in the saved data (cached mode) | "We don't have data for this exact spot yet. Try a demo point" + buttons for San Carlos / Alajuela. Don't auto-retry | `source` |
+| `cache_miss` | **503** | Point not in the saved data (cached mode) | "We don't have data for this exact spot yet. Try a demo point" + buttons for Los Chiles / Alajuela. Don't auto-retry | `source` |
 | `source_unavailable` | 502 | An external data source failed (live mode) | "Data source temporarily unavailable, try again" + retry | `source` |
 | `source_bad_data` | 502 | A source answered unusable data | Same as above; report `request_id` | `source` |
 | `not_found` / `method_not_allowed` / `http_error` | 404/405/4xx | Wrong URL or method (a frontend bug) | Generic error; log it | — |
@@ -552,6 +706,39 @@ normalised `priorities` from the response ("Water 40 % · Soil 30 % · Climate 3
 Target WCAG 2.2 AA (as in the frontend proposal): colour + text, focusable tooltips, 360 px wide
 layouts (calendar cells can shrink to initials "E F M A M J J A S O N D"), tables become cards.
 
+### 5.11 Plan risk: "when could this plan fail?"
+**Input:** crop picker + a date picker without year (month + day; default day 1). Offer shortcuts
+"primera" / "postrera" that fill a date, and "+ add planting" up to 4.
+
+**One card per planting:**
+1. **Header:** crop name, "Sow 1 Sep → harvest 30 Nov".
+2. **Headline:** `summary`, plus a big "**4 of 24 years**" (from `failed_years` and the
+   planting's `len(years)`). If `summary` says the crop is too wet for the place, show it as a
+   warning and hide the big number (0 failures there is not good news). Prefer counts of years over percent: farmers think in seasons, and
+   "17 %" reads like a forecast.
+3. **Year strip:** one dot per entry in `years`, oldest left: green `ok`, amber `stress`, red `fail`.
+   Label the year under each dot (or every 5th on mobile). Mark El Niño years (e.g. a small "N"
+   or a dotted outline) from `years[].enso`. Tap a dot → its causes. This is the trust builder:
+   farmers recognise their bad years.
+4. **Why it failed:** `causes` in order, each with icon, label ([§6](#6-label-maps-english--spanish)),
+   severity colour, year chips, `explanation`, and its `actions` as "What you can do".
+5. **Better options:** each `alternatives[].label` as a button. Tapping it can re-request
+   `/plan-risk` with that crop/date to show its full card.
+6. **El Niño:** if `enso_now` isn't `null`, a banner ("El Niño now", +1.97 °C, ASO 2026); with
+   `enso_split`, three small bars "failed X of N" per phase **and the `note` always visible**. Never
+   write "El Niño → drought" on your own: show what this point's history says.
+7. **Crop notes:** `data_gaps` entries that start with this card's `crop_name` (e.g. warm nights
+   at flowering for beans): a small ℹ️ line on the card. They are context, not failures: don't
+   colour them red.
+8. **About this data:** the other `data_gaps` + "Based on {len(years)} seasons, {first}–{last}" +
+   `data_sources`.
+
+**Empty states:** `causes: []` → "No problems found in any of the {count} seasons". `alternatives: []`
+→ hide the section (or "No better date or crop found").
+
+**Severity words:** `ok` "Good year / Buen año", `stress` "Hurt the crop / Afectó el cultivo",
+`fail` "Would have failed / Habría fallado".
+
 ---
 
 ## 6. Label maps (English / Spanish)
@@ -595,6 +782,28 @@ export const LEVEL_WORDS = {
 export const SEASON_HINTS = {
   primera:  { en: "first rainy season (May–Aug)",  es: "primera (mayo–agosto)" },
   postrera: { en: "second rainy season (Sep–Nov)", es: "postrera (setiembre–noviembre)" },
+} as const;
+
+// POST /plan-risk: why a planting failed (causes[].cause, years[].causes)
+export const CAUSE_LABELS = {
+  late_dry_start:      { en: "Dry start after sowing",      es: "Inicio seco después de sembrar" },
+  flowering_dry_spell: { en: "Dry spell at flowering",      es: "Sequía en la floración" },
+  cycle_rain_low:      { en: "Too little rain in the cycle", es: "Poca lluvia en el ciclo" },
+  cycle_rain_high:     { en: "Too much rain in the cycle",  es: "Demasiada lluvia en el ciclo" },  // not produced today
+  harvest_wet:         { en: "Rain or wet soil at harvest", es: "Lluvia o suelo empapado en la cosecha" },
+  flowering_heat:      { en: "Heat at flowering",           es: "Calor en la floración" },
+} as const;
+
+export const OUTCOME_LABELS = {
+  ok:     { en: "Good year",        es: "Buen año" },
+  stress: { en: "Hurt the crop",    es: "Afectó el cultivo" },
+  fail:   { en: "Would have failed", es: "Habría fallado" },
+} as const;
+
+export const ENSO_LABELS = {
+  el_nino: { en: "El Niño", es: "El Niño" },
+  la_nina: { en: "La Niña", es: "La Niña" },
+  neutral: { en: "Neutral", es: "Neutral" },
 } as const;
 
 export const BADGES = {
@@ -672,6 +881,35 @@ export interface RecommendationResponse {
   rotations: Rotation[]; current_rotation: Rotation | null; method_version: string; generated_at: string;
 }
 
+// POST /plan-risk
+export interface PlantingInput { crop: string; sowing_month: number; sowing_day?: number }  // day defaults to 1
+export interface PlanRiskRequest { lat: number; lon: number; plantings: PlantingInput[] }   // 1..4
+export type PlanRiskCauseName =
+  | "late_dry_start" | "flowering_dry_spell" | "cycle_rain_low" | "cycle_rain_high" | "harvest_wet" | "flowering_heat";
+export type EnsoPhase = "el_nino" | "la_nina" | "neutral";
+export interface YearsEvaluated { first: number; last: number; count: number }
+export interface EnsoNow { oni: number; phase: EnsoPhase; season: string; source: string }
+export interface PlanRiskCause {
+  cause: PlanRiskCauseName; severity: "fail" | "stress"; years: number[]; count: number;
+  explanation: LocalizedText; actions: LocalizedText[];
+}
+export interface PlanRiskYear { year: number; outcome: "ok" | "stress" | "fail"; causes: PlanRiskCauseName[]; enso: EnsoPhase | null }
+export interface EnsoGroup { years: number; failed: number }                     // counts
+export interface EnsoSplit { el_nino: EnsoGroup; la_nina: EnsoGroup; neutral: EnsoGroup; note: LocalizedText }
+export interface PlanAlternative {
+  kind: "shift_sowing" | "other_crop"; crop_id: string; sowing_date: string;   // "MM-DD"
+  failed_years: number; failure_rate: number; label: LocalizedText;
+}
+export interface PlanRiskPlanting {
+  crop_id: string; crop_name: LocalizedText; sowing_date: string; harvest_date: string;   // "MM-DD"
+  failed_years: number; failure_rate: number; summary: LocalizedText;
+  causes: PlanRiskCause[]; years: PlanRiskYear[]; enso_split: EnsoSplit | null; alternatives: PlanAlternative[];
+}
+export interface PlanRiskResponse {
+  location: Location; years_evaluated: YearsEvaluated; data_sources: string[];
+  enso_now: EnsoNow | null; plantings: PlanRiskPlanting[]; data_gaps: LocalizedText[];
+}
+
 export type ErrorCode =
   | "validation_failed" | "out_of_region" | "unknown_crop" | "invalid_priorities" | "invalid_rotation"
   | "not_found" | "method_not_allowed" | "http_error" | "source_unavailable" | "source_bad_data"
@@ -705,7 +943,7 @@ Things the backend doesn't do yet, so you don't build on wrong assumptions (trac
 
 | Gap | Effect on the frontend | Workaround today |
 |---|---|---|
-| Only 2 points have data (`cached`) | Any other pin → `503 cache_miss` | Offer the demo points; design the map around San Carlos |
+| Only 2 points have data (`cached`) | Any other pin → `503 cache_miss` | Offer the demo points; design the map around Los Chiles |
 | `GET /crops` lists only the MVP crops (rice, beans, maize), but requests also accept `sorghum` and `cowpea` | Spanish names and traits of those two aren't fetchable | Stick to the MVP crops in the UI for now |
 | `crop_name` in rotations / windows is English only | Need Spanish names there | Look up `name_es` in `/crops` by `crop_id` |
 | `Crop.market_note` is English only | — | Show only in English, or hide in Spanish |
@@ -716,6 +954,8 @@ Things the backend doesn't do yet, so you don't build on wrong assumptions (trac
 | Trait scores are bands (0, 0.33, 0.67, 1) | The hover number adds little yet | Still show it; finer values come with sourced data |
 | No endpoint for terrain/erosion, daily weather indicators or the full soil profile (they exist inside the backend) | — | Ask if a screen needs them: it's a contract addition |
 | No accounts, saving or area (polygon) input | Everything is per request, per point | Keep state in the frontend |
+| `POST /plan-risk` El Niño part can be missing | If NOAA is down and nothing is cached: `enso_now`, `enso_split`, `years[].enso` are `null` (200, with a `data_gaps` note) | Hide those parts when `null` |
+| `POST /plan-risk` data exists only for the demo points | Any other pin → `503 cache_miss`, like the other endpoints | Demo with Los Chiles / Alajuela |
 
 **Gotchas:**
 - `rainfall_mm` in crops is **per crop cycle**; `monthly[].rainfall_mm` is **per month**.
@@ -726,6 +966,9 @@ Things the backend doesn't do yet, so you don't build on wrong assumptions (trac
 - `is_good` already includes the dry-month check: don't recompute "good" from `score`.
 - Arrays like `moisture_monthly_m3m3` / `wetness_monthly` can be `null`.
 - `generated_at` changes every call.
+- `/plan-risk` dates are `"MM-DD"` strings without a year; `harvest_date` can fall in the next year.
+- `/plan-risk` `data_sources` is a list of strings, not the `{climate, soil, crops}` object.
+- `EnsoGroup.years` is a **count**, not a list of years (per-year phases are in `years[].enso`).
 
 ---
 
