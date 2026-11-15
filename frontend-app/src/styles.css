@@ -977,3 +977,190 @@ details[open] > :not(summary) {
     grid-column: 1 / -1;
   }
 }
+
+/* ---- Past-weather check (components/PlanRisk.tsx) ---- */
+.risk {
+  border-top: 5px solid var(--cosmic-blue);
+}
+
+.risk h2 {
+  margin-top: 4px;
+}
+
+.risk__planting {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  min-width: 0;
+}
+
+.risk__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.risk__head h3 {
+  margin: 0;
+}
+
+.risk__date {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 400;
+  font-size: 0.9rem;
+}
+
+.risk__date select {
+  width: auto;
+  min-height: 36px;
+  margin: 0;
+  padding: 4px 8px;
+}
+
+.risk__headline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 0;
+}
+
+.risk__badge {
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 2px solid;
+}
+
+.risk__badge--ok {
+  border-color: var(--agri-green);
+  color: var(--agri-green);
+}
+
+.risk__badge--stress {
+  border-color: var(--solar-gold);
+  color: #6b4e00;
+}
+
+.risk__badge--fail {
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.risk__alts h4 {
+  margin: 0 0 4px;
+}
+
+.enso {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--ivory);
+  border-left: 5px solid var(--muted);
+}
+
+.enso--el_nino {
+  border-left-color: var(--solar-gold);
+}
+
+.enso--la_nina {
+  border-left-color: var(--cosmic-blue);
+}
+
+.years {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(18px, 1fr));
+  gap: 3px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.years__cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  min-width: 18px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.years__cell--ok {
+  background: #dcefd9;
+  color: var(--agri-green);
+}
+
+.years__cell--stress {
+  background: #fde9a8;
+  color: #6b4e00;
+}
+
+.years__cell--fail {
+  background: var(--error);
+  color: var(--white);
+}
+
+.years__axis {
+  display: flex;
+  justify-content: space-between;
+  margin: 2px 0 0;
+}
+
+.years__legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 0;
+}
+
+.years__legend .years__cell {
+  width: 18px;
+  margin-left: 6px;
+}
+
+.years__legend .years__cell:first-child {
+  margin-left: 0;
+}
+
+.grid--auto {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+/* ---- Soil health (components/SoilHealth.tsx) ---- */
+.soil {
+  border-top: 5px solid var(--growth-lime);
+}
+
+.soil h2 {
+  margin-top: 4px;
+}
+
+.soil h3 {
+  margin: 0;
+}
+
+.practice {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  min-width: 0;
+}
+
+.practice h4,
+.practice p {
+  margin: 0;
+}

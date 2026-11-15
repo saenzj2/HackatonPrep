@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router";
 import { api, type RecommendationRequest, type RecommendationResponse, type Rotation } from "../api/client";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { NeedsField } from "../components/NeedsField";
+import { PlanRisk } from "../components/PlanRisk";
+import { SoilHealth } from "../components/SoilHealth";
 import { Stepper } from "../components/Stepper";
 import { capitalize, monthSpan, scoreOf1, signed } from "../format";
 import { usePlan, type PlanState } from "../state/PlanContext";
@@ -131,6 +133,21 @@ function ResultsView({ data }: { data: RecommendationResponse }) {
         <Breakdown rotation={best} />
         <Details rotation={best} />
       </article>
+
+      <PlanRisk
+        key={best.sequence.map((s) => s.crop_id).join("-")}
+        lat={data.location.lat}
+        lon={data.location.lon}
+        rotation={best}
+      />
+
+      <SoilHealth
+        lat={data.location.lat}
+        lon={data.location.lon}
+        seasons={data.conditions.seasons}
+        recommended={best}
+        current={current}
+      />
 
       {others.length > 0 && (
         <details className="panel others">

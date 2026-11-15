@@ -10,7 +10,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    // The glossary is imported from backend/data (pages/Learn.tsx).
+    // The glossary (pages/Learn.tsx) and practice cards (practices.ts) are imported from backend/data.
     fs: { allow: [".", "../backend/data"] },
     // In dev, everything outside /app/ goes to the API (make dev on :8000).
     // The browser sees one origin, as in production, so no CORS and the same relative URLs.

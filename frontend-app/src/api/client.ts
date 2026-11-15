@@ -28,8 +28,32 @@ export interface Crop {
   cycle_days: number;
 }
 
+export interface CropDetails extends Crop {
+  mycorrhizal_affinity?: { level: string; score: number };
+  nitrogen_demand?: { level: string; score: number };
+}
+
+export interface SoilLayer {
+  depth_cm: number;
+  ph: number | null;
+  organic_carbon_g_kg: number | null;
+  clay_pct: number | null;
+  sand_pct: number | null;
+  silt_pct: number | null;
+  texture_class: string | null;
+}
+
+/** GET /soil: OpenLandMap soil map (250 m) at 0, 10 and 30 cm. An estimate, not a soil test. */
+export interface SoilProfile {
+  location: { lat: number; lon: number };
+  source: string;
+  attribution: string;
+  resolution_m: number;
+  layers: SoilLayer[];
+}
+
 export interface CropsResponse {
-  crops: Crop[];
+  crops: CropDetails[];
 }
 
 export interface Season {
@@ -121,6 +145,82 @@ export interface RecommendationResponse {
   generated_at: string;
 }
 
+// ---- POST /plan-risk: replay a sowing plan against past years of NASA daily weather ----
+
+export type EnsoPhase = "el_nino" | "la_nina" | "neutral";
+export type RiskCause =
+  | "late_dry_start"
+  | "flowering_dry_spell"
+  | "cycle_rain_low"
+  | "cycle_rain_high"
+  | "harvest_wet"
+  | "flowering_heat";
+
+export interface PlantingInput {
+  crop: string;
+  sowing_month: number;
+  sowing_day?: number;
+}
+
+export interface PlanRiskRequest {
+  lat: number;
+  lon: number;
+  plantings: PlantingInput[]; // 1 to 4
+}
+
+export interface PlanRiskCause {
+  cause: RiskCause;
+  severity: "fail" | "stress";
+  years: number[];
+  count: number;
+  explanation: Text;
+  actions: Text[];
+}
+
+export interface PlanRiskYear {
+  year: number;
+  outcome: "ok" | "stress" | "fail";
+  causes: RiskCause[];
+  enso: EnsoPhase | null;
+}
+
+export interface EnsoGroup {
+  years: number;
+  failed: number;
+}
+
+export interface PlanAlternative {
+  kind: "shift_sowing" | "other_crop";
+  crop_id: string;
+  sowing_date: string; // MM-DD
+  failed_years: number;
+  failure_rate: number;
+  label: Text;
+}
+
+export interface PlanRiskPlanting {
+  crop_id: string;
+  crop_name: Text;
+  sowing_date: string; // MM-DD
+  harvest_date: string; // MM-DD
+  failed_years: number;
+  failure_rate: number;
+  summary: Text;
+  causes: PlanRiskCause[];
+  years: PlanRiskYear[];
+  enso_split: { el_nino: EnsoGroup; la_nina: EnsoGroup; neutral: EnsoGroup; note: Text } | null;
+  alternatives: PlanAlternative[];
+}
+
+export interface PlanRiskResponse {
+  location: { lat: number; lon: number };
+  years_evaluated: { first: number; last: number; count: number };
+  data_sources: string[];
+  enso_now: { oni: number; phase: EnsoPhase; season: string; source: string } | null;
+  plantings: PlanRiskPlanting[];
+  data_gaps: Text[];
+}
+
 /** Envelope of every API error (backend/docs/errors.md). */
 interface ErrorBody {
   code: string;
@@ -173,10 +273,17 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   health: () => request<HealthResponse>("/health"),
   crops: () => request<CropsResponse>("/crops"),
+  soil: (lat: number, lon: number) =>
+    request<SoilProfile>(`/soil?${new URLSearchParams({ lat: String(lat), lon: String(lon) })}`),
   conditions: (lat: number, lon: number) =>
     request<Conditions>(`/conditions?${new URLSearchParams({ lat: String(lat), lon: String(lon) })}`),
   recommendations: (body: RecommendationRequest) =>
     request<RecommendationResponse>("/recommendations", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  planRisk: (body: PlanRiskRequest) =>
+    request<PlanRiskResponse>("/plan-risk", {
       method: "POST",
       body: JSON.stringify(body),
     }),

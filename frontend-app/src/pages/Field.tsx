@@ -1,11 +1,12 @@
 import { lazy, Suspense, useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router";
-import { api, type Conditions } from "../api/client";
+import { api, type Conditions, type SoilProfile } from "../api/client";
 import { RainChart, TemperatureChart } from "../components/ClimateCharts";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { Stepper } from "../components/Stepper";
 import { DEMO_FIELDS, type DemoField } from "../demoFields";
 import { capitalize, monthSpan } from "../format";
+import { organicMatterPct } from "../practices";
 import { usePlan } from "../state/PlanContext";
 
 // The map (Leaflet + tiles) loads only when this page opens.
@@ -14,7 +15,7 @@ const FieldMap = lazy(() => import("../components/FieldMap"));
 type Status =
   | { kind: "idle" }
   | { kind: "loading" }
-  | { kind: "ready"; conditions: Conditions }
+  | { kind: "ready"; conditions: Conditions; soil: SoilProfile | null }
   | { kind: "error"; error: unknown; lat: number; lon: number; name: string };
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -56,14 +57,18 @@ export function Field() {
     setLon(String(lonValue));
     setStatus({ kind: "loading" });
     try {
-      const conditions = await api.conditions(latValue, lonValue);
+      // The soil profile adds organic carbon; it is optional, so its failure never blocks the step.
+      const [conditions, soil] = await Promise.all([
+        api.conditions(latValue, lonValue),
+        api.soil(latValue, lonValue).catch(() => null),
+      ]);
       setField({
         lat: latValue,
         lon: lonValue,
         name,
         seasons: conditions.seasons.map(({ name: season, months }) => ({ name: season, months })),
       });
-      setStatus({ kind: "ready", conditions });
+      setStatus({ kind: "ready", conditions, soil });
     } catch (error) {
       setStatus({ kind: "error", error, lat: latValue, lon: lonValue, name });
     }
@@ -182,14 +187,16 @@ export function Field() {
             onRetry={() => void lookUp(status.lat, status.lon, status.name)}
           />
         )}
-        {status.kind === "ready" && <ConditionsSummary conditions={status.conditions} />}
+        {status.kind === "ready" && <ConditionsSummary conditions={status.conditions} profile={status.soil} />}
       </div>
     </div>
   );
 }
 
-function ConditionsSummary({ conditions }: { conditions: Conditions }) {
+function ConditionsSummary({ conditions, profile }: { conditions: Conditions; profile: SoilProfile | null }) {
   const { soil, seasons, monthly, data_sources } = conditions;
+  const topsoil = profile?.layers.find((l) => l.depth_cm === 0) ?? profile?.layers[0];
+  const carbon = topsoil?.organic_carbon_g_kg ?? null;
   const yearRain = monthly.reduce((sum, m) => sum + m.rainfall_mm, 0);
   return (
     <section className="stack fade-in" aria-labelledby="conditions">
@@ -202,7 +209,7 @@ function ConditionsSummary({ conditions }: { conditions: Conditions }) {
         </Link>
       </div>
 
-      <div className="grid grid--4">
+      <div className="grid grid--auto">
         <div className="panel stat-card">
           <span className="stat-card__label">Rain per year</span>
           <span className="stat">{Math.round(yearRain).toLocaleString("en")} mm</span>
@@ -219,6 +226,15 @@ function ConditionsSummary({ conditions }: { conditions: Conditions }) {
           <span className="stat-card__label">Soil pH</span>
           <span className="stat stat--green">{soil.ph != null ? soil.ph.toFixed(1) : "Not available"}</span>
           <span className="muted small">Soil map estimate, not a test</span>
+        </div>
+        <div className="panel stat-card">
+          <span className="stat-card__label">Organic carbon</span>
+          <span className="stat stat--green">{carbon != null ? `${carbon.toFixed(0)} g/kg` : "Not available"}</span>
+          <span className="muted small">
+            {carbon != null
+              ? `Topsoil, about ${organicMatterPct(carbon).toFixed(1)}% organic matter (soil map)`
+              : "Soil map has no value here"}
+          </span>
         </div>
         <div className="panel stat-card">
           <span className="stat-card__label">Soil texture</span>
