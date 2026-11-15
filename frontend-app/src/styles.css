@@ -1340,6 +1340,7 @@ details[open] > :not(summary) {
 
 #ai-use th[scope="row"] {
   font-weight: 600;
+}
 
 /* Home: one-click demo, secondary to "Start with my field" but easy to spot on the hero. */
 .btn--demo {
