@@ -32,6 +32,50 @@ Template:
   priorities and variables. **Not yet:** monthly normals only, no year-to-year variability (#34).
 - **Revisit if:** windows should drive the rotation seasons, or an agronomist suggests other thresholds.
 
+
+## 2026-11-14 — Soil profile from OpenLandMap via Google Earth Engine
+- **Decision:** New source: 7 OpenLandMap assets (pH, organic carbon, clay, sand, bulk density,
+  field capacity at 33 kPa, USDA texture class) at 0, 10 and 30 cm, read with `earthengine-api`
+  (new dependency) in **one** `reduceRegion` request per location, on the native ~232 m grid.
+  `services.get_soil_data(latitude=, longitude=)` returns a JSON-ready dict (`SoilDataResult`) with
+  units, attribution and depths. `silt_pct = 100 − clay − sand` only when both are valid and add up to
+  100 % or less. Masked pixels give `None`. Field capacity is returned in m³/m³ (`field_capacity_m3m3`),
+  the project's moisture unit, not in volumetric %. Config: `GEE_PROJECT_ID` (defaults to the team
+  project `advance-topic-243700` in `settings.py`: an ID, not a secret), optional
+  `GEE_SERVICE_ACCOUNT_KEY_FILE`. Each pixel is cached forever, in every mode (static maps).
+- **Why:** The task asked for Earth Engine and these assets. Earth Engine was already set up for the
+  team's project. One combined request is about 3 s, against 21 separate band reads. `ee` is imported
+  lazily, because it takes ~0.6 s and mock or cached runs never need it.
+- **Not changed:** `Sources.soil` / `MockSoil` (pH + moisture used for suitability scoring) and the
+  API's `data_sources`. Feeding OpenLandMap pH into scoring changes recommendations, so it needs a team
+  decision (and moisture still has no source).
+- **Alternatives considered:** ISRIC SoilGrids REST API (no Earth Engine account, but beta and
+  rate-limited); one request per asset (7 round trips).
+- **Revisit if:** pH or texture should drive `soil` scoring; an endpoint is added (needs an
+  api-contract.yaml change); we need 60–200 cm (the bands exist, add them to `DEPTHS_CM`).
+
+## 2026-11-14 — NASA POWER daily adapter requests true daily max / min (T2.3, #19)
+- **Decision:** The daily adapter now requests `T2M,T2M_MAX,T2M_MIN,PRECTOTCORR` and `parse_daily`
+  returns `temperature_max_c` / `temperature_min_c` (°C, as POWER sends them). `field_indicators`
+  already used those columns, so heat-stress and frost days are now real counts for POWER data.
+  The San José fixture was refetched from the public API on 2026-11-14 with the four parameters;
+  `T2M` and `PRECTOTCORR` are identical to the previous fixture. `parse_daily` also rejects a
+  response whose declared `parameters.<P>.units` differ from `C` / `mm/day` (no conversion is done).
+- **Why:** Heat-stress and frost days need the day's true extremes; the mean cannot show them.
+  POWER provides them in the same request at no extra cost.
+- **Cache:** the request string is the cache key, so daily entries cached before this change (key
+  with `T2M,PRECTOTCORR`) are never served. They have no extrema. In `cached` mode those points
+  raise `cache_miss` until refetched once in `live` mode. No daily cache is committed and demo
+  responses are not cached yet (#18), so nothing shipped is affected.
+- **Not changed:** `HEAT_STRESS_MAX_C = 35.0` stays a provisional generic placeholder (no
+  `agro-logic` review, not crop-specific, not scored). No scoring constant or crop scoring changed.
+  The mock daily source still has no extrema, so heat/frost stay `None` in `mock` mode.
+- **Alternatives considered:** serving old cache entries under the legacy key (would silently mix
+  responses with and without extrema); making extrema optional in `parse_daily` (a response that
+  drops them would quietly turn real counts into `None`).
+- **Revisit if:** demo fields are chosen and cached (#15, #18); the heat threshold gets an
+  `agro-logic` review or crop-specific values; an endpoint exposes the table (#40).
+
 ## 2026-11-14 — Every strategy carries all five explanation parts (T4.4, #29)
 - **Decision:** No contract change and no score change. `ranking.score_rotation()` now ends `risks`
   with two "Local review: …" items: (1) check sowing dates and varieties for each crop/season, since

@@ -6,9 +6,11 @@ The only module that knows about all three layers (api schemas, integrations, do
 from __future__ import annotations
 
 import calendar
+import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
+from functools import lru_cache
 from typing import TypedDict, overload
 
 from app.api import schemas as s
@@ -25,6 +27,7 @@ from app.domain.models import (
     RotationResult,
     Season,
     SoilConditions,
+    SoilLayer,
     Weights,
 )
 from app.domain.planting_windows import planting_windows as find_planting_windows
@@ -38,9 +41,9 @@ from app.errors import (
     SourceDataError,
     UnknownCropError,
 )
-from app.integrations import Sources
-from app.integrations.base import DailyWeatherSource, TerrainSource
-from app.settings import MvpConfig
+from app.integrations import Sources, build_sources
+from app.integrations.base import DailyWeatherSource, SoilProfileSource, TerrainSource
+from app.settings import MvpConfig, get_config, get_env
 
 METHOD_VERSION = "suitability-v1"
 SOURCE_LABELS = {"nasa_power": "NASA POWER monthly normals", "mock": "mock data"}
@@ -512,3 +515,117 @@ def planting_windows(
         crops=result,
         data_sources=s.DataSources(**ctx.sources.names()),
     )
+
+
+# ---------------------------------------------------------------- soil profile (OpenLandMap)
+
+SOIL_SOURCE_LABELS = {"openlandmap": "OpenLandMap", "mock": "mock"}
+# Units of every property in SoilLayerResult, returned with the data so no client has to guess.
+SOIL_UNITS = {
+    "ph": "pH in water (1:1 soil:water)",
+    "organic_carbon_g_kg": "g/kg",
+    "clay_pct": "% of fine earth by weight",
+    "sand_pct": "% of fine earth by weight",
+    "silt_pct": "% of fine earth by weight (100 - clay - sand)",
+    "bulk_density_kg_m3": "kg/m³ (fine earth)",
+    "field_capacity_m3m3": "m³/m³ (volumetric water content at 33 kPa)",
+    "texture_class": "USDA texture class",
+}
+WORLD_BBOX = (-180.0, -90.0, 180.0, 90.0)  # min_lon, min_lat, max_lon, max_lat
+
+
+class SoilLayerResult(TypedDict):
+    """One depth of get_soil_data(). None = no valid value at this pixel and depth (not guessed)."""
+
+    ph: float | None
+    organic_carbon_g_kg: float | None
+    clay_pct: float | None
+    sand_pct: float | None
+    silt_pct: float | None  # None also when clay + sand > 100 % (see domain/soil.py)
+    bulk_density_kg_m3: float | None
+    field_capacity_m3m3: float | None
+    texture_class: str | None  # e.g. "clay loam"
+
+
+class SoilDataResult(TypedDict):
+    """get_soil_data() output. Becomes a schema in app/api/schemas.py once an endpoint exists."""
+
+    latitude: float  # as requested; the values are those of the 250 m pixel containing it
+    longitude: float
+    source: str  # "OpenLandMap" (or "mock" in mock mode)
+    attribution: str  # credit line required by the CC-BY-SA 4.0 license
+    resolution_m: int
+    depths_cm: list[int]
+    units: dict[str, str]  # property name → unit
+    soil: dict[str, SoilLayerResult]  # "0cm", "10cm", "30cm"
+
+
+def _round_or_none(x: float | None, ndigits: int) -> float | None:
+    return None if x is None else round(x, ndigits)
+
+
+def _soil_layer_result(layer: SoilLayer) -> SoilLayerResult:
+    # Rounded to the source's real precision: pH steps of 0.1, carbon 5 g/kg, density 10 kg/m³.
+    return {
+        "ph": _round_or_none(layer.ph, 1),
+        "organic_carbon_g_kg": _round_or_none(layer.organic_carbon_g_kg, 1),
+        "clay_pct": _round_or_none(layer.clay_pct, 1),
+        "sand_pct": _round_or_none(layer.sand_pct, 1),
+        "silt_pct": _round_or_none(layer.silt_pct, 1),
+        "bulk_density_kg_m3": _round_or_none(layer.bulk_density_kg_m3, 0),
+        "field_capacity_m3m3": _round_or_none(layer.field_capacity_m3m3, 2),
+        "texture_class": layer.texture_class,
+    }
+
+
+def check_coordinates(lat: float, lon: float) -> None:
+    """Real coordinates only: finite, lat in -90..90, lon in -180..180."""
+    min_lon, min_lat, max_lon, max_lat = WORLD_BBOX
+    valid = math.isfinite(lat) and math.isfinite(lon)
+    if not (valid and min_lat <= lat <= max_lat and min_lon <= lon <= max_lon):
+        raise OutOfRegionError(
+            f"Location ({lat}, {lon}) is not a valid coordinate "
+            "(latitude -90 to 90, longitude -180 to 180)",
+            details={"lat": lat, "lon": lon, "bbox": list(WORLD_BBOX)},
+        )
+
+
+@lru_cache
+def _default_soil_source() -> SoilProfileSource:
+    # Same choice as the app (data_mode from mvp.yaml / .env), built once per process.
+    return build_sources(get_config(), get_env()).soil_profile
+
+
+def get_soil_data(
+    *, latitude: float, longitude: float, soil_source: SoilProfileSource | None = None
+) -> SoilDataResult:
+    """Soil properties at 0, 10 and 30 cm for a point, for suitability and rotation choices.
+
+        soil_data = get_soil_data(latitude=9.93, longitude=-84.08)
+
+    Source: OpenLandMap 250 m maps (Hengl et al.) through Google Earth Engine, one request for
+    all 7 datasets x 3 depths, then cached per pixel forever (the maps never change). Values
+    are the ones of the 250 m pixel that contains the point:
+      - pH in water; organic carbon in g/kg (stored in steps of 5 g/kg, so ±2.5 g/kg);
+        clay and sand in % by weight; bulk density in kg/m³; field capacity as volumetric
+        water content at 33 kPa in m³/m³; USDA texture class name.
+      - silt_pct = 100 - clay - sand, only when both are valid and add up to 100 % or less.
+      - A masked pixel (sea, lake, ice, no prediction) gives None for that property, never a guess.
+
+    `soil_source` defaults to the configured one (data_mode: mock, cached or live). Pass one to
+    reuse an app's sources or a fake in tests. Not exposed over HTTP yet: that needs an
+    api-contract.yaml change. Raises OutOfRegionError for impossible coordinates.
+    """
+    check_coordinates(latitude, longitude)
+    source = soil_source or _default_soil_source()
+    profile = source.soil_profile(latitude, longitude)
+    return {
+        "latitude": latitude,
+        "longitude": longitude,
+        "source": SOIL_SOURCE_LABELS.get(source.name, source.name),
+        "attribution": source.attribution,
+        "resolution_m": source.resolution_m,
+        "depths_cm": [layer.depth_cm for layer in profile.layers],
+        "units": dict(SOIL_UNITS),
+        "soil": {f"{layer.depth_cm}cm": _soil_layer_result(layer) for layer in profile.layers},
+    }

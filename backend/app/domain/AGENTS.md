@@ -8,6 +8,7 @@ General backend rules: [`backend/AGENTS.md`](../../AGENTS.md).
   `Weights`, `CropSeasonFit`, `RotationResult`). Validate invariants in `__post_init__`.
 - `suitability.py`: trapezoid scoring per variable → categories (climate, water, soil) → one crop/season score.
 - `erosion.py`: slope → terrain risk, daily rain → rainfall risk, combined erosion risk (0/1/2).
+- `soil.py`: derived soil values (`silt_pct` from clay and sand, only when plausible).
 - `indicators.py`: daily series → monthly indicators (rain, dry spells, extremes; heat/frost only from true max/min).
 - `planting_windows.py`: best sowing months per crop (each month scored over the crop's cycle with
   `crop_season_fit`), grouped into windows. Extra info; rotations still use the configured seasons.
