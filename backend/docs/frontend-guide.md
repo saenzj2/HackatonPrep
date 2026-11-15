@@ -17,7 +17,9 @@
 2. [Conventions you'll see everywhere](#2-conventions-youll-see-everywhere)
 3. [Endpoints](#3-endpoints)
    - [GET /health](#get-health) · [GET /crops](#get-crops) · [GET /conditions](#get-conditions) ·
-     [GET /planting-windows](#get-planting-windows) · [POST /recommendations](#post-recommendations)
+     [GET /planting-windows](#get-planting-windows) · [GET /weather/daily](#get-weatherdaily) ·
+     [GET /erosion](#get-erosion) · [GET /soil](#get-soil) ·
+     [POST /recommendations](#post-recommendations)
 4. [Errors](#4-errors)
 5. [How to display it (UI recommendations)](#5-how-to-display-it-ui-recommendations)
 6. [Label maps (English / Spanish)](#6-label-maps-english--spanish)
@@ -127,6 +129,9 @@ show a visible "demo data" banner.
 | GET | `/crops` | The candidate crops with their tolerances and traits | 500 |
 | GET | `/conditions?lat&lon` | Climate by month and season + soil at a point | 422, 500, 502, 503 |
 | GET | `/planting-windows?lat&lon[&crops]` | Best months to sow each crop | 422, 500, 502, 503 |
+| GET | `/weather/daily?lat&lon&start&end` | NASA POWER weather day by day (≤ 366 days) | 422, 500, 502, 503 |
+| GET | `/erosion?lat&lon&start&end` | Erosion risk: slope alone, and slope + rain over the period | 422, 500, 502, 503 |
+| GET | `/soil?lat&lon` | Soil properties at 0, 10 and 30 cm (OpenLandMap) | 422, 500, 502, 503 |
 | POST | `/recommendations` | Ranked crop rotations, explained, optionally vs the farmer's current one | 422, 500, 502, 503 |
 
 All responses are JSON. All errors share one envelope ([§4](#4-errors)). Every response carries an
@@ -295,6 +300,134 @@ flagged when maize is sown in Aug and beans in Sep.
 
 ---
 
+### GET /weather/daily
+NASA POWER weather at one point, **one row per day**. Use it for daily rain or temperature charts
+over a chosen period. Real example for San José, January 2026:
+[`examples/weather_daily_san_jose.json`](examples/weather_daily_san_jose.json).
+
+**Request:** `GET /weather/daily?lat=9.93&lon=-84.08&start=2026-01-01&end=2026-01-31`
+
+| Parameter | Type | Required | Rules |
+|---|---|---|---|
+| `lat`, `lon` | number | yes | Decimal degrees, inside the MVP region (else `422 out_of_region`) |
+| `start`, `end` | date `YYYY-MM-DD` | yes | Inclusive. `start ≤ end`, at most **366 days**, `start` ≥ 1981-01-01, and `end` **at least 30 days before today** (else `422 validation_failed`) |
+
+**Why 30 days:** NASA POWER publishes daily data with a delay. A period inside it would come back
+empty, so the API rejects it with a clear `422` instead of a `502`. In a date picker, set the
+latest selectable day to today − 30. The `422` message names the latest allowed `end`.
+Unknown query parameters (e.g. `lang`, a cache-busting `_`) are ignored, as on every GET endpoint.
+
+```json
+{
+  "location": { "lat": 9.93, "lon": -84.08 },
+  "start": "2026-01-01",
+  "end": "2026-01-31",
+  "source": "nasa_power",
+  "days": [
+    { "date": "2026-01-01", "temperature_c": 22.43, "temperature_max_c": 27.06, "temperature_min_c": 19.48, "rainfall_mm": 1.38 },
+    { "date": "2026-01-02", "temperature_c": 22.21, "temperature_max_c": 27.24, "temperature_min_c": 18.03, "rainfall_mm": 2.27 },
+    … one per day, oldest first …
+  ]
+}
+```
+
+| Field | Meaning | Source / caveat |
+|---|---|---|
+| `days[].temperature_c` | Daily mean air temperature at 2 m, °C | NASA POWER `T2M`, ~55 km cell |
+| `days[].temperature_max_c` / `_min_c` | Daily high / low, °C | POWER `T2M_MAX` / `T2M_MIN`. Always `null` in `mock` mode |
+| `days[].rainfall_mm` | Rain that day, mm | POWER `PRECTOTCORR`. A ~55 km average: local storms look smaller than at a rain gauge |
+| `source` | `nasa_power`, or `mock` | |
+
+Any value can be `null` (POWER has no data that day): leave a
+gap in the chart instead of drawing 0.
+
+---
+
+### GET /erosion
+How prone the field is to losing soil to water. Two answers, each **0 low, 1 medium, 2 high** plus
+the word: `terrain_*` from the slope only (same every year) and `combined_*` from the slope plus the
+rain in the period you ask for. Real example: [`examples/erosion_san_jose.json`](examples/erosion_san_jose.json).
+
+**Request:** `GET /erosion?lat=9.93&lon=-84.08&start=2026-01-01&end=2026-01-31` (same parameters
+and rules as `/weather/daily`).
+
+```json
+{
+  "location": { "lat": 9.93, "lon": -84.08 },
+  "start": "2026-01-01",
+  "end": "2026-01-31",
+  "elevation_m": 1164,
+  "slope_pct": 2.3,
+  "terrain_erosion_risk": 0,
+  "terrain_erosion_level": "low",
+  "total_rainfall_mm": 35.2,
+  "avg_daily_rainfall_mm": 1.14,
+  "heavy_rain_days": 0,
+  "max_daily_rainfall_mm": 8.7,
+  "combined_erosion_risk": 0,
+  "combined_erosion_level": "low",
+  "data_sources": { "terrain": "opentopography", "weather": "nasa_power" }
+}
+```
+
+| Field | Meaning | Source / caveat |
+|---|---|---|
+| `elevation_m` | Height above sea level (EGM96 geoid), m | NASA SRTM GL1 (2000), 30 m |
+| `slope_pct` | Local slope over ~30 m, % | From 5 SRTM points around the field |
+| `terrain_erosion_risk` / `_level` | Slope only: < 5 % low, 5–15 % medium, > 15 % high | Thresholds are placeholders |
+| `total_rainfall_mm` | Rain over the period, mm | NASA POWER daily |
+| `avg_daily_rainfall_mm` | Mean per day with data, mm/day | idem |
+| `heavy_rain_days` | Days with ≥ 30 mm | idem; underestimated vs a rain gauge (~55 km cell) |
+| `max_daily_rainfall_mm` | Wettest day, mm | Shown only, **not** used in the risk |
+| `combined_erosion_risk` / `_level` | Slope sets the base; only **high** rain raises it one step. Never below the terrain risk | |
+
+| Terrain ↓ / rain → | low | medium | high |
+|---|---|---|---|
+| **low (flat)** | low | low | medium |
+| **medium** | medium | medium | high |
+| **high (steep)** | high | high | high |
+
+Show the **level word** (with the number on hover, like trait levels), and say which period it
+covers: the same field can be low in January and medium over a whole wet season.
+
+---
+
+### GET /soil
+Soil properties by depth at one point, from the OpenLandMap 250 m maps (Google Earth Engine). Real
+example: [`examples/soil_san_jose.json`](examples/soil_san_jose.json).
+
+**Request:** `GET /soil?lat=9.93&lon=-84.08` (`lat`, `lon` required, inside the MVP region).
+
+```json
+{
+  "location": { "lat": 9.93, "lon": -84.08 },
+  "source": "OpenLandMap",
+  "attribution": "OpenLandMap soil property maps v02 (field capacity v01), Hengl et al. 2018-2019, CC-BY-SA 4.0 (doi:10.5281/zenodo.1475457), via Google Earth Engine",
+  "resolution_m": 250,
+  "layers": [
+    { "depth_cm": 0, "ph": 6.6, "organic_carbon_g_kg": 10.0, "clay_pct": 38.0, "sand_pct": 34.0, "silt_pct": 28.0,
+      "bulk_density_kg_m3": 1270.0, "field_capacity_m3m3": 0.34, "texture_class": "clay loam" },
+    { "depth_cm": 10, … },
+    { "depth_cm": 30, … }
+  ]
+}
+```
+
+| Field | Meaning | Caveat |
+|---|---|---|
+| `layers[].depth_cm` | 0, 10, 30 (shallowest first) | |
+| `ph` | pH in water | A map prediction for a ~5 ha pixel, not a soil test |
+| `organic_carbon_g_kg` | Organic carbon, g/kg | Stored in steps of 5 g/kg (10 means 7.5–12.5) |
+| `clay_pct`, `sand_pct`, `silt_pct` | Texture fractions, % by weight | `silt_pct` = 100 − clay − sand; `null` if they add up to over 100 |
+| `bulk_density_kg_m3` | How compact the soil is, kg/m³ | |
+| `field_capacity_m3m3` | Water the soil holds after draining, m³/m³ | 0.34 = 34 % of the volume |
+| `texture_class` | USDA class (`clay loam`, `sandy loam`, …) | Same words as `conditions.soil.texture_class` |
+| `attribution` | Credit line | **Must be shown** wherever these values appear (CC-BY-SA 4.0) |
+
+Every property can be `null` (sea, lake, no prediction): show "no data", never 0.
+
+---
+
 ### POST /recommendations
 Ranks every crop rotation (one crop per season, repeated every year) for a point, explains each one,
 and optionally compares them with the farmer's current rotation.
@@ -309,7 +442,8 @@ and optionally compares them with the farmer's current rotation.
 | `top_n` | no | How many rotations to return (1–50). Default 5 |
 | `current_rotation` | no | The farmer's rotation: **one crop id per season, in season order** (`["maize", "maize"]` = maize in primera and postrera). Wrong length → `422 invalid_rotation` |
 
-Unknown fields are rejected (`422 validation_failed`): don't send extra keys.
+Unknown fields in this JSON body are rejected (`422 validation_failed`): don't send extra keys.
+(Query parameters are different: GET endpoints ignore unknown ones.)
 
 ```json
 { "lat": 11.0, "lon": -84.6, "current_rotation": ["maize", "maize"], "top_n": 3,
@@ -655,6 +789,30 @@ export interface CropPlanting {
 }
 export interface PlantingWindowsResponse { location: Location; crops: CropPlanting[]; data_sources: DataSources }
 
+export interface DailyWeather {
+  date: string;                                   // YYYY-MM-DD
+  temperature_c: number | null; temperature_max_c: number | null; temperature_min_c: number | null;
+  rainfall_mm: number | null;                     // mm that day
+}
+export interface DailyWeatherResponse { location: Location; start: string; end: string; source: string; days: DailyWeather[] }
+
+export type RiskLevel = "low" | "medium" | "high";
+export interface ErosionRiskResponse {
+  location: Location; start: string; end: string;
+  elevation_m: number; slope_pct: number;
+  terrain_erosion_risk: 0 | 1 | 2; terrain_erosion_level: RiskLevel;
+  total_rainfall_mm: number; avg_daily_rainfall_mm: number; heavy_rain_days: number; max_daily_rainfall_mm: number;
+  combined_erosion_risk: 0 | 1 | 2; combined_erosion_level: RiskLevel;
+  data_sources: { terrain: string; weather: string };
+}
+
+export interface SoilProfileLayer {
+  depth_cm: number; ph: number | null; organic_carbon_g_kg: number | null;
+  clay_pct: number | null; sand_pct: number | null; silt_pct: number | null;
+  bulk_density_kg_m3: number | null; field_capacity_m3m3: number | null; texture_class: string | null;
+}
+export interface SoilProfileResponse { location: Location; source: string; attribution: string; resolution_m: number; layers: SoilProfileLayer[] }
+
 export interface Priorities { water: number; soil: number; climate: number }
 export interface RecommendationRequest {
   lat: number; lon: number; crops?: string[]; priorities?: Priorities; top_n?: number; current_rotation?: string[];
@@ -714,7 +872,8 @@ Things the backend doesn't do yet, so you don't build on wrong assumptions (trac
 | `region.name` is a placeholder ("TBD …") | — | Don't show it; say "Costa Rica" |
 | Seasons are fixed (primera May–Aug, postrera Sep–Nov), not the local calendar | Late (Nov–Jan) bean sowings don't appear | Show the "Local review" note; planting windows give the month-by-month view |
 | Trait scores are bands (0, 0.33, 0.67, 1) | The hover number adds little yet | Still show it; finer values come with sourced data |
-| No endpoint for terrain/erosion, daily weather indicators or the full soil profile (they exist inside the backend) | — | Ask if a screen needs them: it's a contract addition |
+| `/weather/daily` and `/erosion` have no saved data for the demo points yet (`cached`) | They return `503 cache_miss` in the demo; `/soil` works at San Carlos and Alajuela | Run them in `live` mode, or ask the backend to add demo dates to the snapshot |
+| No endpoint for the monthly field indicators (dry spells, heat/frost days) | — | Ask if a screen needs them: it's a contract addition |
 | No accounts, saving or area (polygon) input | Everything is per request, per point | Keep state in the frontend |
 
 **Gotchas:**
@@ -726,6 +885,10 @@ Things the backend doesn't do yet, so you don't build on wrong assumptions (trac
 - `is_good` already includes the dry-month check: don't recompute "good" from `score`.
 - Arrays like `moisture_monthly_m3m3` / `wetness_monthly` can be `null`.
 - `generated_at` changes every call.
+- `/weather/daily` and `/erosion` take **both** `start` and `end` (inclusive, ≤ 366 days, `end` at
+  least 30 days ago); a bad period is `422 validation_failed` with `details.fields[0].loc = "query"`.
+- Request **bodies** reject unknown fields; **query strings** ignore unknown parameters.
+- Erosion and soil `null`s and levels: show words, never turn `null` into 0.
 
 ---
 

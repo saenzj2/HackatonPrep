@@ -5,7 +5,7 @@
 | **Used for** | Elevation and local slope for erosion risk (`TerrainSource`) |
 | **Adapter** | `app/integrations/opentopography.py` |
 | **Fixtures** | `tests/fixtures/opentopography/elevation_san_jose_{center,north,south,east,west}.json` (centre lat 9.93, lon −84.08, neighbours ±1″; fetched 2026-11-14) |
-| **Status** | ⚙️ Adapter + `services.erosion_risk()`, wired in `build_sources()` (`Sources.terrain`, `MockTerrain` in mock mode); no endpoint yet |
+| **Status** | ⚙️ Adapter + `services.erosion_risk()`, wired in `build_sources()` (`Sources.terrain`, `MockTerrain` in mock mode); served by `GET /erosion` |
 
 ## Access
 - Endpoint: `GET https://portal.opentopography.org/API/v1/elevation?latitude=&longitude=&dataset=SRTM_GL1&API_Key=`
