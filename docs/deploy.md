@@ -58,8 +58,16 @@ Owner of both accounts: Andres (GitHub `AndresACV`). Ask him for dashboard chang
 **Railway**: project `guardians-of-the-harvest`, environment `production`
 - Service `harvest`. **No repo connected on purpose:** code arrives only through `railway up` from
   the Deploy workflow. Connecting the repo would deploy every push twice.
-- Build and health check come from `railway.json` (Dockerfile build, `/health`). Railway has
-  deprecated this format ("Config as Code"). It stops being read on **2026-12-01**; see Pending.
+- Build and deploy settings live in the Railway dashboard (service `harvest` → **Settings**), not
+  in the repo. Railway deprecated `railway.json` ("Config as Code"), which stops being read on
+  2026-12-01, so we removed it. The settings are:
+  - **Build:** Dockerfile. Railway always uses the root `Dockerfile` when it finds one.
+  - **Healthcheck Path:** `/health`, with a **Healthcheck Timeout** of `120` s. Railway switches
+    traffic only after it passes.
+  - **Restart Policy:** `On Failure`, with **Max Retries** `3`.
+  If the service is recreated, set these again by hand. Railway **stages** settings changes: they
+  only take effect when you click **Deploy** on the "Apply N changes" bar, and that redeploys the
+  service.
 - Service variable **`PORT=8000`**. Both domains route to port 8000, and Railway would otherwise
   inject its own `PORT`. Don't remove it.
 - Domains: the generated `harvest-production-3c6bc064.up.railway.app` and the custom
@@ -115,13 +123,6 @@ a token in a chat, issue or PR.
         submitted link can't be changed.
       - **If we are not nominated:** we let the account drop to Free. The domain stays ours; it
         just stops serving the app.
-- [ ] **`railway.json` stops working on 2026-12-01.** Railway's notice on the service settings
-      reads: "Existing config files keep working until 2026-12-01" (see
-      https://docs.railway.com/infrastructure-as-code). After that date the build still works,
-      because Railway always uses a root `Dockerfile`. We lose the `/health` check before traffic
-      switches (120 s) and the restart policy (`ON_FAILURE`, 3 retries).
-      Proposal, pending a decision: set the same values in Railway → `harvest` → Settings, then
-      remove `railway.json` in a follow-up PR.
 - [ ] **After the submission:** revoke the Cloudflare MCP OAuth access (My Profile → Access
       Management → Connected Applications). It has write access to the whole account. On
       2026-11-15 it read the zone and confirmed the table above: Always Use HTTPS `on`, SSL `full`.
@@ -141,7 +142,7 @@ baked into the image:
 | `FRONTEND_DIR` | `/srv/frontend` (image default) | Unset it to serve the API only. |
 | `CORS_ORIGINS` | localhost dev ports | Only needed if a frontend is hosted on another domain. |
 
-Never put secrets in the `Dockerfile`, `railway.json` or the repo. `.dockerignore` keeps `.env`
+Never put secrets in the `Dockerfile`, the workflows or the repo. `.dockerignore` keeps `.env`
 files out of the image (checked: the image has no `.env`).
 
 ## Setting it up again from zero
@@ -150,7 +151,9 @@ Use this only if the project or the token is lost.
 
 1. **Railway:** **New Project → Empty Project**, then **+ Create → Empty Service** named `harvest`.
    Don't connect a repo. Set the service variable `PORT=8000`. In **Settings → Networking**, choose
-   **Generate Domain** (port 8000) and **Custom Domain** `terracosmos.space` (port 8000).
+   **Generate Domain** (port 8000) and **Custom Domain** `terracosmos.space` (port 8000). In
+   **Settings → Deploy**, set Healthcheck Path `/health`, timeout `120`, and Restart Policy
+   `On Failure` with 3 retries.
 2. **Railway:** **Project Settings → Tokens → Create Token**, environment `production`.
 3. **GitHub** (needs repo write access):
    `gh secret set RAILWAY_TOKEN` (paste the token) and `gh variable set RAILWAY_SERVICE --body harvest`.
