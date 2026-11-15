@@ -25,7 +25,7 @@ Requirements: **Python ≥ 3.11** (macOS: `brew install python@3.12`), `make`, `
 ```bash
 git clone git@github.com:saenzj2/HackatonPrep.git && cd HackatonPrep
 make setup      # creates backend/.venv, installs deps, installs git hooks, copies .env.example → .env
-make dev        # API on http://localhost:8000 — interactive docs at http://localhost:8000/docs
+make dev        # http://localhost:8000/app/ (frontend) and /docs (API)
 make check      # ruff + mypy + tests: exactly what CI runs
 ```
 
@@ -42,7 +42,8 @@ pass the interpreter explicitly: `make setup PYTHON=py` (Windows launcher) or th
 |------|-------|--------|
 | Backend API | `make dev` → http://localhost:8000/docs | Works with mock data out of the box |
 | Local MVP preview | `python tools/local-mvp-preview/serve.py` → http://127.0.0.1:8765 | Independent offline explorer, not the team frontend |
-| Team frontend | — | Not in this repo yet; tracked in issue #14. Start with [`backend/docs/frontend-guide.md`](backend/docs/frontend-guide.md) |
+| Frontend (skeleton) | `make dev` → http://localhost:8000/app/ | Static page served by the API; the real UI is issue #14. Start with [`backend/docs/frontend-guide.md`](backend/docs/frontend-guide.md) |
+| Production | **Actions → Deploy**, or merge to `main` | One Railway service, any team member can deploy: [`docs/deploy.md`](docs/deploy.md) |
 
 ### Try it
 
@@ -123,6 +124,8 @@ External Sentinel-2, WorldCover, SoilGrids and FTW research images are not backe
 
 | Path | What |
 |------|------|
+| `frontend/` | Static frontend skeleton served at `/app` (replace freely, keep `index.html`) |
+| `Dockerfile`, `railway.json`, `.github/workflows/deploy.yml` | Production image and deploy ([`docs/deploy.md`](docs/deploy.md)) |
 | `backend/app/api/` | HTTP routes and request/response schemas |
 | `backend/app/domain/` | Suitability scoring and rotation ranking (pure Python, no I/O) |
 | `backend/app/integrations/` | One adapter per data source (NASA POWER, EcoCrop, soil, mock) |

@@ -1,0 +1,20 @@
+# Keep the image small and secret-free: only backend/ and frontend/ are copied.
+**/.env
+**/.venv
+**/.cache
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+.git
+.github
+.claude
+.atl
+learning
+research
+docs
+tools
+Ecocrop
+NASA Power API
+odd
+backend/tests

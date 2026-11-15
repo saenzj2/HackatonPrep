@@ -15,6 +15,22 @@ Template:
 
 ---
 
+## 2026-11-15 — Deploy: one Railway service (API + static frontend), deployed from GitHub Actions
+- **Decision:** the root `Dockerfile` builds one image that runs the API and serves `frontend/` at
+  `/app` (`FRONTEND_DIR`; `/` redirects there). Railway runs it in `cached` mode, so production
+  needs no secrets and never calls external APIs. `.github/workflows/deploy.yml` deploys after CI
+  passes on `main`, or manually from **Actions → Deploy**, with a Railway project token stored as a
+  repo secret. `frontend/` is a framework-free skeleton (demo point → `POST /recommendations`) that
+  #14 can replace; the image just copies the folder, so a build step can be added later.
+- **Why:** all six team members can deploy without a Railway account or seat (Vercel Hobby blocks
+  deploys from other authors on a private repo). Same origin means no CORS setup. One service is
+  one URL to keep alive for judging. Steps: `docs/deploy.md`.
+- **Alternatives considered:** Vercel for the frontend plus Railway for the API (two platforms and
+  CORS); GoDaddy hosting (shared PHP hosting can't run FastAPI; its free domain can still point to
+  Railway); Google Cloud Run (free credits but more setup; the same image runs there).
+- **Revisit if:** the frontend needs a Node build or server rendering, or Railway costs become a
+  problem after the hackathon.
+
 ## 2026-11-15 — Farmer-facing texts in English and Spanish, reworded after review
 - **Decision (engine owner):** every text a farmer or judge reads is returned as
   `{"en": ..., "es": ...}` (`LocalizedText`): `explanation`, `benefits`, `risks`, `data_gaps`,

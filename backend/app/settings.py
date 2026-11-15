@@ -40,6 +40,9 @@ class EnvSettings(BaseSettings):
     cache_snapshot_dir: Path | None = BACKEND_DIR / "app" / "cache" / "snapshots"
     crop_catalog: Path = BACKEND_DIR / "data" / "ecocrop_subset.csv"
     cors_origins: str = "http://localhost:3000,http://localhost:5173"
+    # Static frontend served by the API under /app (FRONTEND_DIR). None = API only (tests, local
+    # dev without a frontend). The Docker image sets it, so one service hosts both parts.
+    frontend_dir: Path | None = None
     # OpenTopography API key (OPEN_TOPOGRAPHY_KEY). Only needed to fetch new elevation data in live
     # mode; SecretStr keeps it out of logs and reprs.
     open_topography_key: SecretStr | None = None

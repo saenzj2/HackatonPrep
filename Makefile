@@ -43,8 +43,8 @@ install: ## Create backend/.venv and install the backend with dev deps
 hooks: ## Install pre-commit git hooks
 	$(BIN)/pre-commit install
 
-dev: ## Run the API with auto-reload on http://localhost:8000 (docs at /docs)
-	cd $(BACKEND) && $(BIN)/uvicorn app.main:create_app --factory --reload --port 8000
+dev: ## Run API + frontend with auto-reload on http://localhost:8000 (app at /app, docs at /docs)
+	cd $(BACKEND) && FRONTEND_DIR=../frontend $(BIN)/uvicorn app.main:create_app --factory --reload --port 8000
 
 test: ## Fast tests (no network, no slow)
 	cd $(BACKEND) && $(BIN)/pytest -q $(FAST)
