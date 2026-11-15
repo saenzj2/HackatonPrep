@@ -679,7 +679,7 @@ def test_committed_snapshot_never_holds_secrets():
 
 
 # The demo points the committed snapshot must serve in `cached` mode (the default).
-DEMO_POINTS = {"San Carlos": (11.0, -84.6), "Alajuela": (10.0, -84.2)}
+DEMO_POINTS = {"Los Chiles": (11.0, -84.6), "Alajuela": (10.0, -84.2)}
 
 
 @pytest.mark.parametrize("point", sorted(DEMO_POINTS))

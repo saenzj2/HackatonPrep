@@ -22,7 +22,7 @@ Why this shape:
   One reading per day (8× fewer) with each image clipped to the area works in ~30 s.
 - Images are at hh:30 UTC: a filter on 12:00 matches nothing (an empty collection gives no values).
 - One pixel can be masked (open water); the mean over 15 km avoids an empty answer near lakes and
-  wetlands (San Carlos is close to Lake Nicaragua and the Río Frío wetlands).
+  wetlands (Los Chiles is close to Lake Nicaragua and the Río Frío wetlands).
 
 The answer is cached forever (historical means don't change), like the OpenLandMap maps, so
 `cached` mode never calls Earth Engine. A month without a value is an error (`source_bad_data`),
@@ -46,14 +46,14 @@ never a guess.
 Moisture (m³/m³):
 | Point | Jan | Feb | Mar | Apr | May | Jun | Jul | Aug | Sep | Oct | Nov | Dec |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| San Carlos (11.0, −84.6) | 0.32 | 0.29 | 0.24 | 0.21 | 0.21 | 0.26 | 0.33 | 0.36 | 0.35 | 0.36 | 0.36 | 0.35 |
+| Los Chiles (11.0, −84.6) | 0.32 | 0.29 | 0.24 | 0.21 | 0.21 | 0.26 | 0.33 | 0.36 | 0.35 | 0.36 | 0.36 | 0.35 |
 | Alajuela (10.0, −84.2) | 0.45 | 0.41 | 0.38 | 0.38 | 0.43 | 0.49 | 0.50 | 0.51 | 0.51 | 0.52 | 0.51 | 0.48 |
 
 Wetness (relative saturation, 0–1):
 
 | Point | Jan | Feb | Mar | Apr | May | Jun | Jul | Aug | Sep | Oct | Nov | Dec |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| San Carlos | 0.76 | 0.68 | 0.58 | 0.51 | 0.49 | 0.63 | 0.77 | 0.84 | 0.84 | 0.85 | 0.87 | 0.83 |
+| Los Chiles | 0.76 | 0.68 | 0.58 | 0.51 | 0.49 | 0.63 | 0.77 | 0.84 | 0.84 | 0.85 | 0.87 | 0.83 |
 | Alajuela | 0.83 | 0.76 | 0.71 | 0.70 | 0.78 | 0.89 | 0.93 | 0.93 | 0.94 | 0.95 | 0.94 | 0.88 |
 
 The soil dries and wets **1–2 months after the rain** (May is rainy but the soil is still at its

@@ -14,7 +14,7 @@ import hashlib
 import json
 import logging
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -42,23 +42,49 @@ class JsonCache:
         """
         return self._lookup(namespace, params)
 
+    def peek_fresh(self, namespace: str, params: dict[str, Any], max_age: timedelta) -> Any | None:
+        """The cached data if it was fetched less than `max_age` ago, else None. Never fetches.
+
+        For sources that change slowly (e.g. NOAA's monthly ENSO files): the adapter can skip the
+        network in live mode while the copy is recent enough, and still refetch once it isn't.
+        """
+        entry = self._lookup_entry(namespace, params)
+        if entry is None:
+            return None
+        try:
+            fetched_at = datetime.fromisoformat(entry["fetched_at"])
+        except (KeyError, TypeError, ValueError):
+            return None  # no usable timestamp: treat as stale
+        if fetched_at.tzinfo is None:
+            fetched_at = fetched_at.replace(tzinfo=UTC)
+        return entry["data"] if datetime.now(UTC) - fetched_at < max_age else None
+
     def _lookup(self, namespace: str, params: dict[str, Any]) -> Any | None:
         """Runtime cache first, then the committed snapshot. None if neither has it."""
-        data = self._read(self.path_for(namespace, params))
-        if data is None and self.snapshot is not None:
-            digest = self.path_for(namespace, params).name
-            data = self._read(self.snapshot / namespace / digest)
-        return data
+        entry = self._lookup_entry(namespace, params)
+        return None if entry is None else entry["data"]
 
-    def _read(self, path: Path) -> Any | None:
-        """The cached data, or None if the file is missing or unreadable (treated as a miss)."""
+    def _lookup_entry(self, namespace: str, params: dict[str, Any]) -> dict[str, Any] | None:
+        """The whole {"params", "fetched_at", "data"} entry: runtime cache, then the snapshot."""
+        entry = self._read_entry(self.path_for(namespace, params))
+        if entry is None and self.snapshot is not None:
+            digest = self.path_for(namespace, params).name
+            entry = self._read_entry(self.snapshot / namespace / digest)
+        return entry
+
+    def _read_entry(self, path: Path) -> dict[str, Any] | None:
+        """The cache file's payload, or None if missing or unreadable (treated as a miss)."""
         try:
-            return json.loads(path.read_text(encoding="utf-8"))["data"]
+            entry = json.loads(path.read_text(encoding="utf-8"))
         except FileNotFoundError:
             return None
-        except (OSError, ValueError, KeyError, TypeError):
+        except (OSError, ValueError):
             log.warning("Ignoring unreadable cache file %s", path)
             return None
+        if not isinstance(entry, dict) or "data" not in entry:
+            log.warning("Ignoring unreadable cache file %s", path)
+            return None
+        return entry
 
     def _write(self, path: Path, payload: dict[str, Any]) -> None:
         """Atomic: write a temp file, then rename, so a crash never leaves half a file."""

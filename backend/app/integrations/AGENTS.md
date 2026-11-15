@@ -12,6 +12,9 @@ General backend rules: [`backend/AGENTS.md`](../../AGENTS.md).
 - `smap.py`: NASA SMAP L4 root-zone moisture, 12 monthly means per point via Earth Engine (~30 s, cached forever).
 - `measured_soil.py`: the real `SoilSource` for scoring: OpenLandMap pH (0–30 cm) + SMAP monthly moisture.
   Earth Engine setup and error handling are shared in `openlandmap.py` (`initialize_earth_engine`, `call_earth_engine`).
+- `noaa_enso.py`: NOAA CPC El Niño indices (RONI official, ONI legacy), plain-text files cached as
+  `{"text": ...}`; no dated cache key, a copy under `MAX_AGE` (1 day) is reused in `live` mode
+  (`JsonCache.peek_fresh`).
 - `ecocrop.py`: local CSV catalog. `mock.py`: deterministic fake data for `mock` mode.
 
 ## The adapter pattern (keep these three parts separate)
