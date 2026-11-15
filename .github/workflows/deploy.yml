@@ -1,0 +1,49 @@
+name: Deploy
+
+# Production deploy to Railway. Any team member can deploy:
+#   - automatically: merge to main; this runs after CI passes on main;
+#   - manually: Actions -> Deploy -> Run workflow (pick a branch to deploy it, e.g. for a demo).
+# Only one person needs a Railway account. Setup: docs/deploy.md.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_SERVICE: ${{ vars.RAILWAY_SERVICE }}
+    steps:
+      - name: Check setup
+        id: setup
+        run: |
+          if [ -z "$RAILWAY_TOKEN" ] || [ -z "$RAILWAY_SERVICE" ]; then
+            echo "::warning::Deploy skipped: set the RAILWAY_TOKEN secret and RAILWAY_SERVICE variable (docs/deploy.md)."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.setup.outputs.ready == 'true'
+        with:
+          # workflow_run: deploy exactly the commit CI tested, not whatever main is now.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Deploy to Railway
+        if: steps.setup.outputs.ready == 'true'
+        run: npx --yes @railway/cli@5.71.0 up --ci --service "$RAILWAY_SERVICE"
+
+      - name: Summary
+        if: steps.setup.outputs.ready == 'true'
+        run: echo "Deployed $(git rev-parse --short HEAD) by ${{ github.actor }}" >> "$GITHUB_STEP_SUMMARY"

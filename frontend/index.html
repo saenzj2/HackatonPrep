@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Guardians of the Harvest</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Deploy skeleton (#12). The real UI is #14; replace this folder freely, keep index.html. -->
+  <header>
+    <h1>Guardians of the Harvest</h1>
+    <p id="status" class="muted">Conectando con la API…</p>
+  </header>
+
+  <main>
+    <form id="form">
+      <label>Campo demo
+        <select id="field">
+          <option value="11.0,-84.6">San Carlos (11.0, −84.6)</option>
+          <option value="10.0,-84.2">Alajuela (10.0, −84.2)</option>
+        </select>
+      </label>
+      <label>Idioma
+        <select id="lang">
+          <option value="es">Español</option>
+          <option value="en">English</option>
+        </select>
+      </label>
+      <button type="submit">Comparar rotaciones</button>
+    </form>
+
+    <section id="results" aria-live="polite"></section>
+  </main>
+
+  <footer class="muted">
+    API: <a href="../docs">/docs</a> · Datos: NASA POWER, NASA SMAP, OpenLandMap, FAO EcoCrop
+  </footer>
+  <script src="app.js"></script>
+</body>
+</html>
