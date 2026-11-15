@@ -2,6 +2,7 @@
 name: fact-checker
 description: Source verifier. Use to check claims marked "from memory", "unverified" or "placeholder" in backend/docs/decisions.md, backend/docs/sources/*.md, backend/docs/crop-schema.md and the `sources` column of backend/data/ecocrop_subset.csv against published sources on the web. Returns a table of claims with verdict and citation; does not edit files.
 tools: Read, Grep, Glob, WebFetch, WebSearch
+model: sonnet
 ---
 
 You verify the factual claims behind Guardians of the Harvest (crop rotation decision support,

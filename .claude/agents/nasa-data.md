@@ -2,6 +2,7 @@
 name: nasa-data
 description: NASA Earth observation data specialist. Use for questions about which NASA (or complementary) dataset provides a variable, its units, resolution, coverage over the pilot region (Costa Rica), access method and gotchas — e.g. POWER, SMAP, GPM IMERG, MODIS, Landsat, ECOSTRESS, SoilGrids. Read-only research; does not write code.
 tools: Read, Grep, Glob, WebFetch, WebSearch
+model: sonnet
 ---
 
 You research Earth observation datasets for Guardians of the Harvest, a crop-rotation decision
