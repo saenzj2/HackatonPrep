@@ -173,7 +173,18 @@ Parts of this repository's code, tests and documentation were written with AI co
 (Anthropic Claude Code and OpenAI Codex). The `.claude/` folder, `CLAUDE.md` and `AGENTS.md` hold the
 instructions those tools followed. Every change went through a pull request, CI (lint, type checks,
 tests) and team review. Crop data comes from FAO EcoCrop, and climate, soil and moisture data come
-from NASA POWER, NASA SMAP and OpenLandMap. None of it is AI-generated. The project uses no
-AI-generated images, video or audio. If any are added, they must carry a visible "AI-generated"
-watermark.
+from NASA POWER, NASA SMAP, NASA GPM IMERG, MERRA-2 and OpenLandMap. None of it is AI-generated,
+and no AI model produces the recommendations: every score comes from the code in `backend/app/domain/`.
+
+AI-generated media and text, each labeled where it appears:
+
+| What | AI tool | Label |
+|---|---|---|
+| Background video clips (web app and presentation video) | Veo (Google) | "AI generated video" on screen |
+| Logo and brand artwork | AI image generator | "AI generated" in the app footer and on the project page |
+| Presentation video end card | Claude (Anthropic) | Labeled in the video |
+| Glossary and practice-card texts (`backend/data/*.json`) | Claude (Anthropic) | Note in the app; reviewed by the team |
+| Project backlog | Claude (Anthropic) | Reviewed by the team |
+
+The web app lists the same items on its Learn page ("How we used AI").
 Submission notes: [`docs/submission.md`](docs/submission.md).
