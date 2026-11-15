@@ -6,7 +6,6 @@ import { DEMO_FIELDS, type DemoField } from "../demoFields";
 // Brand colors (styles.css): selected point in space navy, demo fields in agricultural green.
 const NAVY = "#072c4a";
 const GREEN = "#2e7d32";
-const COSTA_RICA: L.LatLngTuple = [9.9, -84.2];
 
 interface Props {
   /** Pilot region [min_lon, min_lat, max_lon, max_lat] from GET /health, drawn as a dashed box. */
@@ -29,7 +28,8 @@ export default function FieldMap({ bbox, selected, onPick, onPickDemo }: Props) 
 
   useEffect(() => {
     if (!container.current) return;
-    const m = L.map(container.current, { center: COSTA_RICA, zoom: 7, scrollWheelZoom: false });
+    // The view fits the pilot region from GET /health (mvp.yaml) once it arrives; never hardcoded.
+    const m = L.map(container.current, { center: [0, 0], zoom: 2, scrollWheelZoom: false });
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 18,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -70,6 +70,7 @@ export default function FieldMap({ bbox, selected, onPick, onPickDemo }: Props) 
       ],
       { color: NAVY, weight: 1.5, dashArray: "6 6", fill: false, interactive: false },
     ).addTo(map.current);
+    map.current.fitBounds(box.getBounds(), { padding: [16, 16] });
     return () => {
       box.remove();
     };

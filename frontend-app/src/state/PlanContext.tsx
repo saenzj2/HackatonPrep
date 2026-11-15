@@ -16,17 +16,16 @@ export interface PlanState {
   crops: string[] | null;
   /** One crop id per season, "" = not set. All empty = no current rotation. */
   currentRotation: string[];
-  /** Slider values 0..10; the API normalizes them to sum 1. */
-  priorities: Priorities;
+  /** Slider values 0..10 (the API normalizes them to sum 1); null = the MVP default weights
+   * from mvp.yaml, so the request omits `priorities` until the farmer moves a slider. */
+  priorities: Priorities | null;
 }
-
-const DEFAULT_PRIORITIES: Priorities = { water: 4, soil: 3, climate: 3 }; // mvp.yaml defaults
 
 const INITIAL: PlanState = {
   field: null,
   crops: null,
   currentRotation: [],
-  priorities: DEFAULT_PRIORITIES,
+  priorities: null,
 };
 
 const STORAGE_KEY = "guardians-plan-v1";

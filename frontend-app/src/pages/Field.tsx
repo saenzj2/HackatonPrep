@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState, type FormEvent } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router";
 import { api, type Conditions, type SoilProfile } from "../api/client";
 import { RainChart, TemperatureChart } from "../components/ClimateCharts";
@@ -41,6 +41,11 @@ export function Field() {
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [point, setPoint] = useState(plan.field ? { lat: plan.field.lat, lon: plan.field.lon } : null);
   const [bbox, setBbox] = useState<number[] | undefined>();
+  // Ignore answers that arrive after the page closed or after a newer lookup started.
+  const latestLookup = useRef(0);
+  useEffect(() => () => {
+    latestLookup.current = -1;
+  }, []);
 
   useEffect(() => {
     // Coming back to this step: show the saved field again.
@@ -55,6 +60,7 @@ export function Field() {
     setPoint({ lat: latValue, lon: lonValue });
     setLat(String(latValue));
     setLon(String(lonValue));
+    const id = ++latestLookup.current;
     setStatus({ kind: "loading" });
     try {
       // The soil profile adds organic carbon; it is optional, so its failure never blocks the step.
@@ -62,6 +68,7 @@ export function Field() {
         api.conditions(latValue, lonValue),
         api.soil(latValue, lonValue).catch(() => null),
       ]);
+      if (id !== latestLookup.current) return;
       setField({
         lat: latValue,
         lon: lonValue,
@@ -70,6 +77,7 @@ export function Field() {
       });
       setStatus({ kind: "ready", conditions, soil });
     } catch (error) {
+      if (id !== latestLookup.current) return;
       setStatus({ kind: "error", error, lat: latValue, lon: lonValue, name });
     }
   }

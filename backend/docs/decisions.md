@@ -29,6 +29,11 @@ Template:
   maintain); Streamlit (the team reads Python, but it is a second server and gives little design
   control); replace `frontend/` in place (production could serve the unbuilt source `index.html`
   and current tests would not notice).
+- **Runtime dependencies (added later the same day):** the map loads OpenStreetMap tiles and the
+  background videos load from YouTube (youtube-nocookie.com). Both need internet in the browser;
+  offline, the map is blank and the videos don't play, while the rest of the app works on cached
+  data. `backend/data/glossary.json` and `regenerative_practices.json` are bundled into the app at
+  build time, so editing them needs a rebuild (unlike `mvp.yaml`).
 - **Revisit if:** nobody on the team can review or debug the React code before the demo.
 
 ## 2026-11-15 — NOAA ENSO files: reuse a copy under one day old in live mode

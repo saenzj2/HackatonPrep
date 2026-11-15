@@ -39,6 +39,10 @@ use **Redeploy** on a previous deployment in the Railway dashboard (the Railway 
 Use this when you change `Dockerfile`, `frontend/`, `frontend-app/` or startup code. You need Docker Desktop.
 CI's `image` job runs the same build and a smoke test on every PR.
 
+**Demo without internet:** the API and the React app work offline on cached data, but the map
+(OpenStreetMap tiles) stays blank and the background videos (YouTube) don't play. Use the demo
+field buttons instead of the map. Edits to `backend/data/*.json` reach the app only after a rebuild.
+
 ```bash
 docker build -t harvest .
 docker run --rm -p 8000:8000 harvest     # http://localhost:8000

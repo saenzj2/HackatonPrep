@@ -34,12 +34,33 @@ export function Plan() {
     };
   }, [attempt]);
 
+  // Until the farmer moves a slider, show the MVP default weights (mvp.yaml) as the API applies
+  // them: one cheap /recommendations call returns the weights it used.
+  const [defaults, setDefaults] = useState<Priorities | null>(null);
+  const fieldKey = plan.field ? `${plan.field.lat},${plan.field.lon}` : "";
+  useEffect(() => {
+    if (!plan.field || plan.priorities) return;
+    let active = true;
+    api
+      .recommendations({ lat: plan.field.lat, lon: plan.field.lon, top_n: 1 })
+      .then((r) => {
+        if (!active) return;
+        const p = r.priorities;
+        setDefaults({ water: Math.round(p.water * 10), soil: Math.round(p.soil * 10), climate: Math.round(p.climate * 10) });
+      })
+      .catch(() => undefined); // sliders stay hidden; the request still uses the defaults
+    return () => {
+      active = false;
+    };
+  }, [fieldKey, plan.priorities === null]);
+
   if (!plan.field) return <NeedsField />;
   const field = plan.field;
 
   const allIds = crops.kind === "ready" ? crops.crops.map((c) => c.id) : [];
   const selected = plan.crops ?? allIds;
-  const total = plan.priorities.water + plan.priorities.soil + plan.priorities.climate;
+  const weights = plan.priorities ?? defaults;
+  const total = weights ? weights.water + weights.soil + weights.climate : 0;
 
   function toggleCrop(id: string) {
     const next = selected.includes(id) ? selected.filter((c) => c !== id) : [...selected, id];
@@ -60,7 +81,7 @@ export function Plan() {
     if (filled > 0 && filled < field.seasons.length) {
       return setFormError("Choose a crop for every season of your current rotation, or leave all empty.");
     }
-    if (total === 0) return setFormError("Move at least one priority above zero.");
+    if (weights && total === 0) return setFormError("Move at least one priority above zero.");
     setFormError(null);
     navigate("/results");
   }
@@ -108,10 +129,14 @@ export function Plan() {
 
           <fieldset>
             <legend>What matters most to you</legend>
-            <p className="hint">Each slider sets how much that part counts in the ranking.</p>
+            <p className="hint">
+              Each slider sets how much that part counts in the ranking.
+              {!plan.priorities && " Now showing the default weights."}
+            </p>
+            {!weights && <div className="skeleton" role="status" aria-label="Loading default weights" />}
             <div className="stack">
-              {PRIORITY_INFO.map(({ key, label, hint }) => {
-                const share = total > 0 ? Math.round((plan.priorities[key] / total) * 100) : 0;
+              {weights && PRIORITY_INFO.map(({ key, label, hint }) => {
+                const share = total > 0 ? Math.round((weights[key] / total) * 100) : 0;
                 return (
                   <div key={key}>
                     <label htmlFor={`priority-${key}`}>
@@ -123,9 +148,9 @@ export function Plan() {
                       min={0}
                       max={10}
                       step={1}
-                      value={plan.priorities[key]}
+                      value={weights[key]}
                       aria-valuetext={`${share}% of the ranking`}
-                      onChange={(e) => setPriorities({ ...plan.priorities, [key]: Number(e.target.value) })}
+                      onChange={(e) => setPriorities({ ...weights, [key]: Number(e.target.value) })}
                     />
                   </div>
                 );

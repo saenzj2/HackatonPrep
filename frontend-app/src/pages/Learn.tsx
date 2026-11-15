@@ -9,10 +9,14 @@ interface Term {
   term: { en: string };
   tooltip: { en: string };
   why_it_matters: { en: string };
+  /** "planned" = a feature not built yet; hidden here (glossary.json meta.note). */
+  status?: string;
 }
 
 const CATEGORIES = glossary.meta.categories as Record<string, { en: string }>;
-const TERMS = (glossary.terms as Term[]).slice().sort((a, b) => a.term.en.localeCompare(b.term.en));
+const TERMS = (glossary.terms as Term[])
+  .filter((t) => t.status !== "planned")
+  .sort((a, b) => a.term.en.localeCompare(b.term.en));
 
 export function Learn() {
   const [query, setQuery] = useState("");
@@ -44,7 +48,7 @@ export function Learn() {
             <strong>Soil:</strong> soil pH from the OpenLandMap soil map.
           </li>
           <li>
-            <strong>Rotation rules:</strong> a bonus when a legume follows another crop; penalties for
+            <strong>Rotation rules:</strong> a bonus when a legume follows a crop that is not a legume; penalties for
             repeating a crop, two crops of the same family, two heavy nitrogen feeders in a row, or breaking
             the soil fungi that some crops depend on.
           </li>

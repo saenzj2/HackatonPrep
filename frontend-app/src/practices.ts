@@ -31,6 +31,12 @@ export interface MatchedPractice {
 }
 
 const CARDS = (data as { practices: PracticeCard[] }).practices;
+/** "Low organic matter" threshold (%) as the cards define it (soil_test.organic_matter_pct rule). */
+export const LOW_ORGANIC_MATTER_PCT = Number(
+  CARDS.flatMap((c) => c.applies_when.rules).find((r) => r.attribute === "soil_test.organic_matter_pct")
+    ?.value ?? Number.NaN,
+);
+
 export const PRACTICES_DISCLAIMER = (data as { meta: { disclaimer: { en: string } } }).meta.disclaimer.en;
 
 /**
@@ -138,7 +144,7 @@ export function nitrogenInsight(facts: FieldFacts, recommended: string[], crops:
   if (facts.organicCarbonGKg != null) {
     const om = organicMatterPct(facts.organicCarbonGKg);
     parts.push(
-      `The soil map shows ${facts.organicCarbonGKg.toFixed(0)} g/kg of organic carbon in the topsoil (about ${om.toFixed(1)}% organic matter, ${om < 3 ? "low" : "not low"}).`,
+      `The soil map shows ${facts.organicCarbonGKg.toFixed(0)} g/kg of organic carbon in the topsoil (about ${om.toFixed(1)}% organic matter${Number.isFinite(LOW_ORGANIC_MATTER_PCT) ? `, ${om < LOW_ORGANIC_MATTER_PCT ? "low" : "not low"}` : ""}).`,
     );
   }
   if (legume) {

@@ -8,7 +8,7 @@
     ],
     "is_generated": true,
     "author": "Carlo",
-    "note": "tooltip = one sentence for the hover. why_it_matters = one sentence for the Learn page. Entries with uses_app_setting quote a threshold; update the text if the backend changes that setting.",
+    "note": "tooltip = one sentence for the hover. why_it_matters = one sentence for the Learn page. Entries with uses_app_setting quote a threshold; update the text if the backend changes that setting. Terms with status 'planned' describe features not built yet; the app hides them. The front end bundles this file at build time, so an edit needs a rebuild.",
     "categories": {
       "climate": {
         "en": "Weather and climate",
@@ -67,15 +67,15 @@
         "es": "Días de estrés por calor"
       },
       "tooltip": {
-        "en": "Days when the maximum temperature goes above 32 °C, hot enough to harm many crops.",
-        "es": "Días en que la temperatura máxima supera los 32 °C, suficiente para dañar a muchos cultivos."
+        "en": "Days at flowering when the maximum temperature passes what the crop tolerates: 32 °C for beans, 35 °C for maize, rice and cowpea, 36 °C for sorghum.",
+        "es": "Días en la floración en que la temperatura máxima supera lo que aguanta el cultivo: 32 °C para frijol, 35 °C para maíz, arroz y caupí, 36 °C para sorgo."
       },
       "why_it_matters": {
         "en": "Heat during flowering can cut yields, so months with many of these days suit heat-tolerant crops.",
         "es": "El calor durante la floración puede reducir la cosecha; los meses con muchos de estos días convienen a cultivos tolerantes al calor."
       },
       "data_model_attribute": "field_indicator_monthly.heat_stress_days",
-      "uses_app_setting": "heat stress threshold: 32 °C"
+      "uses_app_setting": "plan_risk.FLOWERING_HEAT_LIMIT_C: 32-36 °C per crop; suitability.HEAT_MARGIN_C: 6 °C above the crop's EcoCrop absolute max scores 0"
     },
     {
       "term_id": "frost_risk",
@@ -85,15 +85,15 @@
         "es": "Riesgo de helada"
       },
       "tooltip": {
-        "en": "How often the minimum temperature drops below 2 °C, cold enough for frost to form on plants.",
-        "es": "Con qué frecuencia la temperatura mínima baja de 2 °C, suficiente para que se forme escarcha sobre las plantas."
+        "en": "How close the coldest nights of a season get to freezing: the risk starts below 5 °C and is highest at 0 °C or less.",
+        "es": "Qué tan cerca del congelamiento llegan las noches más frías de la temporada: el riesgo empieza por debajo de 5 °C y es máximo a 0 °C o menos."
       },
       "why_it_matters": {
         "en": "Frost can kill tender crops overnight, so planting dates and crop choice should avoid risky months.",
         "es": "Una helada puede matar cultivos sensibles en una noche; las fechas de siembra y la elección del cultivo deben evitar los meses de riesgo."
       },
       "data_model_attribute": "field_indicator_monthly.frost_risk_days",
-      "uses_app_setting": "frost threshold: 2 °C"
+      "uses_app_setting": "suitability.FROST_SAFE_C: 5 °C; suitability.FROST_C: 0 °C"
     },
     {
       "term_id": "dry_spell",
@@ -121,15 +121,15 @@
         "es": "Días de lluvia extrema"
       },
       "tooltip": {
-        "en": "Days with more than 50 mm of rain, enough to cause runoff and wash soil away.",
-        "es": "Días con más de 50 mm de lluvia, suficiente para causar escorrentía y arrastrar el suelo."
+        "en": "Days with 30 mm of rain or more, enough to cause runoff and wash soil away.",
+        "es": "Días con 30 mm de lluvia o más, suficiente para que el agua corra y arrastre el suelo."
       },
       "why_it_matters": {
         "en": "Bare or sloping soil is easily eroded on these days; keeping the ground covered protects it.",
         "es": "El suelo desnudo o en pendiente se erosiona con facilidad en estos días; mantenerlo cubierto lo protege."
       },
       "data_model_attribute": "field_indicator_monthly.extreme_rain_days",
-      "uses_app_setting": "extreme rain threshold: 50 mm"
+      "uses_app_setting": "erosion.HEAVY_RAIN_MM: 30 mm"
     },
     {
       "term_id": "rainfall_variability",
@@ -165,7 +165,8 @@
         "es": "Muestra hacia dónde van las condiciones locales, pero prolonga el pasado y no es un pronóstico."
       },
       "data_model_attribute": "climate_trend.change_per_decade",
-      "uses_app_setting": null
+      "uses_app_setting": null,
+      "status": "planned"
     },
     {
       "term_id": "scenario",
@@ -183,7 +184,8 @@
         "es": "Una rotación que mantiene buena calificación en un escenario más duro es una opción más segura a largo plazo."
       },
       "data_model_attribute": "rotation_strategy.scenario",
-      "uses_app_setting": null
+      "uses_app_setting": null,
+      "status": "planned"
     },
     {
       "term_id": "soil_moisture",
@@ -273,7 +275,8 @@
         "es": "Una caída del NDVI durante la temporada puede indicar estrés del cultivo; los valores bajos muestran cuándo el campo está desnudo."
       },
       "data_model_attribute": "modis_ndvi.ndvi",
-      "uses_app_setting": null
+      "uses_app_setting": null,
+      "status": "planned"
     },
     {
       "term_id": "bare_field",
@@ -291,7 +294,8 @@
         "es": "El suelo desnudo se erosiona y pierde humedad; esos meses son la oportunidad para un cultivo de cobertura."
       },
       "data_model_attribute": "field_indicator_monthly.bare_field",
-      "uses_app_setting": "bare field threshold: NDVI 0.3"
+      "uses_app_setting": "bare field threshold: NDVI 0.3",
+      "status": "planned"
     },
     {
       "term_id": "soil_ph",
@@ -489,7 +493,8 @@
         "es": "Un puntaje más alto significa menos temporadas perdidas por mal tiempo; es una guía para comparar opciones, no una garantía."
       },
       "data_model_attribute": "rotation_strategy.score_resilience",
-      "uses_app_setting": null
+      "uses_app_setting": null,
+      "status": "planned"
     },
     {
       "term_id": "information_gap",
@@ -579,7 +584,8 @@
         "es": "Sus imágenes se usan para calcular el NDVI, es decir, qué tan verde está su campo a lo largo del año."
       },
       "data_model_attribute": "modis_ndvi",
-      "uses_app_setting": null
+      "uses_app_setting": null,
+      "status": "planned"
     },
     {
       "term_id": "smap",

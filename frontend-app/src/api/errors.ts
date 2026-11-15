@@ -16,12 +16,12 @@ const TEXTS: Record<string, ErrorText> = {
   },
   out_of_region: {
     title: "This location is outside the pilot region",
-    body: "The pilot covers Costa Rica. Enter a point inside it, or pick a demo field.",
+    body: "Choose a point inside the dashed box on the map, or pick a demo field.",
     offerDemoFields: true,
   },
   validation_failed: {
     title: "Some values are not valid",
-    body: "Check the highlighted fields and try again.",
+    body: "Check what you entered and try again.",
     offerDemoFields: false,
   },
   unknown_crop: {

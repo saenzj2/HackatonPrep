@@ -20,7 +20,7 @@ PYTHON ?= $(shell for p in python3.13 python3.12 python3.11 python3 python py; d
 FAST := -m "not slow and not network"
 
 .DEFAULT_GOAL := help
-.PHONY: help setup install hooks dev test test-all lint fmt check clean cache-snapshot web-install web-dev web-build
+.PHONY: help setup install hooks dev test test-all lint fmt check check-all clean cache-snapshot web-install web-dev web-build
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
@@ -67,7 +67,9 @@ lint: ## Lint + format check + type check (no changes)
 fmt: ## Auto-fix lint and format
 	cd $(BACKEND) && $(BIN)/ruff format . && $(BIN)/ruff check --fix .
 
-check: lint test ## Everything CI runs (contract tests are part of `test`)
+check: lint test ## Backend checks CI runs (contract tests are part of `test`)
+
+check-all: check web-build ## Everything CI runs, frontend build included (needs Node >= 22)
 
 cache-snapshot: ## Copy backend/.cache into the committed snapshot (real data for cached mode)
 	@mkdir -p $(BACKEND)/app/cache/snapshots

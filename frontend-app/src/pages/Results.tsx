@@ -22,14 +22,18 @@ function toRequest(plan: PlanState): RecommendationRequest | null {
   return {
     lat: plan.field.lat,
     lon: plan.field.lon,
-    priorities: plan.priorities,
+    ...(plan.priorities ? { priorities: plan.priorities } : {}),
     top_n: TOP_N,
     ...(plan.crops ? { crops: plan.crops } : {}),
     ...(rotation.length > 0 && rotation.every(Boolean) ? { current_rotation: rotation } : {}),
   };
 }
 
-/** The API's one-line explanation, without the trailing "Score 0.91 of 1." (shown separately). */
+/**
+ * The API's one-line explanation, without the trailing "Score 0.91 of 1." (shown separately).
+ * Matches the wording built in backend/app/domain/ranking.py; if that wording changes, the regex
+ * simply stops matching and the full explanation is shown.
+ */
 const summaryOf = (r: Rotation) => r.explanation.en.replace(/\s*Score [\d.]+ of 1\.?\s*$/, "");
 
 export function Results() {
