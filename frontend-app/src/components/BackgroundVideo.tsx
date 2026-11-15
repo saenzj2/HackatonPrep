@@ -19,8 +19,9 @@ function loadPaused(): boolean {
 }
 
 /**
- * Muted, looping YouTube video behind the page content (decorative). A light overlay keeps the
- * text readable. Not shown with "reduce motion" or data saver; a button pauses it (WCAG 2.2.2).
+ * Muted, looping YouTube video behind the page content (decorative), lightly blurred. Text outside
+ * the cards gets a solid surface (body.with-video in styles.css). Not shown with "reduce motion" or
+ * data saver; a button pauses it (WCAG 2.2.2). Marked "AI generated video".
  */
 export function BackgroundVideo() {
   const { pathname } = useLocation();
@@ -33,6 +34,13 @@ export function BackgroundVideo() {
   function command(func: "pauseVideo" | "playVideo") {
     frame.current?.contentWindow?.postMessage(JSON.stringify({ event: "command", func, args: [] }), "*");
   }
+
+  // Lets the stylesheet give page text a solid surface while a video plays behind it.
+  const showing = Boolean(video) && !noMotion;
+  useEffect(() => {
+    document.body.classList.toggle("with-video", showing);
+    return () => document.body.classList.remove("with-video");
+  }, [showing]);
 
   useEffect(() => {
     try {
@@ -71,6 +79,7 @@ export function BackgroundVideo() {
         />
         <div className="bg-video__overlay" />
       </div>
+      <span className="ai-mark ai-mark--video">AI generated video</span>
       <button
         type="button"
         className="bg-video__toggle"

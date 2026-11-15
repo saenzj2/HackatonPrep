@@ -29,7 +29,12 @@ export function App() {
         <header className="site-header">
           <div className="site-header__inner">
             <Link to="/" className="brand">
-              <img src={`${import.meta.env.BASE_URL}logo-96.png`} alt="" width={40} height={40} />
+              <span className="ai-image">
+                <img src={`${import.meta.env.BASE_URL}logo-96.png`} alt="" width={40} height={40} />
+                <span className="ai-mark" aria-label="AI generated image">
+                  AI generated
+                </span>
+              </span>
               Terra Cosmos
             </Link>
             <nav className="nav" aria-label="Main">

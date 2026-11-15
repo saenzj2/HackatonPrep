@@ -242,6 +242,20 @@ legend {
   font-weight: 600;
 }
 
+legend {
+  float: left; /* keeps the legend inside the fieldset box instead of on its border */
+  width: 100%;
+  padding: 0;
+  margin: 0 0 8px;
+  font-family: var(--font-heading);
+  color: var(--space-navy);
+  font-size: 1.05rem;
+}
+
+legend + * {
+  clear: both;
+}
+
 fieldset {
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -541,15 +555,15 @@ details summary {
   left: 50%;
   width: max(100vw, 177.78vh);
   height: max(100vh, 56.25vw);
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) scale(1.04); /* scale hides the blurred edges */
   border: 0;
+  filter: blur(2px);
 }
 
-/* Warm ivory veil: keeps dark text readable (WCAG AA) over any frame of the video. */
+/* No veil over the video: text outside the white cards gets its own solid background instead
+   (see .with-video below), so contrast holds over any frame. */
 .bg-video__overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(248, 244, 232, 0.86);
+  display: none;
 }
 
 .bg-video__toggle {
@@ -1163,4 +1177,60 @@ details[open] > :not(summary) {
 .practice h4,
 .practice p {
   margin: 0;
+}
+
+/* ---- Pages with a background video: text outside the cards gets a solid surface ---- */
+.with-video .page :is(h1, h2, .lead, .muted, .small, .field-error):not(.panel *, .hero *, .notice *, .stepper *, .section-head .btn-row *) {
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px 12px;
+  border-radius: 8px;
+  background: var(--white);
+}
+
+.with-video .site-footer {
+  width: fit-content;
+  margin-top: 8px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: var(--white);
+}
+
+/* ---- "AI generated" marks: small, solid (not transparent), for AI-made images and videos ---- */
+.ai-mark {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #0b1f30;
+  color: #f8f4e8;
+  font-family: var(--font-body);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.3;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* On the video: bottom-left, like a caption burned into the footage. */
+.ai-mark--video {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 2;
+}
+
+/* On an image: pinned to its bottom edge. */
+.ai-image {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ai-image .ai-mark {
+  margin-top: -6px;
+  font-size: 0.5rem;
+  padding: 1px 4px;
 }
