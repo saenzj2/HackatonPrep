@@ -230,6 +230,44 @@ class RecommendationResponse(Schema):
     generated_at: datetime
 
 
+class SowingMonth(Schema):
+    sowing_month: int = Field(ge=1, le=12)
+    months_in_field: list[int] = Field(
+        description="Months the crop spends in the field when sown this month (wraps the year)"
+    )
+    score: float = Field(ge=0, le=1, description="Same scoring as rotations, 1 = ideal")
+    is_good: bool = Field(description="score >= 0.8 and no variable below 0.5")
+    limiting_factor: str | None = Field(
+        description="Lowest-scoring variable (e.g. rainfall) when it is below 1, else null"
+    )
+    variable_scores: dict[str, float]
+
+
+class PlantingWindow(Schema):
+    first_month: int = Field(ge=1, le=12, description="Can wrap: first 11, last 1 = Nov to Jan")
+    last_month: int = Field(ge=1, le=12)
+    best_month: int = Field(ge=1, le=12)
+    best_score: float = Field(ge=0, le=1)
+
+
+class CropPlanting(Schema):
+    crop_id: str
+    crop_name: str
+    cycle_days: int
+    sowing_months: list[SowingMonth] = Field(description="Always 12, January first")
+    windows: list[PlantingWindow] = Field(
+        description="Consecutive good sowing months; may be empty"
+    )
+
+
+class PlantingWindowsResponse(Schema):
+    location: Location
+    crops: list[CropPlanting] = Field(
+        description="One per requested crop id (duplicates ignored), in request order"
+    )
+    data_sources: DataSources
+
+
 class ErrorBody(Schema):
     code: ErrorCode = Field(description="Stable machine-readable code. Switch on this.")
     message: str = Field(description="Plain-English explanation, safe to show to users")

@@ -146,7 +146,24 @@ def test_wrong_method(client):
     assert "POST" in r.headers["allow"]
 
 
+@pytest.mark.parametrize(
+    ("params", "code"),
+    [
+        ({"lat": 40.0, "lon": 0.0}, ErrorCode.OUT_OF_REGION),
+        ({**CR, "crops": ["kale"]}, ErrorCode.UNKNOWN_CROP),
+        ({"lon": -84.2}, ErrorCode.VALIDATION_FAILED),
+    ],
+)
+def test_planting_windows_input_errors(client, params, code):
+    assert_error(client.get("/planting-windows", params=params), 422, code)
+
+
 # ---------------------------------------------------------------- 5xx from data sources
+def test_cache_miss_on_planting_windows(make_client):
+    r = make_client(data_mode=DataMode.CACHED).get("/planting-windows", params=CR)
+    assert_error(r, 503, ErrorCode.CACHE_MISS)
+
+
 def test_cache_miss(make_client):
     err = assert_error(
         make_client(data_mode=DataMode.CACHED).post("/recommendations", json=CR),

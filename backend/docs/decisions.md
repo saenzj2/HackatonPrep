@@ -15,6 +15,23 @@ Template:
 
 ---
 
+## 2026-11-14 — Planting windows per crop from NASA POWER monthly climate
+- **Decision:** `app/domain/planting_windows.py` scores each crop for every sowing month (Jan..Dec)
+  over the months it spends in the field (cycle rounded up to whole months, wrapping the year), with
+  the same `crop_season_fit()` used for rotations. Consecutive good months form a planting window.
+  A month is good when the score is >= `GOOD_SOWING_SCORE` (0.8, placeholder) **and** no variable is
+  below `MARGINAL_SCORE` (0.5).
+- **Why:** The team asked when each crop can grow at a location. Calendars differ between regions; POWER
+  monthly climate plus EcoCrop ranges answer it per point without a new dataset. Rotations keep the
+  fixed seasons in `mvp.yaml`; windows are extra information and a check on those seasons.
+- **Why the second condition:** the overall score averages climate, water and soil, so a crop whose
+  cycle gets almost no rain (rainfall score 0.08) still scored 0.85. Requiring no marginal variable
+  stops recommending those months. The same averaging affects rotation scores (flag for #27).
+- **API:** `GET /planting-windows?lat=&lon=[&crops=]` (contract updated): per crop, the 12 sowing
+  months with score, `is_good`, `limiting_factor` and variable scores, plus the windows. Uses the MVP
+  priorities and variables. **Not yet:** monthly normals only, no year-to-year variability (#34).
+- **Revisit if:** windows should drive the rotation seasons, or an agronomist suggests other thresholds.
+
 ## 2026-11-14 — Every strategy carries all five explanation parts (T4.4, #29)
 - **Decision:** No contract change and no score change. `ranking.score_rotation()` now ends `risks`
   with two "Local review: …" items: (1) check sowing dates and varieties for each crop/season, since

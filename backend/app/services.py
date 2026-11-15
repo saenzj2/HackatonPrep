@@ -27,6 +27,8 @@ from app.domain.models import (
     SoilConditions,
     Weights,
 )
+from app.domain.planting_windows import planting_windows as find_planting_windows
+from app.domain.planting_windows import sowing_calendar
 from app.domain.ranking import explain, rank_rotations
 from app.domain.suitability import cycle_rainfall_mm, season_climate
 from app.errors import (
@@ -454,3 +456,59 @@ def field_indicators(
         }
         for m in months
     ]
+
+
+def _limiting_factor(variable_scores: dict[str, float]) -> str | None:
+    if not variable_scores:
+        return None
+    name = min(variable_scores, key=lambda v: variable_scores[v])
+    return name if variable_scores[name] < 1 else None
+
+
+def planting_windows(
+    ctx: AppContext, lat: float, lon: float, crop_ids: list[str] | None
+) -> s.PlantingWindowsResponse:
+    """Best sowing months per crop at a point, scored with the MVP priorities and variables."""
+    ctx.check_location(lat, lon)
+    crops = ctx.resolve_crops(crop_ids)
+    climate = ctx.sources.climate.monthly_climate(lat, lon)
+    soil = ctx.sources.soil.soil(lat, lon)
+    p = ctx.config.priority_weights
+    weights = Weights(water=p.water, soil=p.soil, climate=p.climate)
+    result = []
+    for crop in crops:
+        months = sowing_calendar(
+            crop, climate=climate, soil=soil, weights=weights, variables=ctx.config.variables
+        )
+        result.append(
+            s.CropPlanting(
+                crop_id=crop.id,
+                crop_name=crop.name,
+                cycle_days=crop.cycle_days,
+                sowing_months=[
+                    s.SowingMonth(
+                        sowing_month=m.sowing_month,
+                        months_in_field=list(m.fit.season.months),
+                        score=_score(m.score),
+                        is_good=m.is_good(),
+                        limiting_factor=_limiting_factor(m.fit.variable_scores),
+                        variable_scores={k: _score(v) for k, v in m.fit.variable_scores.items()},
+                    )
+                    for m in months
+                ],
+                windows=[
+                    s.PlantingWindow(
+                        first_month=w.first_month,
+                        last_month=w.last_month,
+                        best_month=w.best_month,
+                        best_score=_score(w.best_score),
+                    )
+                    for w in find_planting_windows(months)
+                ],
+            )
+        )
+    return s.PlantingWindowsResponse(
+        location=s.Location(lat=lat, lon=lon),
+        crops=result,
+        data_sources=s.DataSources(**ctx.sources.names()),
+    )
