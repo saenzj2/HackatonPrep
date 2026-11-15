@@ -115,6 +115,9 @@ a token in a chat, issue or PR.
       switches (120 s) and the restart policy (`ON_FAILURE`, 3 retries).
       Proposal, pending a decision: set the same values in Railway → `harvest` → Settings, then
       remove `railway.json` in a follow-up PR.
+- [ ] **After the submission:** revoke the Cloudflare MCP OAuth access (My Profile → Access
+      Management → Connected Applications). It has write access to the whole account. On
+      2026-11-15 it read the zone and confirmed the table above: Always Use HTTPS `on`, SSL `full`.
 - [ ] Optional on Hobby: add `www.terracosmos.space` as a second custom domain in Railway, then
       drop the placeholder record and the redirect rule.
 - [ ] A teammate follows the README on their own laptop (issue #12).

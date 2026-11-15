@@ -9,15 +9,15 @@ Only the last click on **Submit for Judging** counts, and nothing can be edited 
 | # | Field | Required | Status | Owner |
 |---|---|---|---|---|
 | 1 | Project Name | yes | ✅ "Guardians of the Harvest" | — |
-| 2 | Summary (≤ 1,500 characters) | yes | ✏️ Draft below | ? |
-| 3 | Project Demonstration (public link) | yes | ❌ **Missing:** a video **≤ 30 s** *or* slides **≤ 7** (title included) | ? |
+| 2 | Summary (≤ 1,500 characters) | yes | ✏️ Draft below | Andres |
+| 3 | Project Demonstration (public link) | yes | ❌ **Missing:** a video **≤ 30 s** *or* slides **≤ 7** (title included) | a teammate (name TBD) |
 | 4 | Project (public link) | yes | ✅ https://terracosmos.space (the repo is public too, see below) | — |
-| 5 | Project Details | yes | ✏️ Draft below | ? |
-| 6 | Use of Super Intelligence (SI) | yes | ✏️ Draft below, and the team must confirm what each person used | all |
+| 5 | Project Details | yes | ✏️ Draft below | Andres |
+| 6 | Use of Super Intelligence (SI) | yes | ✅ Code only (team decision, 2026-11-15) | Andres |
 | 7 | NASA Data (links) | yes | ✅ List below | — |
 | 8 | Space Agency Partner & Other Data | no, but expected | ✅ List below | — |
 | 9 | Terms and Conditions + Original work | yes | ✅ Already checked in the form | — |
-| 10 | **Submit for Judging** | yes | ❌ Click after everything above, **before 11:59 PM** | team owner |
+| 10 | **Submit for Judging** | yes | ❌ Click after everything above, **before 11:59 PM** | Andres |
 
 Tips from the form: use **Lock** while editing so two people don't overwrite each other, and
 **Save Progress** often. Saving doesn't submit.
@@ -110,13 +110,15 @@ https://terracosmos.space
 
 ## 6. Use of Super Intelligence (SI)
 
-Select the options that apply. **Each team member must confirm what they used.** Likely:
+Team decision (2026-11-15): declare **Code** only.
 
-- **Code:** yes. AI coding assistants (Anthropic Claude Code, OpenAI Codex) helped write and review
-  code, tests and documentation. Team members reviewed every change through pull requests and CI.
-- **Text and data:** yes. They helped draft documentation, farmer-facing texts (reviewed by the team)
-  and research on data sources. Crop data comes from FAO EcoCrop, not from SI.
-- **Images, video, audio:** only if the team generated any. If so, add a **visible watermark**.
+- **Code:** yes. AI coding assistants (Anthropic Claude Code and OpenAI Codex) helped write and
+  review code, tests and repository documentation. Team members reviewed every change through pull
+  requests and CI.
+- **Text and data, images, video, audio:** not selected. Crop data comes from FAO EcoCrop and
+  climate, soil and moisture data come from NASA POWER, NASA SMAP and OpenLandMap. None of it is
+  AI-generated. If the demo uses any AI-generated image or video, add a **visible watermark** and
+  select that option too.
 
 The form requires code and data to acknowledge SI in descriptive text and metadata. The README's
 "Use of AI tools" section does this.
