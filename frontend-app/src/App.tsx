@@ -1,4 +1,5 @@
-import { HashRouter, Link, NavLink, Route, Routes } from "react-router";
+import { useEffect, type ReactNode } from "react";
+import { HashRouter, Link, NavLink, Route, Routes, useLocation } from "react-router";
 import { BackgroundVideo } from "./components/BackgroundVideo";
 import { Field } from "./pages/Field";
 import { Home } from "./pages/Home";
@@ -41,20 +42,35 @@ export function App() {
           </div>
         </header>
         <main id="main" className="page" tabIndex={-1}>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/field" element={<Field />} />
-            <Route path="/plan" element={<Plan />} />
-            <Route path="/results" element={<Results />} />
-            <Route path="/learn" element={<Learn />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <RouteFade>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/field" element={<Field />} />
+              <Route path="/plan" element={<Plan />} />
+              <Route path="/results" element={<Results />} />
+              <Route path="/learn" element={<Learn />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </RouteFade>
         </main>
         <footer className="site-footer">
           Data: NASA POWER, NASA SMAP, OpenLandMap, FAO EcoCrop · <a href="/docs">API docs</a>
         </footer>
       </PlanProvider>
     </HashRouter>
+  );
+}
+
+/** Re-mounts on each route so the page fades in (styles.css `.route`; off with reduced motion). */
+function RouteFade({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return (
+    <div key={pathname} className="route">
+      {children}
+    </div>
   );
 }
 

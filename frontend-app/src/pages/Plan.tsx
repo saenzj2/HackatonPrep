@@ -79,19 +79,6 @@ export function Plan() {
       {crops.kind === "ready" && (
         <form className="stack" onSubmit={submit} noValidate>
           <fieldset>
-            <legend>Crops you can grow</legend>
-            <p className="hint">Rotations are built only from the crops you select.</p>
-            {crops.crops.map((crop) => (
-              <label key={crop.id} className="check">
-                <input type="checkbox" checked={selected.includes(crop.id)} onChange={() => toggleCrop(crop.id)} />
-                {crop.name}
-                {crop.is_legume && <span className="tag">Legume</span>}
-                {crop.is_cover_crop && <span className="tag">Cover crop</span>}
-              </label>
-            ))}
-          </fieldset>
-
-          <fieldset>
             <legend>What you grow now (optional)</legend>
             <p className="hint">
               One crop per season. We compare every option with it. Leave all empty if you have no current crop.
@@ -145,6 +132,30 @@ export function Plan() {
               })}
             </div>
           </fieldset>
+
+          <details className="panel" open={selected.length === 0}>
+            <summary>
+              Crops to compare:{" "}
+              {selected.length === allIds.length
+                ? "all available"
+                : crops.crops
+                    .filter((c) => selected.includes(c.id))
+                    .map((c) => c.name)
+                    .join(", ") || "none"}
+            </summary>
+            <fieldset className="fieldset--plain">
+              <legend className="visually-hidden">Crops you can grow</legend>
+              <p className="hint">Rotations are built only from the crops you select.</p>
+              {crops.crops.map((crop) => (
+                <label key={crop.id} className="check">
+                  <input type="checkbox" checked={selected.includes(crop.id)} onChange={() => toggleCrop(crop.id)} />
+                  {crop.name}
+                  {crop.is_legume && <span className="tag">Legume</span>}
+                  {crop.is_cover_crop && <span className="tag">Cover crop</span>}
+                </label>
+              ))}
+            </fieldset>
+          </details>
 
           {formError && (
             <p className="field-error" role="alert">

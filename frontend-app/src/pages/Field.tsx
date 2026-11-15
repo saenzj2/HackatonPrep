@@ -1,11 +1,15 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { lazy, Suspense, useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router";
 import { api, type Conditions } from "../api/client";
+import { RainChart, TemperatureChart } from "../components/ClimateCharts";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { Stepper } from "../components/Stepper";
 import { DEMO_FIELDS, type DemoField } from "../demoFields";
 import { capitalize, monthSpan } from "../format";
 import { usePlan } from "../state/PlanContext";
+
+// The map (Leaflet + tiles) loads only when this page opens.
+const FieldMap = lazy(() => import("../components/FieldMap"));
 
 type Status =
   | { kind: "idle" }
@@ -34,13 +38,22 @@ export function Field() {
   const [lon, setLon] = useState(plan.field ? String(plan.field.lon) : "");
   const [errors, setErrors] = useState<{ lat?: string; lon?: string }>({});
   const [status, setStatus] = useState<Status>({ kind: "idle" });
+  const [point, setPoint] = useState(plan.field ? { lat: plan.field.lat, lon: plan.field.lon } : null);
+  const [bbox, setBbox] = useState<number[] | undefined>();
 
-  // Coming back to this step: show the saved field's conditions again.
   useEffect(() => {
+    // Coming back to this step: show the saved field again.
     if (plan.field) void lookUp(plan.field.lat, plan.field.lon, plan.field.name);
+    api
+      .health()
+      .then((h) => setBbox(h.region.bbox))
+      .catch(() => undefined); // the region box is a hint only
   }, []); // only on first render
 
   async function lookUp(latValue: number, lonValue: number, name: string) {
+    setPoint({ lat: latValue, lon: lonValue });
+    setLat(String(latValue));
+    setLon(String(lonValue));
     setStatus({ kind: "loading" });
     try {
       const conditions = await api.conditions(latValue, lonValue);
@@ -56,12 +69,15 @@ export function Field() {
     }
   }
 
-  function pickDemo(field: DemoField) {
-    setLat(String(field.lat));
-    setLon(String(field.lon));
+  const pickDemo = (field: DemoField) => {
     setErrors({});
     void lookUp(field.lat, field.lon, field.name);
-  }
+  };
+
+  const pickPoint = (latValue: number, lonValue: number) => {
+    setErrors({});
+    void lookUp(latValue, lonValue, `Field at ${latValue}, ${lonValue}`);
+  };
 
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -72,83 +88,88 @@ export function Field() {
     setErrors(next);
     if (next.lat) return document.getElementById("lat")?.focus();
     if (next.lon) return document.getElementById("lon")?.focus();
-    void lookUp(Number(lat), Number(lon), `Field at ${Number(lat)}, ${Number(lon)}`);
+    pickPoint(Number(lat), Number(lon));
   }
 
   return (
     <div className="stack">
       <Stepper current="field" />
-      <h1>My field</h1>
-      <p className="lead">Choose where your field is. We use one point to look up climate and soil.</p>
+      <h1>Where is your field?</h1>
+      <p className="lead">Click your field on the map. We use that point to look up climate and soil.</p>
 
-      <section className="panel" aria-labelledby="demo">
-        <h2 id="demo">Demo fields</h2>
-        <p className="muted small">These fields have NASA and soil data preloaded for the demo.</p>
+      <section className="panel stack" aria-label="Choose your field">
+        <Suspense fallback={<div className="skeleton field-map" role="status" aria-label="Loading map" />}>
+          <FieldMap bbox={bbox} selected={point} onPick={pickPoint} onPickDemo={pickDemo} />
+        </Suspense>
+
         <div className="btn-row">
+          <span className="muted small">Or use a demo field:</span>
           {DEMO_FIELDS.map((field) => (
             <button
               key={field.id}
               type="button"
-              className="btn btn--secondary"
+              className="btn btn--secondary btn--small"
               onClick={() => pickDemo(field)}
               aria-pressed={plan.field?.lat === field.lat && plan.field?.lon === field.lon}
             >
-              {field.name} · {field.description}
+              {field.name}
             </button>
           ))}
         </div>
-      </section>
 
-      <form className="panel stack" onSubmit={submit} noValidate aria-labelledby="coords">
-        <h2 id="coords">Or enter coordinates</h2>
-        <div className="grid grid--2">
-          <div>
-            <label htmlFor="lat">
-              Latitude <span className="hint">(-90 to 90, e.g. 10.0)</span>
-            </label>
-            <input
-              id="lat"
-              type="number"
-              inputMode="decimal"
-              step="any"
-              value={lat}
-              onChange={(e) => setLat(e.target.value)}
-              aria-invalid={errors.lat ? true : undefined}
-              aria-describedby={errors.lat ? "lat-error" : undefined}
-            />
-            {errors.lat && (
-              <p id="lat-error" className="field-error">
-                {errors.lat}
-              </p>
-            )}
-          </div>
-          <div>
-            <label htmlFor="lon">
-              Longitude <span className="hint">(-180 to 180, e.g. -84.2)</span>
-            </label>
-            <input
-              id="lon"
-              type="number"
-              inputMode="decimal"
-              step="any"
-              value={lon}
-              onChange={(e) => setLon(e.target.value)}
-              aria-invalid={errors.lon ? true : undefined}
-              aria-describedby={errors.lon ? "lon-error" : undefined}
-            />
-            {errors.lon && (
-              <p id="lon-error" className="field-error">
-                {errors.lon}
-              </p>
-            )}
-          </div>
-        </div>
-        <div className="btn-row">
-          <button type="submit" className="btn" disabled={status.kind === "loading"}>
-            Look up this field
-          </button>
-        </div>
-      </form>
+        <details open={Boolean(errors.lat || errors.lon)}>
+          <summary>Enter coordinates instead</summary>
+          <form className="stack" onSubmit={submit} noValidate>
+            <div className="grid grid--2">
+              <div>
+                <label htmlFor="lat">
+                  Latitude <span className="hint">(-90 to 90, e.g. 10.0)</span>
+                </label>
+                <input
+                  id="lat"
+                  type="number"
+                  inputMode="decimal"
+                  step="any"
+                  value={lat}
+                  onChange={(e) => setLat(e.target.value)}
+                  aria-invalid={errors.lat ? true : undefined}
+                  aria-describedby={errors.lat ? "lat-error" : undefined}
+                />
+                {errors.lat && (
+                  <p id="lat-error" className="field-error">
+                    {errors.lat}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label htmlFor="lon">
+                  Longitude <span className="hint">(-180 to 180, e.g. -84.2)</span>
+                </label>
+                <input
+                  id="lon"
+                  type="number"
+                  inputMode="decimal"
+                  step="any"
+                  value={lon}
+                  onChange={(e) => setLon(e.target.value)}
+                  aria-invalid={errors.lon ? true : undefined}
+                  aria-describedby={errors.lon ? "lon-error" : undefined}
+                />
+                {errors.lon && (
+                  <p id="lon-error" className="field-error">
+                    {errors.lon}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div>
+              <button type="submit" className="btn btn--secondary" disabled={status.kind === "loading"}>
+                Look up these coordinates
+              </button>
+            </div>
+          </form>
+        </details>
+      </section>
 
       <div aria-live="polite">
         {status.kind === "loading" && (
@@ -168,15 +189,55 @@ export function Field() {
 }
 
 function ConditionsSummary({ conditions }: { conditions: Conditions }) {
-  const { soil, seasons, data_sources } = conditions;
+  const { soil, seasons, monthly, data_sources } = conditions;
+  const yearRain = monthly.reduce((sum, m) => sum + m.rainfall_mm, 0);
   return (
-    <section className="stack" aria-labelledby="conditions">
-      <h2 id="conditions">
-        Your field at {conditions.location.lat}, {conditions.location.lon}
-      </h2>
+    <section className="stack fade-in" aria-labelledby="conditions">
+      <div className="section-head">
+        <h2 id="conditions">
+          Your field at {conditions.location.lat}, {conditions.location.lon}
+        </h2>
+        <Link to="/plan" className="btn">
+          Next: crops and priorities
+        </Link>
+      </div>
 
-      <div className="panel">
-        <h3>Growing seasons</h3>
+      <div className="grid grid--4">
+        <div className="panel stat-card">
+          <span className="stat-card__label">Rain per year</span>
+          <span className="stat">{Math.round(yearRain).toLocaleString("en")} mm</span>
+          <span className="muted small">NASA POWER average</span>
+        </div>
+        <div className="panel stat-card">
+          <span className="stat-card__label">Soil moisture</span>
+          <span className="stat">
+            {soil.moisture_m3m3 != null ? `${soil.moisture_m3m3.toFixed(2)} m³/m³` : "Not available"}
+          </span>
+          <span className="muted small">NASA SMAP satellite, ~9 km</span>
+        </div>
+        <div className="panel stat-card">
+          <span className="stat-card__label">Soil pH</span>
+          <span className="stat stat--green">{soil.ph != null ? soil.ph.toFixed(1) : "Not available"}</span>
+          <span className="muted small">Soil map estimate, not a test</span>
+        </div>
+        <div className="panel stat-card">
+          <span className="stat-card__label">Soil texture</span>
+          <span className="stat stat--green">{soil.texture_class ? capitalize(soil.texture_class) : "Not available"}</span>
+          <span className="muted small">Soil map; can differ from your field</span>
+        </div>
+      </div>
+
+      <div className="grid grid--2">
+        <div className="panel">
+          <RainChart monthly={monthly} seasons={seasons} />
+        </div>
+        <div className="panel">
+          <TemperatureChart monthly={monthly} seasons={seasons} />
+        </div>
+      </div>
+
+      <details className="panel">
+        <summary>Season averages as a table</summary>
         <div className="table-scroll">
           <table>
             <thead>
@@ -204,39 +265,11 @@ function ConditionsSummary({ conditions }: { conditions: Conditions }) {
           </table>
         </div>
         <p className="muted small">Long-term averages from NASA POWER. Seasons are rainfed.</p>
-      </div>
-
-      <div className="grid grid--3">
-        <div className="panel">
-          <h3>Soil pH</h3>
-          <p className="stat stat--green">{soil.ph != null ? soil.ph.toFixed(1) : "Not available"}</p>
-          <p className="muted small">Estimate from the OpenLandMap soil map, not a soil test.</p>
-        </div>
-        <div className="panel">
-          <h3>Soil moisture</h3>
-          <p className="stat">
-            {soil.moisture_m3m3 != null ? `${soil.moisture_m3m3.toFixed(2)} m³/m³` : "Not available"}
-          </p>
-          <p className="muted small">Yearly average from NASA SMAP satellite data (~9 km area).</p>
-        </div>
-        <div className="panel">
-          <h3>Soil texture</h3>
-          <p className="stat stat--green">
-            {soil.texture_class ? capitalize(soil.texture_class) : "Not available"}
-          </p>
-          <p className="muted small">From the soil map; it can differ from your field.</p>
-        </div>
-      </div>
+      </details>
 
       <p className="small muted">
         Sources: {Object.values(data_sources).map((s) => SOURCE_LABELS[s] ?? s).join(" · ")}
       </p>
-
-      <div className="btn-row">
-        <Link to="/plan" className="btn">
-          Next: crops and priorities
-        </Link>
-      </div>
     </section>
   );
 }
