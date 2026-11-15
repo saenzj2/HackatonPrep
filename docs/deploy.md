@@ -76,16 +76,31 @@ Owner of both accounts: Andres (GitHub `AndresACV`). Ask him for dashboard chang
 - Redirect rule "Redirect from WWW to root": `https://www.terracosmos.space/*` →
   `https://terracosmos.space/${1}`, 301, keeps the query string.
 - Keep the apex CNAME **DNS only**: Railway issues and renews the HTTPS certificate itself.
+- **SSL/TLS → Edge Certificates → Always Use HTTPS: on.** It upgrades `http://www` at the edge
+  before the redirect rule runs.
+
+**Cloudflare MCP for AI assistants (optional, per person).** Claude Code can read the zone through
+Cloudflare's MCP server (`https://mcp.cloudflare.com/mcp`). Register it only in **local** scope
+(`claude mcp add --scope local …`) with your own Cloudflare API token. Local scope keeps it in your
+user config, outside the repo. **Never** add it to `.mcp.json`, `.claude/settings.json` or any
+file in the repo, and never paste the token in a chat, issue or PR. Read-only is enough: the token
+needs `user:read` and `account:read` to connect, plus zone read for DNS and settings. DNS changes
+are still made by the account owner in the dashboard.
 
 ## Pending
 
-- [ ] **`http://www.terracosmos.space` answers 522.** Turn on Cloudflare **SSL/TLS → Edge
-      Certificates → Always Use HTTPS** so the edge upgrades to https before the www redirect.
-      `http://terracosmos.space` already redirects to https (Railway does it).
-- [ ] **Railway plan.** The account is on Trial (30 days or USD 5 of credit, from 2026-11-15).
-      Afterwards it drops to the Free plan (USD 1/month credit, 0.5 GB RAM), which may stop the
-      service. To keep the URL up through judging, upgrade to Hobby (USD 5/month, includes USD 5 of
-      usage) before the trial ends. That's a team decision.
+- [x] **Always Use HTTPS** is on (Cloudflare **SSL/TLS → Edge Certificates**). Checked with curl
+      on 2026-11-15: `http://www.terracosmos.space/` gets a 301 to https from Cloudflare (no more
+      522), then the www rule sends it to `https://terracosmos.space/`. `http://terracosmos.space`
+      is redirected to https by Railway.
+- [ ] **Railway plan: the Trial ends on 2026-12-15 at the latest.** It started on 2026-11-15 and
+      lasts 30 days or until the USD 5 credit is spent, whichever comes first. Then the account
+      drops to the Free plan (USD 1/month credit).
+      **Risk:** Railway's pricing page lists custom domains on Free as "1 trial, then 0". On Free,
+      `terracosmos.space` stops working. Only `harvest-production-3c6bc064.up.railway.app` would be
+      left, and only if the USD 1 credit covers the service. The link we submitted to Space Apps
+      would break during judging. To prevent it, upgrade to Hobby (USD 5/month, includes USD 5 of
+      usage, 2 custom domains per service) before the trial ends. That's a team decision.
 - [ ] Optional on Hobby: add `www.terracosmos.space` as a second custom domain in Railway, then
       drop the placeholder record and the redirect rule.
 - [ ] A teammate follows the README on their own laptop (issue #12).
