@@ -320,6 +320,10 @@ components:
           type: boolean
           title: Is Cover Crop
           description: Commonly grown to cover and protect the soil
+        needs_good_drainage:
+          type: boolean
+          title: Needs Good Drainage
+          description: 'EcoCrop: does not tolerate poorly drained soil (checked for waterlogging)'
         forage_value:
           $ref: '#/components/schemas/TraitValue'
           description: Value of the crop or its residue as animal feed
@@ -328,14 +332,14 @@ components:
           description: Nutrient density of the edible part
         mycorrhizal_affinity:
           $ref: '#/components/schemas/TraitValue'
-          description: 'How much the crop hosts and benefits from mycorrhizal fungi; none = non-host'
+          description: How much the crop hosts and benefits from mycorrhizal fungi; none = non-host
         nitrogen_demand:
           $ref: '#/components/schemas/TraitValue'
-          description: 'Nitrogen need; high = heavy feeder'
+          description: Nitrogen need; high = heavy feeder
         market_note:
           type: string
           title: Market Note
-          description: 'One line of local market context; may be empty'
+          description: One line of local market context; may be empty
         sources:
           items:
             type: string
@@ -360,6 +364,7 @@ components:
       - soil_ph
       - root_depth_m
       - is_cover_crop
+      - needs_good_drainage
       - forage_value
       - nutrition_density
       - mycorrhizal_affinity
@@ -829,11 +834,38 @@ components:
         moisture_m3m3:
           type: number
           title: Moisture M3M3
+          description: Yearly mean root-zone moisture, m³/m³
+        moisture_monthly_m3m3:
+          anyOf:
+          - items:
+              type: number
+            type: array
+          - type: 'null'
+          title: Moisture Monthly M3M3
+          description: Mean root-zone moisture per month (m³/m³), January first; null if unknown
+        texture_class:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Texture Class
+          description: USDA texture class of the topsoil (OpenLandMap), e.g. clay; null if unknown
+        wetness_monthly:
+          anyOf:
+          - items:
+              type: number
+            type: array
+          - type: 'null'
+          title: Wetness Monthly
+          description: Mean root-zone relative saturation per month (0 dry .. 1 saturated), January first;
+            drives the waterlogging check. Null if unknown
       additionalProperties: false
       type: object
       required:
       - ph
       - moisture_m3m3
+      - moisture_monthly_m3m3
+      - texture_class
+      - wetness_monthly
       title: Soil
     ToleranceRange:
       properties:
@@ -898,6 +930,12 @@ components:
           type: array
           title: Sowing Months
           description: Always 12, January first
+        fixed_limits:
+          items:
+            type: string
+          type: array
+          title: Fixed Limits
+          description: Factors that are the same in every month (soil pH) and limit this crop here
         windows:
           items:
             $ref: '#/components/schemas/PlantingWindow'
@@ -911,6 +949,7 @@ components:
       - crop_name
       - cycle_days
       - sowing_months
+      - fixed_limits
       - windows
       title: CropPlanting
     PlantingWindow:
@@ -985,7 +1024,20 @@ components:
         is_good:
           type: boolean
           title: Is Good
-          description: score >= 0.8 and no variable below 0.5
+          description: 'Score on the month-varying variables >= 0.8 and none of them below 0.5 (soil pH is
+            the same every month: see fixed_limits). Waterlogging never makes a month not good: see waterlogging_risk'
+        dry_month_note:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Dry Month Note
+          description: Why this sowing month fails the dry-month check (a month in the field, harvest excluded,
+            gets too little rain to establish and grow); null when it passes
+        waterlogging_risk:
+          type: boolean
+          title: Waterlogging Risk
+          description: The root zone is wet enough to warn about waterlogging for this crop (needs good drainage);
+            the score already includes a small penalty (at most -15 %)
         limiting_factor:
           anyOf:
           - type: string
@@ -1004,6 +1056,8 @@ components:
       - months_in_field
       - score
       - is_good
+      - dry_month_note
+      - waterlogging_risk
       - limiting_factor
       - variable_scores
       title: SowingMonth

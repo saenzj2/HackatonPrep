@@ -27,6 +27,7 @@ explanations need lives here, so nothing about a crop is hardcoded in Python.
 | Issue attribute | Column | Type / allowed values | Meaning | Used by |
 |---|---|---|---|---|
 | Root depth | `root_depth_m` | float, metres | Typical maximum effective rooting depth (FAO-56 Table 22, upper value) | soil-health benefit ("deep roots open the subsoil"), rotation rules |
+| *(EcoCrop)* Drainage | `needs_good_drainage` | bool | The crop doesn't tolerate poorly drained soil (EcoCrop `drar`); rice `false`, the rest `true` | waterlogging check in scoring |
 | Cover-crop use | `is_cover_crop` | bool | Commonly grown to cover and protect the soil between cash crops | soil-health score, badges #38 |
 | Forage value | `forage_value` | score 0..1 → API `{level, score}` | Value of the crop or its residue as animal feed | income/benefit text #29 |
 | Nutrition density | `nutrition_density` | score 0..1 → API `{level, score}` | Nutrient density of the edible part (protein, micronutrients). 0 for non-food cover crops | nutrition badge #38 |

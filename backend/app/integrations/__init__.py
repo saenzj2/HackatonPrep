@@ -17,10 +17,12 @@ from app.integrations.base import (
     TerrainSource,
 )
 from app.integrations.ecocrop import EcoCropCatalog
+from app.integrations.measured_soil import MeasuredSoil
 from app.integrations.mock import MockClimate, MockSoil, MockSoilProfile, MockTerrain
 from app.integrations.nasa_power import NasaPowerClimate
 from app.integrations.openlandmap import EarthEngineSoil
 from app.integrations.opentopography import OpenTopographyElevation
+from app.integrations.smap import SmapSoilMoisture
 from app.settings import DataMode, EnvSettings, MvpConfig
 
 
@@ -50,19 +52,19 @@ def build_sources(config: MvpConfig, env: EnvSettings) -> Sources:
             terrain=MockTerrain(),
             soil_profile=MockSoilProfile(),
         )
-    cache = JsonCache(env.cache_dir, config.data_mode)
+    cache = JsonCache(env.cache_dir, config.data_mode, snapshot=env.cache_snapshot_dir)
     power = NasaPowerClimate(cache)
+    # Earth Engine starts on the first uncached request, never here (no network at startup).
+    project, key_file = env.gee_project_id, env.gee_service_account_key_file
+    soil_profile = EarthEngineSoil(cache, project_id=project, service_account_key_file=key_file)
+    moisture = SmapSoilMoisture(cache, project_id=project, service_account_key_file=key_file)
     return Sources(
         climate=power,
-        soil=MockSoil(),  # TODO: real soil source (SMAP moisture, SoilGrids pH). See decisions.md
+        # Real soil for scoring: OpenLandMap pH + NASA SMAP monthly moisture (both cached).
+        soil=MeasuredSoil(profile=soil_profile, moisture=moisture),
         crops=crops,
         daily=power,
         # No key needed until a location isn't cached yet (then ConfigError names the variable).
         terrain=OpenTopographyElevation(cache, env.open_topography_key),
-        # Earth Engine starts on the first uncached request, never here (no network at startup).
-        soil_profile=EarthEngineSoil(
-            cache,
-            project_id=env.gee_project_id,
-            service_account_key_file=env.gee_service_account_key_file,
-        ),
+        soil_profile=soil_profile,
     )

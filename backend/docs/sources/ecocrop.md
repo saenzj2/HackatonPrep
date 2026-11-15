@@ -41,18 +41,23 @@ by name. Mapping in `ECOPORT_CODES` (`scripts/import_ecocrop.py`).
 | `rain_abs_min`, `rain_opt_min`, `rain_opt_max`, `rain_abs_max` | `rmin`, `ropmn`, `ropmx`, `rmax` | mm, **annual** in FAO's definition (see below) |
 | `ph_abs_min`, `ph_opt_min`, `ph_opt_max`, `ph_abs_max` | `phmin`, `phopmn`, `phopmx`, `phmax` | pH |
 
+Also imported: **`needs_good_drainage`** from `drar` (the drainage classes the crop tolerates):
+`false` when EcoCrop says the crop tolerates *poorly drained* soil (rice: "saturated >50% of
+year"), `true` otherwise (beans, maize, sorghum, cowpea: "well drained"). It switches on the
+waterlogging check (`docs/sources/smap.md`).
+
 Not imported:
 - `gmin`/`gmax` (cycle days): too wide to replace our single `cycle_days` (maize 65–365 days).
 - `ktmp` (killing temperature): empty for almost every crop.
-- The other columns (drainage, soil depth, texture, fertility, salinity, altitude, uses, …): left in
+- The other columns (soil depth, texture, fertility, salinity, altitude, uses, …): left in
   the source file for later. Most promising:
   - **Soil needs per crop** (`text`, `dra`, `dep`): they pair with the real soil profile from
     OpenLandMap (`soil_profile`: texture class, clay, sand, field capacity; see decisions.md
     2026-11-14 "Soil profile from OpenLandMap") for a soil-suitability check.
   - **Use categories** (`cat`: "cover crop", "forage/pasture") to source `is_cover_crop` and `forage_value`.
 
-**Soil pH:** scoring still uses the mock soil (`Sources.soil`). When the team switches it to
-OpenLandMap pH, these EcoCrop pH ranges are what judge it, so pH results will move.
+**Soil pH:** scoring uses the real OpenLandMap pH (`MeasuredSoil`, decisions.md 2026-11-15), judged
+against these EcoCrop pH ranges.
 
 Every other CSV column (family, legume, cycle, root depth, traits, market note) is ours, not EcoCrop's;
 see [`../crop-schema.md`](../crop-schema.md).

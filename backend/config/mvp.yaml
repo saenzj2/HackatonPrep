@@ -34,8 +34,10 @@ seasons:
 # How many rotations /recommendations returns by default
 top_n: 5
 
-# mock   : deterministic fake data, no network (default; frontend can build on it)
-# live   : real APIs; every response is saved to the cache
-# cached : only the cache, never the network (use this for the demo)
+# cached : real data from the cache only, never the network (default). Reads backend/.cache/ and
+#          then the committed snapshot backend/app/cache/snapshots/ (the demo points). A point
+#          never fetched answers 503 cache_miss: fetch it once in live mode (decisions.md).
+# live   : real APIs; every response is saved to the cache (needs keys / Earth Engine access)
+# mock   : deterministic FAKE data, no network. Only for tests; never for the demo.
 # The DATA_MODE env var overrides this value.
-data_mode: mock
+data_mode: cached

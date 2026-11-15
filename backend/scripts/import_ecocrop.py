@@ -1,7 +1,8 @@
 """Refresh the crop tolerance ranges in data/ecocrop_subset.csv from FAO EcoCrop.
 
 Source: the EcoCrop table published by the Adaptation Atlas (CGIAR) as Parquet. Only the
-temperature, rainfall and pH ranges come from EcoCrop; every other column is kept as it is.
+temperature, rainfall and pH ranges and `needs_good_drainage` (from the drainage classes the crop
+tolerates) come from EcoCrop; every other column is kept as it is.
 Rows are matched by EcoCrop `ecoportcode` (ECOPORT_CODES), never by name: EcoCrop has several
 entries per species (subspecies, varieties).
 
@@ -57,7 +58,18 @@ RANGE_COLUMNS = {
     "ph_opt_max": "phopmx",
     "ph_abs_max": "phmax",
 }
-FIXTURE_COLUMNS = ["ecoportcode", "scientificname", *RANGE_COLUMNS.values(), "gmin", "gmax"]
+# `drar`: soil drainage classes the crop tolerates (a list),
+# e.g. ["poorly (saturated >50% of year)"] for rice.
+LIST_COLUMNS = ["drar"]
+FIXTURE_COLUMNS = [
+    "ecoportcode",
+    "scientificname",
+    *RANGE_COLUMNS.values(),
+    "gmin",
+    "gmax",
+    *LIST_COLUMNS,
+]
+DRAINAGE_COLUMN = "needs_good_drainage"  # our CSV column, after is_cover_crop
 SOURCE_PREFIX = "FAO EcoCrop"  # any old EcoCrop citation in `sources` is replaced
 
 
@@ -73,6 +85,9 @@ def load_records(parquet: Path) -> dict[int, dict[str, Any]]:
         for column in FIXTURE_COLUMNS:
             value = row[column]
             # numpy/pandas scalars → plain Python, missing → None (the fixture is JSON)
+            if column in LIST_COLUMNS:
+                record[column] = None if value is None else [str(v) for v in value]
+                continue
             record[column] = None if pd.isna(value) else getattr(value, "item", lambda v=value: v)()
         records[int(row["ecoportcode"])] = record
     missing = set(ECOPORT_CODES.values()) - set(records)
@@ -97,6 +112,14 @@ def _sources(old: str, code: int, fetched: str) -> str:
     return "; ".join([ecocrop, *kept])
 
 
+def needs_good_drainage(record: dict[str, Any]) -> bool:
+    """True unless EcoCrop says the crop tolerates poorly drained soil (e.g. rice)."""
+    tolerated = record.get("drar")
+    if not tolerated:
+        raise SystemExit(f"EcoCrop {record['ecoportcode']} has no drainage classes (drar)")
+    return not any(v.startswith("poorly") for v in tolerated)
+
+
 def apply_ranges(
     rows: list[dict[str, str]], records: dict[int, dict[str, Any]], fetched: str
 ) -> list[dict[str, str]]:
@@ -118,6 +141,7 @@ def apply_ranges(
         for ours, theirs in RANGE_COLUMNS.items():
             new[ours] = _number(record[theirs])
         new["sources"] = _sources(row["sources"], code, fetched)
+        new[DRAINAGE_COLUMN] = "true" if needs_good_drainage(record) else "false"
         new["verified"] = "true"
         out.append(new)
     return out
@@ -147,6 +171,8 @@ def main() -> None:
     with CSV_PATH.open(encoding="utf-8", newline="") as f:
         reader = csv.DictReader(f)
         header = list(reader.fieldnames or [])
+        if DRAINAGE_COLUMN not in header:
+            header.insert(header.index("is_cover_crop") + 1, DRAINAGE_COLUMN)
         rows = list(reader)
     new_rows = apply_ranges(rows, records, fetched)
     with CSV_PATH.open("w", encoding="utf-8", newline="") as f:

@@ -20,7 +20,7 @@ PYTHON ?= $(shell for p in python3.13 python3.12 python3.11 python3 python py; d
 FAST := -m "not slow and not network"
 
 .DEFAULT_GOAL := help
-.PHONY: help setup install hooks dev test test-all lint fmt check clean
+.PHONY: help setup install hooks dev test test-all lint fmt check clean cache-snapshot
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
@@ -59,6 +59,11 @@ fmt: ## Auto-fix lint and format
 	cd $(BACKEND) && $(BIN)/ruff format . && $(BIN)/ruff check --fix .
 
 check: lint test ## Everything CI runs (contract tests are part of `test`)
+
+cache-snapshot: ## Copy backend/.cache into the committed snapshot (real data for cached mode)
+	@mkdir -p $(BACKEND)/app/cache/snapshots
+	cp -R $(BACKEND)/.cache/. $(BACKEND)/app/cache/snapshots/
+	@echo "Review the new files (git status), then commit them. Never contains API keys."
 
 clean: ## Remove venv and caches
 	rm -rf $(VENV) $(BACKEND)/.pytest_cache $(BACKEND)/.ruff_cache

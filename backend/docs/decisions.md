@@ -15,6 +15,103 @@ Template:
 
 ---
 
+## 2026-11-15 — Planting windows: dry-month check (no more dry-season maize sowing)
+- **Problem:** the cycle's rain total hid dry months. Maize sown in March in Alajuela gets 29 and
+  76 mm in its first two months, but May and June bring the total to 534 mm, so March counted as a
+  good sowing month (the seed would sit in dry soil). October passed with a dry December–January.
+- **Decision (engine owner, after an `agro-logic` review):** every month in the field except the
+  last (harvest; dry weather is wanted there) is checked. The driest one is scored on a ramp from
+  `rain_abs_min / (n + 1)` (0) to `rain_opt_min / (n + 1)` (1), n = months in the field (Recocrop
+  splits EcoCrop ranges per month the same way). It must score >= 0.5 (`MARGINAL_SCORE`): maize and
+  beans pass at ~100 mm, close to Oldeman's (1975) wet-month bar for upland crops (from memory).
+  It only decides good sowing months (not averaged into crop or rotation scores). Farmer note in
+  `SowingMonth.dry_month_note`, e.g. "Sowing Maize in March is risky: March usually gets only 29 mm
+  of rain, and Maize needs about 100 mm a month to establish and grow (at least 80)".
+- **Effect:** maize May–Sep at both demo points (was Apr–Oct in San Carlos, Mar–Oct in Alajuela);
+  Alajuela beans and cowpea lose April (76 mm); San Carlos sorghum keeps no window.
+- **Known limits (documented, not fixed):** stored soil water isn't counted, so residual-moisture
+  sowings (Zona Norte beans in Nov–Dec) still fail; bean windows stay wide because primera disease
+  (web blight) needs a separate rule; rotations score postrera (Sep–Nov) as 3 months although maize
+  needs 4, so the dry December is never seen there.
+- **Revisit if:** soil-water carry-over is added (e.g. pass a month after a month >= 2 × optimum).
+
+## 2026-11-15 — Soil moisture scores dry soil only; waterlogging check for well-drained crops
+- **Decision (engine owner, after an `agro-logic` review):**
+  - `GENERIC_SOIL_MOISTURE` is dry-side only: 0 at or below 0.10 m³/m³, 1 from 0.20, no upper
+    limit (was ideal 0.20–0.40, max 0.55). SMAP's absolute m³/m³ depend on its model's soil, and
+    excess water is already covered by each crop's rainfall upper limits. Dry soil gets a plain note
+    ("root-zone soil is dry… expect water stress without irrigation").
+  - **Waterlogging:** SMAP `sm_rootzone_wetness` (relative saturation 0–1, same model, comparable
+    across soils) is fetched with the moisture. For crops that need good drainage, the cycle's mean
+    wetness lowers the score from 0.80 (no effect) to −30 % at 0.95, with a warning from 0.85
+    ("waterlogging risk… check drainage or use raised beds"). Never a veto.
+  - **`needs_good_drainage`** is imported from EcoCrop (`drar`): rice tolerates poorly drained soil
+    (`false`); beans, maize, sorghum, cowpea need good drainage (`true`).
+- **Rejected:** per-crop moisture ranges (no source gives them in m³/m³); dividing SMAP moisture by
+  OpenLandMap field capacity (different soil models and depths: contradictory results).
+- **Waterlogging size (second `agro-logic` review, adopted by the engine owner):** at most −15 %
+  (`WATERLOGGING_MIN_FACTOR` 0.85, was 0.70). A real waterlogging event costs more, but only in
+  poorly drained fields, which ~9 km monthly data can't tell apart; −30 % treated a regional model
+  value as the field. Thresholds 0.80 / 0.95 / 0.85 kept as placeholders.
+- **Planting windows only warn about waterlogging:** a month's "good" decision ignores the factor
+  (the data can't see drainage, slope, raised beds or ditches). Each sowing month gets
+  `waterlogging_risk`; crop and rotation scores still include the penalty.
+- **Effect (real data):** San Carlos warns in postrera (85 % saturated) for maize, beans and cowpea,
+  ~5 % penalty (mean wetness 0.85). Zona Norte beans are mostly sown late (Upala/Los Chiles cycle
+  ~Dec–Feb); sources found cite rain at harvest and disease, not waterlogging, as the reason
+  (fact-check 2026-11-15). Alajuela keeps rainy-season windows
+  (beans Apr–Oct, maize Mar–Oct) with warnings; with −30 % they had shrunk to Mar–May.
+- **Open:** Alajuela maize still opens in March (dry season): the rain or dry-soil checks may be too
+  loose for the sowing month; separate review.
+- **Later (review):** FAO-56 water-stress coefficient per crop (depletion fraction p) for the dry
+  side; SMAP `land_fraction_saturated`; clay texture raising the waterlogging risk (for now it
+  only words the warning: "clay soil drains slowly, which raises the risk", from the OpenLandMap
+  topsoil texture class, also returned as `Soil.texture_class`; no score change).
+
+## 2026-11-15 — Default data mode is `cached` (real data), with a committed demo snapshot
+- **Decision:** `config/mvp.yaml` → `data_mode: cached` (was `mock`). `JsonCache` reads the runtime
+  cache (`backend/.cache/`, gitignored) and then a **committed read-only snapshot**
+  (`backend/app/cache/snapshots/`, `EnvSettings.cache_snapshot_dir`), as the `.gitignore` comment
+  already anticipated. The snapshot holds the real responses for the demo points: San Carlos
+  (11.0, −84.6) and Alajuela (10.0, −84.2), NASA POWER climate, OpenLandMap soil and NASA SMAP
+  moisture (24 KB). `make cache-snapshot` copies newly fetched points into it.
+- **Why:** The engine owner wants the API to serve real data always. With `mock` as default, anyone
+  starting the server without `DATA_MODE` got fake climate and soil. `mock` stays for tests (they
+  force it, with no snapshot).
+- **Effect:** a fresh clone answers real data for the demo points; any other point answers
+  `503 cache_miss` (never fake data) until someone with access fetches it in `live` mode.
+- **Safety:** cache params never contain API keys (OpenTopography adds its key only at request
+  time); `test_committed_snapshot_never_holds_secrets` checks every snapshot file.
+- **Revisit if:** the frontend needs many arbitrary points (then a deployed `live` backend with keys).
+
+## 2026-11-15 — Real soil in scoring: OpenLandMap pH + NASA SMAP monthly moisture
+- **Decision:** In `live` and `cached` modes, `Sources.soil` is now `MeasuredSoil`
+  (`openlandmap+nasa_smap`) instead of `MockSoil`:
+  - **pH:** mean of the OpenLandMap layers at 0, 10 and 30 cm (Jeffry's `EarthEngineSoil`, reused).
+  - **Moisture:** new adapter `smap.py`, NASA SMAP L4 `sm_rootzone` (0–100 cm, m³/m³) via Earth
+    Engine: 12 monthly means of 2020–2024, one reading a day, mean within 15 km. See
+    `docs/sources/smap.md`.
+  - `SoilConditions` gains `moisture_monthly_m3m3`; seasons and sowing months are scored on the mean
+    moisture of their own months (like rainfall). The scoring logic itself is unchanged.
+- **Planting windows (agro-logic review 2026-11-15):** the "good month" rule now uses only the
+  variables that change by month; soil pH is the same every month, so it's reported once per crop
+  (`fixed_limits`) instead of vetoing all 12 months. A pH outside the crop's absolute range still
+  leaves no window. `GOOD_SOWING_SCORE` stays 0.8 (the review found 0.7 gives the same windows).
+- **API (additive):** `Soil.moisture_monthly_m3m3`, `CropPlanting.fixed_limits`; `is_good`
+  description updated. New `data_gaps` lines say where pH and moisture come from.
+- **Shared code:** Earth Engine error handling moved from `EarthEngineSoil.fetch_raw` to
+  `openlandmap.call_earth_engine()`, used by both adapters.
+- **Why:** The challenge is about NASA Earth observation; SMAP gives real moisture month by month,
+  including the moisture left after the rains (Nov–Dec), which rainfall alone can't show.
+  NASA POWER `GWETROOT` was the fallback (relative wetness, ~55 km, not m³/m³).
+- **Effect:** Alajuela (example point): pH 6.4 and moisture 0.38–0.52 m³/m³, above the generic ideal
+  (0.20–0.40), so rotation scores drop (e.g. 1.00 → 0.89). San Carlos: pH 5.4, moisture 0.21–0.36.
+- **Open:** `GENERIC_SOIL_MOISTURE` is still one placeholder range for every crop and penalises wet
+  areas; per-crop values need an `agro-logic` review. Demo points must be fetched once in `live`
+  mode (~30 s each for SMAP) before `cached` mode works there.
+- **Revisit if:** the team moves to Jeff's Earth Engine project (only `GEE_PROJECT_ID` changes);
+  year-to-year variability (#34); per-crop moisture ranges.
+
 ## 2026-11-15 — Crop tolerance ranges imported from FAO EcoCrop (Adaptation Atlas copy)
 - **Decision:** `scripts/import_ecocrop.py` copies the temperature, rainfall and pH ranges of our 5
   crops from the EcoCrop Parquet published by the Adaptation Atlas (CGIAR), picking each row by

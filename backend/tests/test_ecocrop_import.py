@@ -60,3 +60,11 @@ def test_import_refuses_an_ecocrop_record_with_empty_ranges():
     records = {**RECORDS, 48747: {**RECORDS[48747], "rmax": None}}
     with pytest.raises(SystemExit, match="sorghum: EcoCrop 48747 has empty"):
         apply_ranges([{"id": "sorghum", "sources": "", "verified": "false"}], records, "x")
+
+
+def test_drainage_comes_from_ecocrop():
+    """Rice tolerates poorly drained soil in EcoCrop; the other four need good drainage."""
+    rows = {r["id"]: r for r in _csv_rows()}
+    assert rows["rice"]["needs_good_drainage"] == "false"
+    for crop_id in ("beans", "maize", "sorghum", "cowpea"):
+        assert rows[crop_id]["needs_good_drainage"] == "true"

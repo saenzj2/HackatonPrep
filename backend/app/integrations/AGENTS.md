@@ -9,6 +9,9 @@ General backend rules: [`backend/AGENTS.md`](../../AGENTS.md).
 - `nasa_power.py`: **the template**. Copy its structure for new sources.
 - `opentopography.py`: SRTM GL1 point elevation (API key, 5 calls per slope sample).
 - `openlandmap.py`: OpenLandMap soil by depth via Google Earth Engine (`ee` imported lazily; 1 request per 250 m pixel).
+- `smap.py`: NASA SMAP L4 root-zone moisture, 12 monthly means per point via Earth Engine (~30 s, cached forever).
+- `measured_soil.py`: the real `SoilSource` for scoring: OpenLandMap pH (0–30 cm) + SMAP monthly moisture.
+  Earth Engine setup and error handling are shared in `openlandmap.py` (`initialize_earth_engine`, `call_earth_engine`).
 - `ecocrop.py`: local CSV catalog. `mock.py`: deterministic fake data for `mock` mode.
 
 ## The adapter pattern (keep these three parts separate)

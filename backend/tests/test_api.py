@@ -172,3 +172,9 @@ def test_limiting_factor_is_the_weakest_variable_or_none_when_ideal(client):
         else:
             assert m["limiting_factor"] is None
     assert any(m["limiting_factor"] for m in months)  # the check above ran on real cases
+
+
+def test_conditions_include_monthly_soil_moisture(client):
+    soil = client.get("/conditions", params=CR).json()["soil"]
+    assert len(soil["moisture_monthly_m3m3"]) == 12
+    assert soil["moisture_m3m3"] == pytest.approx(sum(soil["moisture_monthly_m3m3"]) / 12, abs=1e-3)

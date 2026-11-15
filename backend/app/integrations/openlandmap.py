@@ -277,6 +277,41 @@ def sample_point(lat: float, lon: float) -> Any:
     ).getInfo()
 
 
+def call_earth_engine(request: Callable[[], Any], *, source: str) -> dict[str, Any]:
+    """Run one Earth Engine request and translate its failures to the error catalog.
+
+    Shared by every Earth Engine adapter (OpenLandMap soil, SMAP moisture). `source` goes in each
+    error's details. The answer must be a JSON object (what reduceRegion returns).
+    """
+    import ee  # noqa: PLC0415  (see initialize_earth_engine)
+    import httplib2  # noqa: PLC0415  (ee's HTTP transport, installed with it)
+    from google.auth.exceptions import RefreshError, TransportError  # noqa: PLC0415
+
+    try:
+        data = request()
+    except ee.EEException as e:
+        # Earth Engine answered with an error (quota, asset missing, timeout). Only the class
+        # name in the message; the original stays chained for the server log.
+        raise SourceUnavailableError(
+            f"Earth Engine request failed ({type(e).__name__})", details={"source": source}
+        ) from e
+    except RefreshError as e:
+        raise ConfigError(
+            "Earth Engine credentials expired or were revoked; run `earthengine authenticate`",
+            details={"source": source},
+        ) from e
+    except (OSError, httplib2.HttpLib2Error, TransportError) as e:
+        raise SourceUnavailableError(
+            f"Earth Engine is unreachable ({type(e).__name__})", details={"source": source}
+        ) from e
+    if not isinstance(data, dict):
+        raise SourceDataError(
+            f"Earth Engine returned {type(data).__name__}, expected an object",
+            details={"source": source},
+        )
+    return data
+
+
 class EarthEngineSoil:
     name = SOURCE
     attribution = ATTRIBUTION
@@ -322,34 +357,10 @@ class EarthEngineSoil:
         return sample_point
 
     def fetch_raw(self, params: dict[str, Any]) -> dict[str, Any]:
-        import ee  # noqa: PLC0415  (see initialize_earth_engine)
-        import httplib2  # noqa: PLC0415  (ee's HTTP transport, installed with it)
-        from google.auth.exceptions import RefreshError, TransportError  # noqa: PLC0415
-
         sampler = self.sampler or self._default_sampler()
-        try:
-            data = sampler(params["latitude"], params["longitude"])
-        except ee.EEException as e:
-            # Earth Engine answered with an error (quota, asset missing, timeout). Only the class
-            # name in the message; the original stays chained for the server log.
-            raise SourceUnavailableError(
-                f"Earth Engine request failed ({type(e).__name__})", details={"source": SOURCE}
-            ) from e
-        except RefreshError as e:
-            raise ConfigError(
-                "Earth Engine credentials expired or were revoked; run `earthengine authenticate`",
-                details={"source": SOURCE},
-            ) from e
-        except (OSError, httplib2.HttpLib2Error, TransportError) as e:
-            raise SourceUnavailableError(
-                f"Earth Engine is unreachable ({type(e).__name__})", details={"source": SOURCE}
-            ) from e
-        if not isinstance(data, dict):
-            raise SourceDataError(
-                f"Earth Engine returned {type(data).__name__}, expected an object",
-                details={"source": SOURCE},
-            )
-        return data
+        return call_earth_engine(
+            lambda: sampler(params["latitude"], params["longitude"]), source=SOURCE
+        )
 
     def _fetch_valid(self, params: dict[str, Any]) -> dict[str, Any]:
         """Validate before the cache stores it, so a malformed answer is never cached."""

@@ -85,6 +85,9 @@ class Crop(Schema):
     soil_ph: ToleranceRange
     root_depth_m: float = Field(description="Typical maximum effective rooting depth, m")
     is_cover_crop: bool = Field(description="Commonly grown to cover and protect the soil")
+    needs_good_drainage: bool = Field(
+        description="EcoCrop: does not tolerate poorly drained soil (checked for waterlogging)"
+    )
     forage_value: Trait = Field(description="Value of the crop or its residue as animal feed")
     nutrition_density: Trait = Field(description="Nutrient density of the edible part")
     mycorrhizal_affinity: Trait = Field(
@@ -123,7 +126,17 @@ class SeasonSummary(Schema):
 
 class Soil(Schema):
     ph: float
-    moisture_m3m3: float
+    moisture_m3m3: float = Field(description="Yearly mean root-zone moisture, m³/m³")
+    moisture_monthly_m3m3: list[float] | None = Field(
+        description="Mean root-zone moisture per month (m³/m³), January first; null if unknown"
+    )
+    texture_class: str | None = Field(
+        description="USDA texture class of the topsoil (OpenLandMap), e.g. clay; null if unknown"
+    )
+    wetness_monthly: list[float] | None = Field(
+        description="Mean root-zone relative saturation per month (0 dry .. 1 saturated), January "
+        "first; drives the waterlogging check. Null if unknown"
+    )
 
 
 class DataSources(Schema):
@@ -236,7 +249,19 @@ class SowingMonth(Schema):
         description="Months the crop spends in the field when sown this month (wraps the year)"
     )
     score: float = Field(ge=0, le=1, description="Same scoring as rotations, 1 = ideal")
-    is_good: bool = Field(description="score >= 0.8 and no variable below 0.5")
+    is_good: bool = Field(
+        description="Score on the month-varying variables >= 0.8 and none of them below 0.5 "
+        "(soil pH is the same every month: see fixed_limits). Waterlogging never makes a month "
+        "not good: see waterlogging_risk"
+    )
+    dry_month_note: str | None = Field(
+        description="Why this sowing month fails the dry-month check (a month in the field, "
+        "harvest excluded, gets too little rain to establish and grow); null when it passes"
+    )
+    waterlogging_risk: bool = Field(
+        description="The root zone is wet enough to warn about waterlogging for this crop (needs "
+        "good drainage); the score already includes a small penalty (at most -15 %)"
+    )
     limiting_factor: str | None = Field(
         description="Lowest-scoring variable (e.g. rainfall) when it is below 1, else null"
     )
@@ -255,6 +280,9 @@ class CropPlanting(Schema):
     crop_name: str
     cycle_days: int
     sowing_months: list[SowingMonth] = Field(description="Always 12, January first")
+    fixed_limits: list[str] = Field(
+        description="Factors that are the same in every month (soil pH) and limit this crop here"
+    )
     windows: list[PlantingWindow] = Field(
         description="Consecutive good sowing months; may be empty"
     )

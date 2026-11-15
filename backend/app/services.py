@@ -30,10 +30,10 @@ from app.domain.models import (
     SoilLayer,
     Weights,
 )
+from app.domain.planting_windows import SowingMonth, fixed_limits, sowing_calendar
 from app.domain.planting_windows import planting_windows as find_planting_windows
-from app.domain.planting_windows import sowing_calendar
 from app.domain.ranking import explain, rank_rotations
-from app.domain.suitability import cycle_rainfall_mm, season_climate
+from app.domain.suitability import MARGINAL_SCORE, cycle_rainfall_mm, season_climate
 from app.errors import (
     InvalidPrioritiesError,
     InvalidRotationError,
@@ -43,10 +43,15 @@ from app.errors import (
 )
 from app.integrations import Sources, build_sources
 from app.integrations.base import DailyWeatherSource, SoilProfileSource, TerrainSource
+from app.integrations.measured_soil import SOURCE as MEASURED_SOIL_SOURCE
 from app.settings import MvpConfig, get_config, get_env
 
 METHOD_VERSION = "suitability-v1"
-SOURCE_LABELS = {"nasa_power": "NASA POWER monthly normals", "mock": "mock data"}
+SOURCE_LABELS = {
+    "nasa_power": "NASA POWER monthly normals",
+    "openlandmap+nasa_smap": "OpenLandMap pH, NASA SMAP moisture",
+    "mock": "mock data",
+}
 SCORE_DECIMALS = 4  # the domain keeps full precision; we round only what goes in the response
 
 
@@ -108,6 +113,7 @@ def crop_schema(c: CropProfile) -> s.Crop:
         soil_ph=_range(c.soil_ph),
         root_depth_m=c.root_depth_m,
         is_cover_crop=c.is_cover_crop,
+        needs_good_drainage=c.needs_good_drainage,
         forage_value=c.forage_value,  # 0..1 score; Trait adds the word
         nutrition_density=c.nutrition_density,  # 0..1 score; Trait adds the word
         mycorrhizal_affinity=c.mycorrhizal_affinity,  # 0..1 score; Trait adds the word
@@ -156,7 +162,15 @@ def get_conditions(
             )
             for sc in (season_climate(climate, season) for season in ctx.seasons)
         ],
-        soil=s.Soil(ph=soil.ph, moisture_m3m3=soil.moisture_m3m3),
+        soil=s.Soil(
+            ph=soil.ph,
+            moisture_m3m3=soil.moisture_m3m3,
+            moisture_monthly_m3m3=None
+            if soil.moisture_monthly_m3m3 is None
+            else list(soil.moisture_monthly_m3m3),
+            wetness_monthly=None if soil.wetness_monthly is None else list(soil.wetness_monthly),
+            texture_class=soil.texture_class,
+        ),
         data_sources=s.DataSources(**ctx.sources.names()),
     )
     return schema, climate, soil
@@ -209,6 +223,11 @@ def _evidence(
     return list(dict.fromkeys(lines))
 
 
+MEASURED_SOIL_GAPS = (
+    "Soil pH is the OpenLandMap 250 m map (0-30 cm), not a soil test of this field",
+    "Soil moisture is NASA SMAP L4 (satellite plus model, ~9 km), monthly means of 2020-2024",
+    "Waterlogging uses SMAP relative saturation over ~9 km; it can't see a field's own drainage",
+)
 PLACEHOLDER_RULES_GAP = (
     "Scoring thresholds and rotation rule values are placeholders, "
     "not yet reviewed by an agronomist"
@@ -222,6 +241,8 @@ def _data_gaps(r: RotationResult, sources: dict[str, str], variables: Sequence[s
         gaps.append("Climate values are mock data, not NASA POWER measurements")
     if sources["soil"] == "mock":
         gaps.append("Soil pH and moisture are mock values, not measured for this location")
+    elif sources["soil"] == MEASURED_SOIL_SOURCE:
+        gaps.extend(MEASURED_SOIL_GAPS)
     if "soil_moisture" in variables:
         gaps.append("Soil moisture uses one generic range for all crops")
     if "frost" in variables:
@@ -469,6 +490,47 @@ def _limiting_factor(variable_scores: dict[str, float]) -> str | None:
     return name if variable_scores[name] < 1 else None
 
 
+def _dry_month_note(crop: CropProfile, m: SowingMonth) -> str | None:
+    """Farmer note when a sowing month fails the dry-month check, else None."""
+    dry = m.dry_month
+    if dry is None or dry.score >= MARGINAL_SCORE:
+        return None
+    sown, driest = calendar.month_name[m.sowing_month], calendar.month_name[dry.month]
+    needs = (
+        f"{crop.name} needs about {dry.pass_mm:.0f} mm a month to establish and grow "
+        f"(at least {dry.limit_mm:.0f})"
+    )
+    if dry.month == m.sowing_month:
+        return (
+            f"Too dry to establish {crop.name} sown in {sown}: {sown} usually gets only "
+            f"{dry.rainfall_mm:.0f} mm of rain, and {needs}"
+        )
+    return (
+        f"Sowing {crop.name} in {sown} is risky: {driest} usually gets only "
+        f"{dry.rainfall_mm:.0f} mm of rain, and {needs}"
+    )
+
+
+def _fixed_limit_notes(
+    crop: CropProfile, soil: SoilConditions, limits: dict[str, float]
+) -> list[str]:
+    """Plain-language notes for the fixed factors (same every month) that limit this crop."""
+    notes = []
+    if "soil_ph" in limits:
+        r = crop.soil_ph
+        if limits["soil_ph"] == 0:
+            notes.append(
+                f"Soil pH {soil.ph:.1f} is outside the {r.abs_min:g}-{r.abs_max:g} that "
+                f"{crop.name} tolerates: it can't be grown here in any month"
+            )
+        else:
+            notes.append(
+                f"Soil pH {soil.ph:.1f} is outside the ideal {r.opt_min:g}-{r.opt_max:g} for "
+                f"{crop.name}: it lowers the score in every month"
+            )
+    return notes
+
+
 def planting_windows(
     ctx: AppContext, lat: float, lon: float, crop_ids: list[str] | None
 ) -> s.PlantingWindowsResponse:
@@ -495,11 +557,14 @@ def planting_windows(
                         months_in_field=list(m.fit.season.months),
                         score=_score(m.score),
                         is_good=m.is_good(),
+                        waterlogging_risk=m.fit.waterlogging_warning,
+                        dry_month_note=_dry_month_note(crop, m),
                         limiting_factor=_limiting_factor(m.fit.variable_scores),
                         variable_scores={k: _score(v) for k, v in m.fit.variable_scores.items()},
                     )
                     for m in months
                 ],
+                fixed_limits=_fixed_limit_notes(crop, soil, fixed_limits(months)),
                 windows=[
                     s.PlantingWindow(
                         first_month=w.first_month,

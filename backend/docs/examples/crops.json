@@ -27,6 +27,7 @@
       },
       "root_depth_m": 1.0,
       "is_cover_crop": false,
+      "needs_good_drainage": false,
       "forage_value": {
         "level": "low",
         "score": 0.33
@@ -78,6 +79,7 @@
       },
       "root_depth_m": 0.9,
       "is_cover_crop": false,
+      "needs_good_drainage": true,
       "forage_value": {
         "level": "low",
         "score": 0.33
@@ -129,6 +131,7 @@
       },
       "root_depth_m": 1.7,
       "is_cover_crop": false,
+      "needs_good_drainage": true,
       "forage_value": {
         "level": "high",
         "score": 1.0

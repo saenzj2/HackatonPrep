@@ -69,6 +69,9 @@ class CropProfile:
     nitrogen_demand: float  # 1 = heavy feeder
     market_note: str  # one line of local market context, may be empty
     sources: tuple[str, ...]  # citations for this crop's values
+    # EcoCrop: the crop doesn't tolerate poorly drained soil (all but rice here). Enables the
+    # waterlogging check; False = no check.
+    needs_good_drainage: bool = False
     verified: bool = False  # True once the tolerance ranges come from a cited source (EcoCrop)
 
     def __post_init__(self) -> None:
@@ -104,9 +107,48 @@ class MonthlyClimate:
 
 
 @dataclass(frozen=True)
+class MonthlySoilWater:
+    """Root-zone soil water per calendar month, January first (NASA SMAP L4)."""
+
+    moisture_m3m3: tuple[float, ...]  # volumetric water content
+    wetness: tuple[float, ...]  # relative saturation, 0 = dry, 1 = saturated
+
+
+@dataclass(frozen=True)
 class SoilConditions:
     ph: float
-    moisture_m3m3: float  # volumetric water content of the surface layer
+    moisture_m3m3: float  # volumetric water content (m³/m³); the yearly mean when monthly is given
+    # Mean moisture per calendar month (m³/m³), January first. When present, each season or
+    # sowing month is scored on the mean of its own months instead of moisture_m3m3.
+    moisture_monthly_m3m3: tuple[float, ...] | None = None
+
+    def __post_init__(self) -> None:
+        monthly = self.moisture_monthly_m3m3
+        if monthly is not None and len(monthly) != MONTHS:
+            raise DomainInvariantError("SoilConditions needs 12 monthly moisture values")
+        wetness = self.wetness_monthly
+        if wetness is not None and (
+            len(wetness) != MONTHS or not all(0 <= w <= 1 for w in wetness)
+        ):
+            raise DomainInvariantError("SoilConditions needs 12 monthly wetness values in 0..1")
+
+    # Mean relative saturation of the root zone per month (0 = dry, 1 = saturated), January first.
+    # From the same model as the moisture, so it's comparable across soils. Drives waterlogging.
+    wetness_monthly: tuple[float, ...] | None = None
+    # USDA texture class of the topsoil (e.g. "clay"); only used to word the waterlogging warning.
+    texture_class: str | None = None
+
+    def wetness_for(self, months: tuple[int, ...]) -> float | None:
+        """Mean relative saturation over the given months, or None without wetness data."""
+        if self.wetness_monthly is None:
+            return None
+        return sum(self.wetness_monthly[m - 1] for m in months) / len(months)
+
+    def moisture_for(self, months: tuple[int, ...]) -> float:
+        """Mean moisture over the given months (1..12); the single value when there's no series."""
+        if self.moisture_monthly_m3m3 is None:
+            return self.moisture_m3m3
+        return sum(self.moisture_monthly_m3m3[m - 1] for m in months) / len(months)
 
 
 @dataclass(frozen=True)
@@ -183,6 +225,8 @@ class CropSeasonFit:
     categories: CategoryScores
     score: float  # 0..1
     risks: tuple[str, ...] = ()  # limits exceeded, partial stress, cycle too long
+    waterlogging_factor: float = 1.0  # already applied to score; < 1 = some waterlogging risk
+    waterlogging_warning: bool = False  # wet enough to warn the farmer (WATERLOGGING_NOTE)
 
 
 @dataclass(frozen=True)

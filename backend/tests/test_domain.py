@@ -38,9 +38,11 @@ from app.domain.rotation_rules import MONOCULTURE_PENALTY, SAME_FAMILY_PENALTY
 from app.domain.soil import silt_pct
 from app.domain.suitability import (
     HEAT_MARGIN_C,
+    WATERLOGGING_MIN_FACTOR,
     crop_season_fit,
     season_climate,
     trapezoid,
+    waterlogging_factor,
 )
 from app.errors import DomainInvariantError
 
@@ -559,3 +561,56 @@ def _layer(depth_cm):
 def test_soil_profile_needs_unique_sorted_depths(depths):
     with pytest.raises(DomainInvariantError, match="unique depths"):
         SoilProfile(lat=0, lon=0, layers=tuple(_layer(d) for d in depths))
+
+
+# ---------------------------------------------------------------- soil water (NASA SMAP)
+@pytest.mark.parametrize(
+    ("wetness", "factor"), [(0.5, 1.0), (0.8, 1.0), (0.875, 0.925), (0.95, 0.85), (1.0, 0.85)]
+)
+def test_waterlogging_factor_ramps_down_and_never_vetoes(wetness, factor):
+    assert waterlogging_factor(wetness) == pytest.approx(factor)
+
+
+def _fit_with_wetness(wetness: float, *, needs_drainage: bool):
+    soil = SoilConditions(ph=6.0, moisture_m3m3=0.3, wetness_monthly=(wetness,) * 12)
+    c = replace(crop("maize"), needs_good_drainage=needs_drainage)
+    return crop_season_fit(c, sc_with(), soil, EQUAL.normalized(), ALL_VARS)
+
+
+def test_saturated_soil_lowers_score_of_crops_that_need_drainage():
+    fit = _fit_with_wetness(0.95, needs_drainage=True)
+    assert fit.waterlogging_factor == pytest.approx(WATERLOGGING_MIN_FACTOR)
+    assert fit.score == pytest.approx(WATERLOGGING_MIN_FACTOR)  # 1.0 x 0.85
+    assert any("waterlogging risk" in r for r in fit.risks)
+
+
+def test_crops_that_tolerate_poor_drainage_are_not_penalised():
+    fit = _fit_with_wetness(0.95, needs_drainage=False)  # e.g. rice
+    assert fit.score == pytest.approx(1.0)
+    assert not any("waterlogging" in r for r in fit.risks)
+
+
+def test_wet_soil_alone_is_no_longer_penalised_only_dry_soil():
+    wet = SoilConditions(ph=6.0, moisture_m3m3=0.52)
+    dry = SoilConditions(ph=6.0, moisture_m3m3=0.08)
+    fits = {
+        name: crop_season_fit(crop("maize"), sc_with(), soil, EQUAL.normalized(), ALL_VARS)
+        for name, soil in (("wet", wet), ("dry", dry))
+    }
+    assert fits["wet"].variable_scores["soil_moisture"] == 1.0
+    assert fits["dry"].variable_scores["soil_moisture"] == 0.0
+    assert any("very dry" in r for r in fits["dry"].risks)
+
+
+@pytest.mark.parametrize(
+    ("texture", "mentions_clay"),
+    [("clay", True), ("clay loam", True), ("sandy loam", False), (None, False)],
+)
+def test_waterlogging_warning_mentions_clay_soil(texture, mentions_clay):
+    soil = SoilConditions(
+        ph=6.0, moisture_m3m3=0.3, wetness_monthly=(0.95,) * 12, texture_class=texture
+    )
+    c = replace(crop("maize"), needs_good_drainage=True)
+    fit = crop_season_fit(c, sc_with(), soil, EQUAL.normalized(), ALL_VARS)
+    (warning,) = [r for r in fit.risks if "waterlogging" in r]
+    assert ("drains slowly" in warning) is mentions_clay

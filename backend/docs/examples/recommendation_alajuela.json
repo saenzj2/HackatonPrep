@@ -136,12 +136,41 @@
       }
     ],
     "soil": {
-      "ph": 5.87,
-      "moisture_m3m3": 0.256
+      "ph": 6.43,
+      "moisture_m3m3": 0.4638,
+      "moisture_monthly_m3m3": [
+        0.4487,
+        0.4132,
+        0.3835,
+        0.3828,
+        0.4256,
+        0.485,
+        0.5045,
+        0.5077,
+        0.5098,
+        0.5151,
+        0.5096,
+        0.4797
+      ],
+      "texture_class": "clay loam",
+      "wetness_monthly": [
+        0.825,
+        0.7597,
+        0.7051,
+        0.7037,
+        0.7825,
+        0.8919,
+        0.9278,
+        0.9337,
+        0.9374,
+        0.9473,
+        0.937,
+        0.8821
+      ]
     },
     "data_sources": {
       "climate": "nasa_power",
-      "soil": "mock",
+      "soil": "openlandmap+nasa_smap",
       "crops": "ecocrop_subset"
     }
   },
@@ -159,7 +188,7 @@
           ],
           "crop_id": "beans",
           "crop_name": "Common bean",
-          "score": 1.0,
+          "score": 0.916,
           "variable_scores": {
             "temperature": 1.0,
             "rainfall": 1.0,
@@ -178,7 +207,7 @@
           ],
           "crop_id": "maize",
           "crop_name": "Maize",
-          "score": 1.0,
+          "score": 0.8594,
           "variable_scores": {
             "temperature": 1.0,
             "rainfall": 1.0,
@@ -189,16 +218,16 @@
           }
         }
       ],
-      "score": 1.0,
+      "score": 0.9127,
       "viable": true,
       "breakdown": {
         "climate": 1.0,
         "water": 1.0,
         "soil": 1.0
       },
-      "explanation": "Common bean (primera) → Maize (postrera): balanced fit across climate, water, soil (score 1.00).",
+      "explanation": "Common bean (primera) → Maize (postrera): balanced fit across climate, water, soil (score 0.91).",
       "is_current": false,
-      "score_delta_vs_current": 0.1,
+      "score_delta_vs_current": 0.125,
       "benefits": [
         "Maize (Poaceae) → Common bean (Fabaceae): family change helps break pest and disease cycles",
         "Common bean (legume) after Maize, a heavy feeder: it takes most of its nitrogen from the air instead of the soil, and its residues leave a little for the next crop",
@@ -208,12 +237,16 @@
         "Strong soil fit across the year (1.00)"
       ],
       "risks": [
+        "Common bean in primera: waterlogging risk, root zone 88% saturated on average (NASA SMAP) and Common bean needs well-drained soil; clay loam soil drains slowly, which raises the risk; check drainage or use raised beds",
+        "Maize in postrera: waterlogging risk, root zone 94% saturated on average (NASA SMAP) and Maize needs well-drained soil; clay loam soil drains slowly, which raises the risk; check drainage or use raised beds",
         "Maize cycle (120 d) is longer than postrera (~91 d)",
         "Local review: check sowing dates and varieties for Common bean in primera, Maize in postrera; the seasons here are fixed calendar months, not the local planting calendar",
         "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field"
       ],
       "data_gaps": [
-        "Soil pH and moisture are mock values, not measured for this location",
+        "Soil pH is the OpenLandMap 250 m map (0-30 cm), not a soil test of this field",
+        "Soil moisture is NASA SMAP L4 (satellite plus model, ~9 km), monthly means of 2020-2024",
+        "Waterlogging uses SMAP relative saturation over ~9 km; it can't see a field's own drainage",
         "Soil moisture uses one generic range for all crops",
         "Frost risk uses one generic threshold for all crops",
         "Scoring thresholds and rotation rule values are placeholders, not yet reviewed by an agronomist"
@@ -223,7 +256,7 @@
         "Common bean in primera: ~601 mm over its 90-day cycle (optimal 500 to 2000 mm)",
         "postrera (Sep–Nov): mean 22.7 °C, average daily max 29.9 °C, coldest-month daily min 16.1 °C, 248 mm/month (NASA POWER monthly normals)",
         "Maize in postrera: ~978 mm over its 120-day cycle (optimal 600 to 1200 mm)",
-        "Soil: pH 5.9, moisture 0.26 m³/m³ (mock data)"
+        "Soil: pH 6.4, moisture 0.46 m³/m³ (OpenLandMap pH, NASA SMAP moisture)"
       ],
       "notes": [
         "Maize (Poaceae) → Common bean (Fabaceae): family change helps break pest and disease cycles",
@@ -232,6 +265,8 @@
         "Strong climate fit across the year (1.00)",
         "Strong water fit across the year (1.00)",
         "Strong soil fit across the year (1.00)",
+        "Common bean in primera: waterlogging risk, root zone 88% saturated on average (NASA SMAP) and Common bean needs well-drained soil; clay loam soil drains slowly, which raises the risk; check drainage or use raised beds",
+        "Maize in postrera: waterlogging risk, root zone 94% saturated on average (NASA SMAP) and Maize needs well-drained soil; clay loam soil drains slowly, which raises the risk; check drainage or use raised beds",
         "Maize cycle (120 d) is longer than postrera (~91 d)",
         "Local review: check sowing dates and varieties for Common bean in primera, Maize in postrera; the seasons here are fixed calendar months, not the local planting calendar",
         "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field"
@@ -250,7 +285,7 @@
           ],
           "crop_id": "maize",
           "crop_name": "Maize",
-          "score": 1.0,
+          "score": 0.916,
           "variable_scores": {
             "temperature": 1.0,
             "rainfall": 1.0,
@@ -269,7 +304,7 @@
           ],
           "crop_id": "beans",
           "crop_name": "Common bean",
-          "score": 1.0,
+          "score": 0.8594,
           "variable_scores": {
             "temperature": 1.0,
             "rainfall": 1.0,
@@ -280,16 +315,16 @@
           }
         }
       ],
-      "score": 1.0,
+      "score": 0.9127,
       "viable": true,
       "breakdown": {
         "climate": 1.0,
         "water": 1.0,
         "soil": 1.0
       },
-      "explanation": "Maize (primera) → Common bean (postrera): balanced fit across climate, water, soil (score 1.00).",
+      "explanation": "Maize (primera) → Common bean (postrera): balanced fit across climate, water, soil (score 0.91).",
       "is_current": false,
-      "score_delta_vs_current": 0.1,
+      "score_delta_vs_current": 0.125,
       "benefits": [
         "Common bean (Fabaceae) → Maize (Poaceae): family change helps break pest and disease cycles",
         "Maize (Poaceae) → Common bean (Fabaceae): family change helps break pest and disease cycles",
@@ -299,11 +334,15 @@
         "Strong soil fit across the year (1.00)"
       ],
       "risks": [
+        "Maize in primera: waterlogging risk, root zone 88% saturated on average (NASA SMAP) and Maize needs well-drained soil; clay loam soil drains slowly, which raises the risk; check drainage or use raised beds",
+        "Common bean in postrera: waterlogging risk, root zone 94% saturated on average (NASA SMAP) and Common bean needs well-drained soil; clay loam soil drains slowly, which raises the risk; check drainage or use raised beds",
         "Local review: check sowing dates and varieties for Maize in primera, Common bean in postrera; the seasons here are fixed calendar months, not the local planting calendar",
         "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field"
       ],
       "data_gaps": [
-        "Soil pH and moisture are mock values, not measured for this location",
+        "Soil pH is the OpenLandMap 250 m map (0-30 cm), not a soil test of this field",
+        "Soil moisture is NASA SMAP L4 (satellite plus model, ~9 km), monthly means of 2020-2024",
+        "Waterlogging uses SMAP relative saturation over ~9 km; it can't see a field's own drainage",
         "Soil moisture uses one generic range for all crops",
         "Frost risk uses one generic threshold for all crops",
         "Scoring thresholds and rotation rule values are placeholders, not yet reviewed by an agronomist"
@@ -313,7 +352,7 @@
         "Maize in primera: ~801 mm over its 120-day cycle (optimal 600 to 1200 mm)",
         "postrera (Sep–Nov): mean 22.7 °C, average daily max 29.9 °C, coldest-month daily min 16.1 °C, 248 mm/month (NASA POWER monthly normals)",
         "Common bean in postrera: ~734 mm over its 90-day cycle (optimal 500 to 2000 mm)",
-        "Soil: pH 5.9, moisture 0.26 m³/m³ (mock data)"
+        "Soil: pH 6.4, moisture 0.46 m³/m³ (OpenLandMap pH, NASA SMAP moisture)"
       ],
       "notes": [
         "Common bean (Fabaceae) → Maize (Poaceae): family change helps break pest and disease cycles",
@@ -322,6 +361,8 @@
         "Strong climate fit across the year (1.00)",
         "Strong water fit across the year (1.00)",
         "Strong soil fit across the year (1.00)",
+        "Maize in primera: waterlogging risk, root zone 88% saturated on average (NASA SMAP) and Maize needs well-drained soil; clay loam soil drains slowly, which raises the risk; check drainage or use raised beds",
+        "Common bean in postrera: waterlogging risk, root zone 94% saturated on average (NASA SMAP) and Common bean needs well-drained soil; clay loam soil drains slowly, which raises the risk; check drainage or use raised beds",
         "Local review: check sowing dates and varieties for Maize in primera, Common bean in postrera; the seasons here are fixed calendar months, not the local planting calendar",
         "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field"
       ]
@@ -339,7 +380,7 @@
           ],
           "crop_id": "beans",
           "crop_name": "Common bean",
-          "score": 1.0,
+          "score": 0.916,
           "variable_scores": {
             "temperature": 1.0,
             "rainfall": 1.0,
@@ -358,7 +399,7 @@
           ],
           "crop_id": "beans",
           "crop_name": "Common bean",
-          "score": 1.0,
+          "score": 0.8594,
           "variable_scores": {
             "temperature": 1.0,
             "rainfall": 1.0,
@@ -369,14 +410,14 @@
           }
         }
       ],
-      "score": 0.9,
+      "score": 0.7877,
       "viable": true,
       "breakdown": {
         "climate": 1.0,
         "water": 1.0,
         "soil": 1.0
       },
-      "explanation": "Common bean (primera) → Common bean (postrera): balanced fit across climate, water, soil (score 0.90).",
+      "explanation": "Common bean (primera) → Common bean (postrera): balanced fit across climate, water, soil (score 0.79).",
       "is_current": false,
       "score_delta_vs_current": 0.0,
       "benefits": [
@@ -386,11 +427,15 @@
       ],
       "risks": [
         "Common bean follows itself (monoculture): pests and diseases of Common bean build up season after season",
+        "Common bean in primera: waterlogging risk, root zone 88% saturated on average (NASA SMAP) and Common bean needs well-drained soil; clay loam soil drains slowly, which raises the risk; check drainage or use raised beds",
+        "Common bean in postrera: waterlogging risk, root zone 94% saturated on average (NASA SMAP) and Common bean needs well-drained soil; clay loam soil drains slowly, which raises the risk; check drainage or use raised beds",
         "Local review: check sowing dates and varieties for Common bean in primera, Common bean in postrera; the seasons here are fixed calendar months, not the local planting calendar",
         "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field"
       ],
       "data_gaps": [
-        "Soil pH and moisture are mock values, not measured for this location",
+        "Soil pH is the OpenLandMap 250 m map (0-30 cm), not a soil test of this field",
+        "Soil moisture is NASA SMAP L4 (satellite plus model, ~9 km), monthly means of 2020-2024",
+        "Waterlogging uses SMAP relative saturation over ~9 km; it can't see a field's own drainage",
         "Soil moisture uses one generic range for all crops",
         "Frost risk uses one generic threshold for all crops",
         "Scoring thresholds and rotation rule values are placeholders, not yet reviewed by an agronomist"
@@ -400,13 +445,15 @@
         "Common bean in primera: ~601 mm over its 90-day cycle (optimal 500 to 2000 mm)",
         "postrera (Sep–Nov): mean 22.7 °C, average daily max 29.9 °C, coldest-month daily min 16.1 °C, 248 mm/month (NASA POWER monthly normals)",
         "Common bean in postrera: ~734 mm over its 90-day cycle (optimal 500 to 2000 mm)",
-        "Soil: pH 5.9, moisture 0.26 m³/m³ (mock data)"
+        "Soil: pH 6.4, moisture 0.46 m³/m³ (OpenLandMap pH, NASA SMAP moisture)"
       ],
       "notes": [
         "Strong climate fit across the year (1.00)",
         "Strong water fit across the year (1.00)",
         "Strong soil fit across the year (1.00)",
         "Common bean follows itself (monoculture): pests and diseases of Common bean build up season after season",
+        "Common bean in primera: waterlogging risk, root zone 88% saturated on average (NASA SMAP) and Common bean needs well-drained soil; clay loam soil drains slowly, which raises the risk; check drainage or use raised beds",
+        "Common bean in postrera: waterlogging risk, root zone 94% saturated on average (NASA SMAP) and Common bean needs well-drained soil; clay loam soil drains slowly, which raises the risk; check drainage or use raised beds",
         "Local review: check sowing dates and varieties for Common bean in primera, Common bean in postrera; the seasons here are fixed calendar months, not the local planting calendar",
         "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field"
       ]
@@ -425,7 +472,7 @@
         ],
         "crop_id": "maize",
         "crop_name": "Maize",
-        "score": 1.0,
+        "score": 0.916,
         "variable_scores": {
           "temperature": 1.0,
           "rainfall": 1.0,
@@ -444,7 +491,7 @@
         ],
         "crop_id": "maize",
         "crop_name": "Maize",
-        "score": 1.0,
+        "score": 0.8594,
         "variable_scores": {
           "temperature": 1.0,
           "rainfall": 1.0,
@@ -455,14 +502,14 @@
         }
       }
     ],
-    "score": 0.9,
+    "score": 0.7877,
     "viable": true,
     "breakdown": {
       "climate": 1.0,
       "water": 1.0,
       "soil": 1.0
     },
-    "explanation": "Maize (primera) → Maize (postrera): balanced fit across climate, water, soil (score 0.90).",
+    "explanation": "Maize (primera) → Maize (postrera): balanced fit across climate, water, soil (score 0.79).",
     "is_current": true,
     "score_delta_vs_current": 0.0,
     "benefits": [
@@ -472,12 +519,16 @@
     ],
     "risks": [
       "Maize follows itself (monoculture): pests and diseases of Maize build up season after season",
+      "Maize in primera: waterlogging risk, root zone 88% saturated on average (NASA SMAP) and Maize needs well-drained soil; clay loam soil drains slowly, which raises the risk; check drainage or use raised beds",
+      "Maize in postrera: waterlogging risk, root zone 94% saturated on average (NASA SMAP) and Maize needs well-drained soil; clay loam soil drains slowly, which raises the risk; check drainage or use raised beds",
       "Maize cycle (120 d) is longer than postrera (~91 d)",
       "Local review: check sowing dates and varieties for Maize in primera, Maize in postrera; the seasons here are fixed calendar months, not the local planting calendar",
       "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field"
     ],
     "data_gaps": [
-      "Soil pH and moisture are mock values, not measured for this location",
+      "Soil pH is the OpenLandMap 250 m map (0-30 cm), not a soil test of this field",
+      "Soil moisture is NASA SMAP L4 (satellite plus model, ~9 km), monthly means of 2020-2024",
+      "Waterlogging uses SMAP relative saturation over ~9 km; it can't see a field's own drainage",
       "Soil moisture uses one generic range for all crops",
       "Frost risk uses one generic threshold for all crops",
       "Scoring thresholds and rotation rule values are placeholders, not yet reviewed by an agronomist"
@@ -487,13 +538,15 @@
       "Maize in primera: ~801 mm over its 120-day cycle (optimal 600 to 1200 mm)",
       "postrera (Sep–Nov): mean 22.7 °C, average daily max 29.9 °C, coldest-month daily min 16.1 °C, 248 mm/month (NASA POWER monthly normals)",
       "Maize in postrera: ~978 mm over its 120-day cycle (optimal 600 to 1200 mm)",
-      "Soil: pH 5.9, moisture 0.26 m³/m³ (mock data)"
+      "Soil: pH 6.4, moisture 0.46 m³/m³ (OpenLandMap pH, NASA SMAP moisture)"
     ],
     "notes": [
       "Strong climate fit across the year (1.00)",
       "Strong water fit across the year (1.00)",
       "Strong soil fit across the year (1.00)",
       "Maize follows itself (monoculture): pests and diseases of Maize build up season after season",
+      "Maize in primera: waterlogging risk, root zone 88% saturated on average (NASA SMAP) and Maize needs well-drained soil; clay loam soil drains slowly, which raises the risk; check drainage or use raised beds",
+      "Maize in postrera: waterlogging risk, root zone 94% saturated on average (NASA SMAP) and Maize needs well-drained soil; clay loam soil drains slowly, which raises the risk; check drainage or use raised beds",
       "Maize cycle (120 d) is longer than postrera (~91 d)",
       "Local review: check sowing dates and varieties for Maize in primera, Maize in postrera; the seasons here are fixed calendar months, not the local planting calendar",
       "Local review: actual pest and disease pressure (judged here only by crop family), field slope and erosion, irrigation, labour and market prices are not scored; ask a local agronomist or extension officer to check them for this field"
