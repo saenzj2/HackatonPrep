@@ -15,6 +15,19 @@ Template:
 
 ---
 
+## 2026-11-15 — Production at terracosmos.space (Railway Trial + Cloudflare DNS)
+- **Decision:** production is live at https://terracosmos.space. The domain is registered at
+  Cloudflare. The apex CNAME points to Railway as DNS only, so Railway issues the certificate. The
+  Railway service sets `PORT=8000` to match the domains' target port. `www` is a proxied placeholder
+  with a 301 redirect rule to the apex, because Railway Trial allows one custom domain. Current
+  setup and pending items: `docs/deploy.md`.
+- **Why:** the Cloudflare domain was ready, and the GoDaddy offer isn't needed. Keeping Cloudflare
+  as DNS only (no proxy) avoids double TLS and certificate issues.
+- **Alternatives considered:** a Cloudflare-proxied apex (needs SSL mode Full and adds a layer to
+  debug); `www` as a second Railway domain (needs Hobby).
+- **Revisit if:** the team upgrades to Railway Hobby (move `www` to Railway), or the Trial ends
+  before judging does.
+
 ## 2026-11-15 — Deploy: one Railway service (API + static frontend), deployed from GitHub Actions
 - **Decision:** the root `Dockerfile` builds one image that runs the API and serves `frontend/` at
   `/app` (`FRONTEND_DIR`; `/` redirects there). Railway runs it in `cached` mode, so production
